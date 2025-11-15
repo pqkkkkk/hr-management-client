@@ -1,4 +1,5 @@
 // Common types used across the application
+export type ApiType = 'REST' | 'MOCK';
 
 export type UserRole = 'EMPLOYEE' | 'MANAGER' | 'HR' | 'ADMIN';
 
@@ -19,7 +20,7 @@ export type LeaveType =
 
 export type ActivityStatus = 'UPCOMING' | 'ONGOING' | 'COMPLETED';
 
-export type EmployeeStatus = 'ACTIVE' | 'INACTIVE' | 'ON_LEAVE';
+export type UserStatus = 'ACTIVE' | 'INACTIVE' | 'ON_LEAVE';
 
 export type TransactionType = 
   | 'EARNED' 
@@ -43,10 +44,15 @@ export interface PaginatedResponse<T> {
 }
 
 export interface ApiResponse<T> {
-  success: boolean;
-  data?: T;
-  message?: string;
-  error?: string;
+    data: T;
+    statusCode: number;
+    message?: string;
+    success: boolean;
+    error?: ApiError;
+}
+export interface ApiError {
+    statusCode: number;
+    message: string;
 }
 
 export interface FilterOptions {

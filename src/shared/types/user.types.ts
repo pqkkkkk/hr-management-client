@@ -1,51 +1,47 @@
-import { UserRole, EmployeeStatus } from './common.types';
+import { UserRole, UserStatus } from './common.types';
 
 export interface User {
-  id: string;
-  employeeCode: string;
-  firstName: string;
-  lastName: string;
+  userId: string;
   fullName: string;
   email: string;
   role: UserRole;
-  status: EmployeeStatus;
-  avatar?: string;
-  department?: string;
+  status: UserStatus;
   position?: string;
-  managerId?: string;
-  managerName?: string;
   joinDate: Date | string;
+  identityCardNumber?: string;
   phoneNumber?: string;
   dateOfBirth?: Date | string;
   address?: string;
-  idCard?: string;
-  taxCode?: string;
   bankAccount?: string;
   bankName?: string;
-  remainingLeave?: number;
-  totalPoints?: number;
   createdAt: Date | string;
   updatedAt: Date | string;
+  departmentId?: string;
+}
+export interface Department {
+  departmentId: string;
+  departmentName: string;
 }
 
-export interface LoginRequest {
+export interface SignInRequest {
   email: string;
   password: string;
 }
 
-export interface LoginResponse {
+export interface SignInResponse {
   user: User;
   accessToken: string;
   refreshToken: string;
+  authenticated: boolean;
 }
 
-export interface AuthContextType {
-  user: User | null;
-  isAuthenticated: boolean;
-  isLoading: boolean;
-  login: (credentials: LoginRequest) => Promise<void>;
-  logout: () => void;
-  updateUser: (user: Partial<User>) => void;
+export interface RefreshTokenRequest {
+    refreshToken: string;
+}
+
+export interface RefreshTokenResponse{
+    accessToken: string;
+    refreshToken: string;
 }
 
 export interface UpdateProfileRequest {

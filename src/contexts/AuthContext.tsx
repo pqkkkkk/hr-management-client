@@ -1,62 +1,71 @@
-import React, { createContext, useState, useContext, useEffect, ReactNode } from 'react';
-import { User, AuthContextType, LoginRequest } from 'shared/types';
-import authService from 'services/auth.service';
+import React, { createContext, useState, useContext, useEffect, ReactNode, useMemo } from 'react';
+import { AuthApi, MockAuthApi, RestAuthApi } from 'services/api/auth.api';
+import { User, SignInRequest, ApiType } from 'shared/types';
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-interface AuthProviderProps {
-  children: ReactNode;
+export interface AuthContextType {
+  user: User | null;
+  isAuthenticated: boolean;
+  isLoading: boolean;
+  login: (req: SignInRequest) => Promise<void>;
+  logout: () => void;
 }
 
-export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
+interface AuthProviderProps {
+  children: ReactNode;
+  authApiType?: ApiType;
+}
 
-  useEffect(() => {
-    initAuth();
-  }, []);
+const createAuthApi = (type: ApiType) : AuthApi => {
+  switch (type) {
+    case 'REST':
+      return new RestAuthApi();
+    case 'MOCK':
+    default:
+      return new MockAuthApi();
+  }
+}
 
-  const initAuth = async () => {
+export const AuthProvider: React.FC<AuthProviderProps> = ({ children, authApiType = 'MOCK'}) => {
+  const [user, setUser] = useState<User | null>(() => {
+    const storedUser = sessionStorage.getItem('user');
+    return storedUser ? JSON.parse(storedUser) : null;
+  });
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
+    const storedAuth = sessionStorage.getItem('isAuthenticated');
+    return storedAuth === 'true';
+  });
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+
+  const authApi = useMemo(() => createAuthApi(authApiType), [authApiType]);
+
+  const login = async (req: SignInRequest): Promise<void> => {
     try {
-      if (authService.isAuthenticated()) {
-        const storedUser = authService.getStoredUser();
-        if (storedUser) {
-          setUser(storedUser);
-          setIsAuthenticated(true);
-          
-          // Refresh user data from server
-          try {
-            const currentUser = await authService.getCurrentUser();
-            setUser(currentUser);
-          } catch (error) {
-            console.error('Failed to refresh user data:', error);
-          }
-        }
+      const response = await authApi.signIn(req);
+
+      if(response.data.authenticated) {
+        setUser(response.data.user);
+        setIsAuthenticated(true);
+        sessionStorage.setItem('user', JSON.stringify(response.data.user));
+        sessionStorage.setItem('accessToken', response.data.accessToken);
+        sessionStorage.setItem('refreshToken', response.data.refreshToken);
+        sessionStorage.setItem('isAuthenticated', 'true');
+      }
+      else{
+        throw new Error(response.error?.message || response.message || 'Authentication failed');
       }
     } catch (error) {
-      console.error('Auth initialization failed:', error);
-      setUser(null);
-      setIsAuthenticated(false);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const login = async (credentials: LoginRequest): Promise<void> => {
-    try {
-      const response = await authService.login(credentials);
-      setUser(response.user);
-      setIsAuthenticated(true);
-    } catch (error) {
-      console.error('Login failed:', error);
       throw error;
     }
   };
 
   const logout = async () => {
     try {
-      await authService.logout();
+      sessionStorage.removeItem('user');
+      sessionStorage.removeItem('accessToken');
+      sessionStorage.removeItem('refreshToken');
+      sessionStorage.removeItem('isAuthenticated');
     } catch (error) {
       console.error('Logout failed:', error);
     } finally {
@@ -65,21 +74,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  const updateUser = (updatedUser: Partial<User>) => {
-    if (user) {
-      const newUser = { ...user, ...updatedUser };
-      setUser(newUser);
-      localStorage.setItem('user', JSON.stringify(newUser));
-    }
-  };
-
   const value: AuthContextType = {
     user,
     isAuthenticated,
     isLoading,
     login,
-    logout,
-    updateUser,
+    logout
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

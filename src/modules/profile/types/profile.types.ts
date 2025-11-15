@@ -1,4 +1,4 @@
-import { User, EmployeeStatus } from 'shared/types';
+import { User, UserStatus } from 'shared/types';
 
 export interface EmployeeProfile extends User {
   // Additional profile-specific fields
@@ -65,7 +65,7 @@ export interface UpdateEmployeeByHRDto extends UpdateEmployeeProfileDto {
   position?: string;
   department?: string;
   managerId?: string;
-  status?: EmployeeStatus;
+  status?: UserStatus;
   taxCode?: string;
   bankAccount?: string;
   bankName?: string;
@@ -98,7 +98,7 @@ export interface DeactivateEmployeeDto {
 }
 
 export interface EmployeeFilterOptions {
-  status?: EmployeeStatus;
+  status?: UserStatus;
   department?: string;
   managerId?: string;
   searchQuery?: string;
