@@ -45,7 +45,7 @@ const Dashboard: React.FC = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-600">Điểm thưởng</p>
-              <p className="text-2xl font-bold text-gray-900 mt-1">{user?.totalPoints || 0}</p>
+              <p className="text-2xl font-bold text-gray-900 mt-1">{0}</p>
             </div>
             <div className="bg-yellow-100 p-3 rounded-full">
               <svg className="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -59,7 +59,7 @@ const Dashboard: React.FC = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-600">Ngày nghỉ còn lại</p>
-              <p className="text-2xl font-bold text-gray-900 mt-1">{user?.remainingLeave || 0}</p>
+              <p className="text-2xl font-bold text-gray-900 mt-1">{0}</p>
             </div>
             <div className="bg-purple-100 p-3 rounded-full">
               <svg className="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
