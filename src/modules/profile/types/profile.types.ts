@@ -28,3 +28,9 @@ export const bankOptions = [
   { value: "Techcombank", label: "Techcombank" },
   { value: "ACB", label: "ACB" },
 ];
+
+export const statusOptions = [
+  { value: "ACTIVE", label: "Đang làm việc" },
+  { value: "ON_LEAVE", label: "Đang nghỉ phép" },
+  { value: "INACTIVE", label: "Đã nghỉ việc" },
+];
