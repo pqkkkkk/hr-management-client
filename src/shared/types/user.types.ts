@@ -7,6 +7,7 @@ export interface User {
   role: UserRole;
   status: UserStatus;
   position?: string;
+  gender?: 'Nam' | 'Nữ' | 'Khác';
   joinDate: Date | string;
   identityCardNumber?: string;
   phoneNumber?: string;

@@ -5,6 +5,7 @@ import LoginPage from 'shared/components/LoginPage';
 import Dashboard from 'shared/components/Dashboard';
 import UnauthorizedPage from 'shared/components/UnauthorizedPage';
 import Layout from 'shared/components/Layout';
+import { EmployeeUpdatePage } from 'modules/profile/pages';
 
 // Placeholder components for routes that will be implemented later
 const PlaceholderPage: React.FC<{ title: string }> = ({ title }) => (
@@ -26,7 +27,7 @@ const AttendancePage = () => <PlaceholderPage title="Bảng chấm công" />;
 
 // Profile placeholder pages
 const ProfilePage = () => <PlaceholderPage title="Thông tin cá nhân" />;
-const EditProfilePage = () => <PlaceholderPage title="Chỉnh sửa thông tin" />;
+const EditProfilePage = () => <EmployeeUpdatePage />;
 const EmployeeListPage = () => <PlaceholderPage title="Danh sách nhân viên" />;
 const EmployeeDetailPage = () => <PlaceholderPage title="Chi tiết nhân viên" />;
 
