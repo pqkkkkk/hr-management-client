@@ -1,4 +1,4 @@
-import { UserRole, UserStatus } from './common.types';
+import { UserRole, UserStatus } from "./common.types";
 
 export interface User {
   userId: string;
@@ -7,7 +7,7 @@ export interface User {
   role: UserRole;
   status: UserStatus;
   position?: string;
-  gender?: 'Nam' | 'Nữ' | 'Khác';
+  gender?: "Nam" | "Nữ" | "Khác";
   joinDate: Date | string;
   identityCardNumber?: string;
   phoneNumber?: string;
@@ -37,12 +37,12 @@ export interface SignInResponse {
 }
 
 export interface RefreshTokenRequest {
-    refreshToken: string;
+  refreshToken: string;
 }
 
-export interface RefreshTokenResponse{
-    accessToken: string;
-    refreshToken: string;
+export interface RefreshTokenResponse {
+  accessToken: string;
+  refreshToken: string;
 }
 
 export interface UpdateProfileRequest {
