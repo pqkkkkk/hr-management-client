@@ -4,6 +4,7 @@ import { AuthProvider } from 'contexts/AuthContext';
 import AppRoutes from 'routes';
 import './App.css';
 import { ApiProvider } from 'contexts/ApiContext';
+import { ToastContainer } from 'react-toastify';
 
 function App() {
   return (
@@ -11,6 +12,7 @@ function App() {
       <AuthProvider>
         <ApiProvider>
           <AppRoutes />
+          <ToastContainer />
         </ApiProvider>
       </AuthProvider>
     </BrowserRouter>

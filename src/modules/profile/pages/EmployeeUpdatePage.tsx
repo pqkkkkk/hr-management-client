@@ -5,12 +5,14 @@ import FormSelect from '../components/FormSelect';
 import FormDateInput from '../components/FormDateInput';
 import { User } from 'shared/types';
 import { useApi } from 'contexts/ApiContext';
+import { toast } from 'react-toastify';
 
 const EmployeeUpdatePage: React.FC = () => {
     const {profileApi} = useApi();
 
     const [formData, setFormData] = useState<User | undefined>();
     const [isFetchingUserData, setIsFetchingUserData] = useState<boolean>(true);
+    const [isSaving, setIsSaving] = useState<boolean>(false);
     const [isError, setIsError] = useState<boolean>(false);
 
     useEffect(() => {
@@ -38,20 +40,130 @@ const EmployeeUpdatePage: React.FC = () => {
         }));
     };
 
-    // Check loading state first
     if (isFetchingUserData) {
-        return <EmployeeFetching />;
+      return <EmployeeFetching />;
     }
-
-    // Then check error state
     if (isError) {
-        return <EmployeeFetchingError />;
+      return <EmployeeFetchingError />;
+    }
+    if (!formData) {
+      return <EmployeeFetchingError />;
     }
 
-    // Finally check if data is missing (shouldn't happen if error is handled properly)
-    if (!formData) {
-        return <EmployeeFetchingError />;
+    const validateFormData = () => {
+      if (!formData.fullName || formData.fullName.trim().length < 2) {
+        toast.error("Họ và tên phải có ít nhất 2 ký tự.");
+        return false;
+      }
+
+      const cccdRegex = /^[0-9]{12}$/;
+      if (!formData.identityCardNumber || !cccdRegex.test(formData.identityCardNumber)) {
+        toast.error("CCCD phải có 12 số.");
+        return false;
+      }
+
+      const phoneRegex = /^0[0-9]{9}$/;
+      if (!formData.phoneNumber || !phoneRegex.test(formData.phoneNumber)) {
+        toast.error("Số điện thoại phải có 10 số và bắt đầu bằng số 0.");
+        return false;
+      }
+
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!formData.email || !emailRegex.test(formData.email)) {
+        toast.error("Email không hợp lệ.");
+        return false;
+      }
+
+      if (!formData.address || formData.address.trim().length < 5) {
+        toast.error("Địa chỉ phải có ít nhất 5 ký tự.");
+        return false;
+      }
+
+      if (!formData.position) {
+        toast.error("Vui lòng chọn vị trí.");
+        return false;
+      }
+
+      if (!formData.departmentId) {
+        toast.error("Vui lòng chọn phòng ban.");
+        return false;
+      }
+
+      if (!formData.gender) {
+        toast.error("Vui lòng chọn giới tính.");
+        return false;
+      }
+
+      const birthDate = new Date(formData.dateOfBirth);
+      const today = new Date();
+      const age = today.getFullYear() - birthDate.getFullYear();
+      const monthDiff = today.getMonth() - birthDate.getMonth();
+      const dayDiff = today.getDate() - birthDate.getDate();
+      const exactAge = age - (monthDiff < 0 || (monthDiff === 0 && dayDiff < 0) ? 1 : 0);
+
+      if (isNaN(birthDate.getTime())) {
+        toast.error("Ngày sinh không hợp lệ.");
+        return false;
+      }
+
+      if (exactAge < 18) {
+        toast.error("Nhân viên phải từ 18 tuổi trở lên.");
+        return false;
+      }
+
+      if (exactAge > 100) {
+        toast.error("Ngày sinh không hợp lệ.");
+        return false;
+      }
+
+      const joinDate = new Date(formData.joinDate);
+      if (isNaN(joinDate.getTime())) {
+        toast.error("Ngày gia nhập không hợp lệ.");
+        return false;
+      }
+
+      if (joinDate > today) {
+        toast.error("Ngày gia nhập không được lớn hơn ngày hiện tại.");
+        return false;
+      }
+
+      if (!formData.bankName) {
+        toast.error("Vui lòng chọn ngân hàng.");
+        return false;
+      }
+
+      const bankAccountRegex = /^[0-9]{8,20}$/;
+      if (!formData.bankAccount || !bankAccountRegex.test(formData.bankAccount)) {
+        toast.error("Số tài khoản ngân hàng phải từ 8-20 chữ số.");
+        return false;
+      }
+
+      return true;
     }
+
+    const handleSave = async () => {
+      if (!validateFormData()) {
+        return;
+      }
+
+      try {
+        setIsSaving(true);
+
+        const updatedUser = await profileApi.updateProfileForHR(formData.userId, formData);
+
+        toast.success("Cập nhật thông tin nhân viên thành công.");
+        setFormData(updatedUser.data);
+      } catch (error) {
+        toast.error("Đã xảy ra lỗi khi cập nhật thông tin nhân viên.");
+        console.error("Error updating user:", error);
+      } finally {
+        setIsSaving(false);
+      }
+    };
+
+    const handleCancel = () => {
+      window.history.back();
+    };
 
     return (
         <div className="flex justify-center items-start min-h-screen p-3 sm:p-6">
@@ -189,14 +301,17 @@ const EmployeeUpdatePage: React.FC = () => {
                 {/* Action Buttons */}
                 <div className="flex flex-col sm:flex-row justify-end gap-3 sm:gap-4 mt-4 sm:mt-6">
                 <button
-                    className="w-full sm:w-[147px] h-[42px] bg-[#887b7c] text-white text-xl sm:text-2xl font-semibold rounded-[10px] border border-black hover:bg-[#6f6465] transition-colors"
+                  onClick={handleCancel}
+                  className="w-full sm:w-[147px] h-[42px] bg-[#887b7c] text-white text-xl sm:text-2xl font-semibold rounded-[10px] border border-black hover:bg-[#6f6465] transition-colors"
                 >
                     Hủy
                 </button>
                 <button
-                    className="w-full sm:w-[147px] h-[42px] bg-[#186fa5] text-white text-xl sm:text-2xl font-semibold rounded-[10px] border border-black hover:bg-[#14598a] transition-colors"
+                  disabled={isSaving}
+                  onClick={handleSave}
+                  className="w-full sm:w-[147px] h-[42px] bg-[#186fa5] text-white text-xl sm:text-2xl font-semibold rounded-[10px] border border-black hover:bg-[#14598a] transition-colors"
                 >
-                    Lưu
+                    {isSaving ? 'Đang lưu...' : 'Lưu'}
                 </button>
                 </div>
             </div>
