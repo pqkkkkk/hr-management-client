@@ -1,47 +1,14 @@
 import React from "react";
 import { User } from "shared/types";
 import { Edit2, Trash2 } from "lucide-react";
+import { formatDate } from "shared/utils/date-utils";
 
 type Props = {
   user: User;
   departmentName?: string;
 };
 
-const formatDate = (d?: Date | string) => {
-  if (!d) return "-";
-  try {
-    let dateObj: Date | null = null;
-
-    if (typeof d === "string") {
-      const s = d.trim();
-      // Handle DD/MM/YYYY or D/M/YYYY
-      const slashMatch = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
-      if (slashMatch) {
-        const day = parseInt(slashMatch[1], 10);
-        const month = parseInt(slashMatch[2], 10) - 1;
-        const year = parseInt(slashMatch[3], 10);
-        const date = new Date(year, month, day);
-        if (!Number.isNaN(date.getTime())) dateObj = date;
-      } else {
-        // Try ISO or other parseable formats
-        const parsed = new Date(s);
-        if (!Number.isNaN(parsed.getTime())) dateObj = parsed;
-      }
-    } else {
-      const date = d as Date;
-      if (!Number.isNaN(date.getTime())) dateObj = date;
-    }
-
-    if (!dateObj) return "-";
-
-    const dd = String(dateObj.getDate()).padStart(2, "0");
-    const mm = String(dateObj.getMonth() + 1).padStart(2, "0");
-    const yyyy = dateObj.getFullYear();
-    return `${dd}/${mm}/${yyyy}`;
-  } catch {
-    return "-";
-  }
-};
+/* formatDate moved to shared utils: shared/utils/date-utils.ts */
 
 const EmployeeRow: React.FC<Props> = ({ user, departmentName }) => {
   return (
