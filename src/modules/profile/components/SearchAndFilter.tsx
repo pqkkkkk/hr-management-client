@@ -8,6 +8,7 @@ import { Search } from "lucide-react";
 
 interface EmployeeFilters {
   search?: string;
+  gender?: string;
   department?: string;
   position?: string;
   status?: string;
@@ -40,6 +41,19 @@ const SearchAndFilter: React.FC<Props> = ({ filters, setFilters }) => {
       </div>
 
       <div className="bg-gray-100 rounded-lg p-4 flex gap-6">
+        <div className="flex-1">
+          <FormSelect
+            label="Giới tính"
+            value={filters.gender || ""}
+            onChange={(v) => setFilters({ ...filters, gender: v })}
+            options={[
+              { value: "", label: "Tất cả" },
+              { value: "Nam", label: "Nam" },
+              { value: "Nữ", label: "Nữ" },
+              { value: "Khác", label: "Khác" },
+            ]}
+          />
+        </div>
         <div className="flex-1">
           <FormSelect
             label="Phòng ban"

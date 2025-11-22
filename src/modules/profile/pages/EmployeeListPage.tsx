@@ -22,6 +22,7 @@ const EmployeeListPage: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [filters, setFilters] = useState<{
     search?: string;
+    gender?: string;
     department?: string;
     position?: string;
     status?: string;
@@ -62,6 +63,7 @@ const EmployeeListPage: React.FC = () => {
           return false;
       }
       if (filters.position && u.position !== filters.position) return false;
+      if (filters.gender && (u.gender || "") !== filters.gender) return false;
       if (filters.status && u.status !== filters.status) return false;
       if (!q) return true;
       return (
@@ -108,31 +110,39 @@ const EmployeeListPage: React.FC = () => {
         </div>
       ) : (
         <div className="mt-6 bg-white rounded-lg p-4 shadow-sm">
-          <table className="min-w-full table-auto border-collapse">
-            <thead>
-              <tr className="text-left border-b">
-                <th className="px-6 py-3">Mã NV</th>
-                <th className="px-6 py-3">Họ tên</th>
-                <th className="px-6 py-3">Vị trí</th>
-                <th className="px-6 py-3">Phòng ban</th>
-                <th className="px-6 py-3">Trạng thái</th>
-                <th className="px-6 py-3">Hành động</th>
-              </tr>
-            </thead>
-            <tbody>
-              {paged.map((u) => (
-                <EmployeeRow
-                  key={u.userId}
-                  user={u}
-                  departmentName={
-                    u.departmentId
-                      ? departmentIdToName[u.departmentId] || u.departmentId
-                      : ""
-                  }
-                />
-              ))}
-            </tbody>
-          </table>
+          <div className="overflow-x-auto">
+            <table className="min-w-max table-auto border-collapse">
+              <thead>
+                <tr className="text-left border-b">
+                  <th className="px-6 py-3 whitespace-nowrap">Mã NV</th>
+                  <th className="px-6 py-3 whitespace-nowrap">Họ tên</th>
+                  <th className="px-6 py-3">Ngày sinh</th>
+                  <th className="px-6 py-3">Giới tính</th>
+                  <th className="px-6 py-3">Địa chỉ</th>
+                  <th className="px-6 py-3">SDT</th>
+                  <th className="px-6 py-3">Email</th>
+                  <th className="px-6 py-3">Ngày gia nhập</th>
+                  <th className="px-6 py-3">Vị trí</th>
+                  <th className="px-6 py-3">Phòng ban</th>
+                  <th className="px-6 py-3">Trạng thái</th>
+                  <th className="px-6 py-3">Hành động</th>
+                </tr>
+              </thead>
+              <tbody>
+                {paged.map((u) => (
+                  <EmployeeRow
+                    key={u.userId}
+                    user={u}
+                    departmentName={
+                      u.departmentId
+                        ? departmentIdToName[u.departmentId] || u.departmentId
+                        : ""
+                    }
+                  />
+                ))}
+              </tbody>
+            </table>
+          </div>
 
           {/* Phân trang */}
           <Pagination
