@@ -6,11 +6,16 @@ import { formatDate } from "shared/utils/date-utils";
 type Props = {
   user: User;
   departmentName?: string;
+  onDeactivate?: (user: User) => void;
+  isDeactivating?: boolean;
 };
 
-/* formatDate moved to shared utils: shared/utils/date-utils.ts */
-
-const EmployeeRow: React.FC<Props> = ({ user, departmentName }) => {
+const EmployeeRow: React.FC<Props> = ({
+  user,
+  departmentName,
+  onDeactivate,
+  isDeactivating,
+}) => {
   return (
     <tr className="border-b">
       <td className="px-6 py-4 whitespace-nowrap">{user.userId}</td>
@@ -66,9 +71,19 @@ const EmployeeRow: React.FC<Props> = ({ user, departmentName }) => {
           <button className="text-black px-2 py-1 rounded hover:bg-gray-100">
             <Edit2 size={20} />
           </button>
-          <button className="text-red-600 px-2 py-1 rounded hover:bg-red-50">
-            <Trash2 size={20} />
-          </button>
+          {user.status !== "INACTIVE" && onDeactivate ? (
+            <button
+              onClick={() => onDeactivate(user)}
+              disabled={isDeactivating}
+              className={`text-red-600 px-2 py-1 rounded ${
+                isDeactivating
+                  ? "opacity-50 cursor-not-allowed"
+                  : "hover:bg-red-50"
+              }`}
+            >
+              <Trash2 size={20} />
+            </button>
+          ) : null}
         </div>
       </td>
     </tr>

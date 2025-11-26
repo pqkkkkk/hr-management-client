@@ -1,9 +1,21 @@
 import { ApiResponse, User } from "shared/types";
+import {
+  buildXlsxBlob,
+  buildPdfBlob,
+  exportHeaders,
+  departmentIdToName,
+  usersToRows,
+} from "shared/utils/export-utils";
 
 export interface ProfileApi {
   getProfiles(): Promise<ApiResponse<User[]>>;
   getProfileById(id: string): Promise<ApiResponse<User>>;
-  updateProfileForHR(userId: string, profileData: Partial<User>): Promise<ApiResponse<User>>;
+  updateProfileForHR(
+    userId: string,
+    profileData: Partial<User>
+  ): Promise<ApiResponse<User>>;
+  deactivateUser(userId: string): Promise<ApiResponse<null>>;
+  exportUsers?(filter?: any): Promise<ApiResponse<string>>;
 }
 
 export class MockProfileApi implements ProfileApi {
@@ -39,6 +51,7 @@ export class MockProfileApi implements ProfileApi {
             status: "ACTIVE",
             position: "Trưởng phòng",
             joinDate: "01/02/2022",
+            identityCardNumber: "293492390420",
             dateOfBirth: "15/07/1990",
             gender: "Nữ",
             phoneNumber: "0987654321",
@@ -57,6 +70,7 @@ export class MockProfileApi implements ProfileApi {
             status: "ACTIVE",
             position: "Giám đốc",
             joinDate: "10/06/2020",
+            identityCardNumber: "293492390420",
             dateOfBirth: "20/03/1992",
             gender: "Nam",
             phoneNumber: "0911222333",
@@ -75,6 +89,7 @@ export class MockProfileApi implements ProfileApi {
             status: "ON_LEAVE",
             position: "Nhân viên",
             joinDate: "05/09/2023",
+            identityCardNumber: "293492390420",
             dateOfBirth: "02/12/1995",
             gender: "Nữ",
             phoneNumber: "0900111222",
@@ -93,6 +108,7 @@ export class MockProfileApi implements ProfileApi {
             status: "INACTIVE",
             position: "Nhân viên",
             joinDate: "20/01/2019",
+            identityCardNumber: "293492390420",
             dateOfBirth: "30/11/1985",
             gender: "Nam",
             phoneNumber: "0933444555",
@@ -149,6 +165,7 @@ export class MockProfileApi implements ProfileApi {
             status: "ACTIVE",
             position: "Trưởng phòng",
             joinDate: "01/02/2022",
+            identityCardNumber: "293492390420",
             dateOfBirth: "15/07/1990",
             gender: "Nữ",
             phoneNumber: "0987654321",
@@ -167,6 +184,7 @@ export class MockProfileApi implements ProfileApi {
             status: "ACTIVE",
             position: "Giám đốc",
             joinDate: "10/06/2020",
+            identityCardNumber: "293492390420",
             dateOfBirth: "20/03/1992",
             gender: "Nam",
             phoneNumber: "0911222333",
@@ -185,6 +203,7 @@ export class MockProfileApi implements ProfileApi {
             status: "ON_LEAVE",
             position: "Nhân viên",
             joinDate: "05/09/2023",
+            identityCardNumber: "293492390420",
             dateOfBirth: "02/12/1995",
             gender: "Nữ",
             phoneNumber: "0900111222",
@@ -203,6 +222,7 @@ export class MockProfileApi implements ProfileApi {
             status: "INACTIVE",
             position: "Truởng phòng",
             joinDate: "20/01/2019",
+            identityCardNumber: "293492390420",
             dateOfBirth: "30/11/1985",
             gender: "Nam",
             phoneNumber: "0933444555",
@@ -240,6 +260,7 @@ export class MockProfileApi implements ProfileApi {
             status: "ACTIVE",
             position: "Trưởng phòng",
             joinDate: "01/02/2022",
+            identityCardNumber: "293492390420",
             dateOfBirth: "15/07/1990",
             gender: "Nữ",
             phoneNumber: "0987654321",
@@ -258,6 +279,7 @@ export class MockProfileApi implements ProfileApi {
             status: "ACTIVE",
             position: "Giám đốc",
             joinDate: "10/06/2020",
+            identityCardNumber: "293492390420",
             dateOfBirth: "20/03/1992",
             gender: "Nam",
             phoneNumber: "0911222333",
@@ -276,6 +298,7 @@ export class MockProfileApi implements ProfileApi {
             status: "ON_LEAVE",
             position: "Nhân viên",
             joinDate: "05/09/2023",
+            identityCardNumber: "293492390420",
             dateOfBirth: "02/12/1995",
             gender: "Nữ",
             phoneNumber: "0900111222",
@@ -294,6 +317,7 @@ export class MockProfileApi implements ProfileApi {
             status: "INACTIVE",
             position: "Trưởng phòng",
             joinDate: "20/01/2019",
+            identityCardNumber: "293492390420",
             dateOfBirth: "30/11/1985",
             gender: "Nam",
             phoneNumber: "0933444555",
@@ -312,6 +336,7 @@ export class MockProfileApi implements ProfileApi {
             status: "INACTIVE",
             position: "Trưởng phòng",
             joinDate: "20/01/2019",
+            identityCardNumber: "293492390420",
             dateOfBirth: "30/11/1985",
             gender: "Nam",
             phoneNumber: "0933444555",
@@ -349,6 +374,7 @@ export class MockProfileApi implements ProfileApi {
             status: "ACTIVE",
             position: "Trưởng phòng",
             joinDate: "01/02/2022",
+            identityCardNumber: "293492390420",
             dateOfBirth: "15/07/1990",
             gender: "Nữ",
             phoneNumber: "0987654321",
@@ -367,6 +393,7 @@ export class MockProfileApi implements ProfileApi {
             status: "ACTIVE",
             position: "Giám đốc",
             joinDate: "10/06/2020",
+            identityCardNumber: "293492390420",
             dateOfBirth: "20/03/1992",
             gender: "Nam",
             phoneNumber: "0911222333",
@@ -385,6 +412,7 @@ export class MockProfileApi implements ProfileApi {
             status: "ON_LEAVE",
             position: "Nhân viên",
             joinDate: "05/09/2023",
+            identityCardNumber: "293492390420",
             dateOfBirth: "02/12/1995",
             gender: "Nữ",
             phoneNumber: "0900111222",
@@ -403,6 +431,7 @@ export class MockProfileApi implements ProfileApi {
             status: "INACTIVE",
             position: "Trưởng phòng",
             joinDate: "20/01/2019",
+            identityCardNumber: "293492390420",
             dateOfBirth: "30/11/1985",
             gender: "Nam",
             phoneNumber: "0933444555",
@@ -454,7 +483,10 @@ export class MockProfileApi implements ProfileApi {
     });
   }
 
-  updateProfileForHR(userId: string, profileData: Partial<User>): Promise<ApiResponse<User>> {
+  updateProfileForHR(
+    userId: string,
+    profileData: Partial<User>
+  ): Promise<ApiResponse<User>> {
     return new Promise((resolve) => {
       setTimeout(() => {
         resolve({
@@ -470,16 +502,131 @@ export class MockProfileApi implements ProfileApi {
       }, 1000);
     });
   }
+
+  deactivateUser(userId: string): Promise<ApiResponse<null>> {
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        resolve({
+          data: null,
+          message: `Nhân viên ${userId} đã được vô hiệu hóa (mock)`,
+          statusCode: 200,
+          success: true,
+        });
+      }, 800);
+    });
+  }
+
+  exportUsers(filter?: any): Promise<ApiResponse<string>> {
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        (async () => {
+          try {
+            // Lấy danh sách nhân viên hiện có từ mock API
+            const resp = await this.getProfiles();
+            const allUsers: User[] = resp?.data || [];
+
+            // Áp dụng bộ lọc
+            const q = (filter?.search || "").toLowerCase().trim();
+            const filteredUsers = allUsers.filter((u) => {
+              if (q) {
+                const matchesQ =
+                  (u.fullName || "").toLowerCase().includes(q) ||
+                  (u.userId || "").toLowerCase().includes(q) ||
+                  (u.email || "").toLowerCase().includes(q);
+                if (!matchesQ) return false;
+              }
+              if (filter?.gender && filter.gender !== "") {
+                if ((u.gender || "") !== filter.gender) return false;
+              }
+              if (filter?.department && filter.department !== "") {
+                // bộ lọc phòng ban từ UI là nhãn (ví dụ: "IT", "Kế toán")
+                // do mock users lưu `departmentId` (ví dụ: DPT01)
+                const departmentIdToName: Record<string, string> = {
+                  DPT01: "Kế toán",
+                  DPT02: "Nhân sự",
+                  DPT03: "IT",
+                  DPT04: "Marketing",
+                };
+                const deptName = u.departmentId
+                  ? departmentIdToName[u.departmentId] || u.departmentId
+                  : "";
+                if (
+                  deptName !== filter.department &&
+                  u.departmentId !== filter.department
+                )
+                  return false;
+              }
+              if (filter?.position && filter.position !== "") {
+                if ((u.position || "") !== filter.position) return false;
+              }
+              if (filter?.status && filter.status !== "") {
+                if ((u.status || "") !== filter.status) return false;
+              }
+              return true;
+            });
+
+            const format = (filter && filter.format) === "pdf" ? "pdf" : "xlsx";
+            const ts = Date.now();
+            // Để tương thích với Excel và đảm bảo mỗi trường nằm trong ô riêng của nó
+            // tạo tệp UTF-8 TSV (phân tách bằng tab) có BOM khi người dùng yêu cầu "xlsx".
+            // Điều này giúp tránh việc thêm các phụ thuộc mới và đảm bảo chương trình bảng tính phân chia các cột một cách chính xác.
+            const filename = `list-users-${ts}.${
+              format === "pdf" ? "pdf" : "xlsx"
+            }`;
+
+            let blob: Blob;
+            // sử dụng shared headers/mapping/helpers
+            const headers = exportHeaders;
+            const rows = usersToRows(filteredUsers);
+
+            if (format === "xlsx") {
+              blob = buildXlsxBlob(rows, headers);
+            } else {
+              blob = await buildPdfBlob(
+                filteredUsers,
+                headers,
+                departmentIdToName
+              );
+            }
+
+            const url = URL.createObjectURL(blob);
+            resolve({
+              data: url,
+              message: "Đã tải file " + filename,
+              statusCode: 200,
+              success: true,
+            });
+          } catch (err) {
+            resolve({
+              data: "",
+              message: "Export thất bại (mock)",
+              statusCode: 500,
+              success: false,
+            });
+          }
+        })();
+      }, 1200);
+    });
+  }
 }
 
 export class RestProfileApi implements ProfileApi {
-  updateProfileForHR(userId: string, profileData: Partial<User>): Promise<ApiResponse<User>> {
+  updateProfileForHR(
+    userId: string,
+    profileData: Partial<User>
+  ): Promise<ApiResponse<User>> {
     throw new Error("Method not implemented.");
   }
   getProfiles(): Promise<ApiResponse<User[]>> {
     throw new Error("Method not implemented.");
   }
   getProfileById(id: string): Promise<ApiResponse<User>> {
+    throw new Error("Method not implemented.");
+  }
+  deactivateUser(userId: string): Promise<ApiResponse<null>> {
+    throw new Error("Method not implemented.");
+  }
+  exportUsers(filter?: any): Promise<ApiResponse<string>> {
     throw new Error("Method not implemented.");
   }
 }
