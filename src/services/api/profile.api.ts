@@ -10,10 +10,8 @@ import {
 export interface ProfileApi {
   getProfiles(): Promise<ApiResponse<User[]>>;
   getProfileById(id: string): Promise<ApiResponse<User>>;
-  updateProfileForHR(
-    userId: string,
-    profileData: Partial<User>
-  ): Promise<ApiResponse<User>>;
+  updateProfileForHR(userId: string, profileData: Partial<User>): Promise<ApiResponse<User>>;
+  updateProfileForEmployee(userId: string, profileData: Partial<User>): Promise<ApiResponse<User>>;
   deactivateUser(userId: string): Promise<ApiResponse<null>>;
   exportUsers?(filter?: any): Promise<ApiResponse<string>>;
 }
@@ -503,6 +501,20 @@ export class MockProfileApi implements ProfileApi {
     });
   }
 
+  updateProfileForEmployee(userId: string, profileData: Partial<User>): Promise<ApiResponse<User>> {
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        resolve({
+          data: {
+            ...profileData,
+            userId,
+            updatedAt: new Date().toISOString(),
+          } as User,
+          message: "Mock profile updated successfully",
+          statusCode: 200,
+          success: true,
+        });
+      }, 1000);
   deactivateUser(userId: string): Promise<ApiResponse<null>> {
     return new Promise((resolve) => {
       setTimeout(() => {
@@ -611,6 +623,9 @@ export class MockProfileApi implements ProfileApi {
 }
 
 export class RestProfileApi implements ProfileApi {
+  updateProfileForEmployee(userId: string, profileData: Partial<User>): Promise<ApiResponse<User>> {
+    throw new Error("Method not implemented.");
+  }
   updateProfileForHR(
     userId: string,
     profileData: Partial<User>

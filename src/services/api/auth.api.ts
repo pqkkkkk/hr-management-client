@@ -30,7 +30,7 @@ export class MockAuthApi implements AuthApi {
               userId: '1',
               email: req.email,
               fullName: 'Nguyễn Văn A',
-              role: 'EMPLOYEE',
+              role: 'ADMIN',
               status: 'ACTIVE',
               joinDate: new Date().toISOString(),
               createdAt: new Date().toISOString(),

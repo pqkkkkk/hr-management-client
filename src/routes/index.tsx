@@ -5,7 +5,7 @@ import LoginPage from "shared/components/LoginPage";
 import Dashboard from "shared/components/Dashboard";
 import UnauthorizedPage from "shared/components/UnauthorizedPage";
 import Layout from "shared/components/Layout";
-import { EmployeeUpdatePage, EmployeeListPage } from "modules/profile/pages";
+import { ProfileRoutes } from "modules/profile/pages/profile.routes";
 
 // Placeholder components for routes that will be implemented later
 const PlaceholderPage: React.FC<{ title: string }> = ({ title }) => (
@@ -33,11 +33,6 @@ const CreateWFHRequestPage = () => <PlaceholderPage title="Tạo yêu cầu WFH"
 const ManageRequestsPage = () => <PlaceholderPage title="Quản lý yêu cầu" />;
 const AttendancePage = () => <PlaceholderPage title="Bảng chấm công" />;
 
-// Profile placeholder pages
-const ProfilePage = () => <PlaceholderPage title="Thông tin cá nhân" />;
-const EditProfilePage = () => <EmployeeUpdatePage />;
-// (Real) EmployeeListPage is imported from modules/profile/pages
-const EmployeeDetailPage = () => <PlaceholderPage title="Chi tiết nhân viên" />;
 
 // Activity placeholder pages
 const ActivityListPage = () => <PlaceholderPage title="Tất cả hoạt động" />;
@@ -113,28 +108,7 @@ const AppRoutes: React.FC = () => {
         </Route>
 
         {/* Profile routes */}
-        <Route path="profile">
-          <Route index element={<ProfilePage />} />
-          <Route path="edit" element={<EditProfilePage />} />
-          {/* thêm để test giao diện */}
-          <Route path="view" element={<EmployeeListPage />} />
-          <Route
-            path="employees"
-            element={
-              <ProtectedRoute allowedRoles={["MANAGER", "HR", "ADMIN"]}>
-                <EmployeeListPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="employees/:id"
-            element={
-              <ProtectedRoute allowedRoles={["MANAGER", "HR", "ADMIN"]}>
-                <EmployeeDetailPage />
-              </ProtectedRoute>
-            }
-          />
-        </Route>
+        {ProfileRoutes}
 
         {/* Activity routes */}
         <Route path="activities">

@@ -7,7 +7,7 @@ import { User } from 'shared/types';
 import { useApi } from 'contexts/ApiContext';
 import { toast } from 'react-toastify';
 
-const EmployeeUpdatePage: React.FC = () => {
+const EmployeePersonalUpdatePage: React.FC = () => {
     const {profileApi} = useApi();
 
     const [formData, setFormData] = useState<User | undefined>();
@@ -51,17 +51,6 @@ const EmployeeUpdatePage: React.FC = () => {
     }
 
     const validateFormData = () => {
-      if (!formData.fullName || formData.fullName.trim().length < 2) {
-        toast.error("Họ và tên phải có ít nhất 2 ký tự.");
-        return false;
-      }
-
-      const cccdRegex = /^[0-9]{12}$/;
-      if (!formData.identityCardNumber || !cccdRegex.test(formData.identityCardNumber)) {
-        toast.error("CCCD phải có 12 số.");
-        return false;
-      }
-
       const phoneRegex = /^0[0-9]{9}$/;
       if (!formData.phoneNumber || !phoneRegex.test(formData.phoneNumber)) {
         toast.error("Số điện thoại phải có 10 số và bắt đầu bằng số 0.");
@@ -79,65 +68,6 @@ const EmployeeUpdatePage: React.FC = () => {
         return false;
       }
 
-      if (!formData.position) {
-        toast.error("Vui lòng chọn vị trí.");
-        return false;
-      }
-
-      if (!formData.departmentId) {
-        toast.error("Vui lòng chọn phòng ban.");
-        return false;
-      }
-
-      if (!formData.gender) {
-        toast.error("Vui lòng chọn giới tính.");
-        return false;
-      }
-
-      const birthDate = new Date(formData.dateOfBirth);
-      const today = new Date();
-      const age = today.getFullYear() - birthDate.getFullYear();
-      const monthDiff = today.getMonth() - birthDate.getMonth();
-      const dayDiff = today.getDate() - birthDate.getDate();
-      const exactAge = age - (monthDiff < 0 || (monthDiff === 0 && dayDiff < 0) ? 1 : 0);
-
-      if (isNaN(birthDate.getTime())) {
-        toast.error("Ngày sinh không hợp lệ.");
-        return false;
-      }
-
-      if (exactAge < 18) {
-        toast.error("Nhân viên phải từ 18 tuổi trở lên.");
-        return false;
-      }
-
-      if (exactAge > 100) {
-        toast.error("Ngày sinh không hợp lệ.");
-        return false;
-      }
-
-      const joinDate = new Date(formData.joinDate);
-      if (isNaN(joinDate.getTime())) {
-        toast.error("Ngày gia nhập không hợp lệ.");
-        return false;
-      }
-
-      if (joinDate > today) {
-        toast.error("Ngày gia nhập không được lớn hơn ngày hiện tại.");
-        return false;
-      }
-
-      if (!formData.bankName) {
-        toast.error("Vui lòng chọn ngân hàng.");
-        return false;
-      }
-
-      const bankAccountRegex = /^[0-9]{8,20}$/;
-      if (!formData.bankAccount || !bankAccountRegex.test(formData.bankAccount)) {
-        toast.error("Số tài khoản ngân hàng phải từ 8-20 chữ số.");
-        return false;
-      }
-
       return true;
     }
 
@@ -149,12 +79,12 @@ const EmployeeUpdatePage: React.FC = () => {
       try {
         setIsSaving(true);
 
-        const updatedUser = await profileApi.updateProfileForHR(formData.userId, formData);
+        const updatedUser = await profileApi.updateProfileForEmployee(formData.userId, formData);
 
-        toast.success("Cập nhật thông tin nhân viên thành công.");
+        toast.success("Cập nhật thông tin cá nhân thành công.");
         setFormData(updatedUser.data);
       } catch (error) {
-        toast.error("Đã xảy ra lỗi khi cập nhật thông tin nhân viên.");
+        toast.error("Đã xảy ra lỗi khi cập nhật thông tin cá nhân.");
         console.error("Error updating user:", error);
       } finally {
         setIsSaving(false);
@@ -170,7 +100,7 @@ const EmployeeUpdatePage: React.FC = () => {
             <div className="w-full max-w-[921px] bg-white border border-black rounded-[10px] p-4 sm:p-6 relative">
                 {/* Title */}
                 <h1 className="text-xl sm:text-2xl md:text-[29px] font-semibold text-black mb-4 sm:mb-6 break-words">
-                  Thông tin nhân viên - {formData.fullName}
+                Thông tin cá nhân - {formData.fullName}
                 </h1>
 
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
@@ -192,12 +122,14 @@ const EmployeeUpdatePage: React.FC = () => {
                             label="Vị trí"
                             value={formData.position}
                             options={positionOptions}
+                            disabled={true}
                             onChange={(value) => handleInputChange('position', value)}
                         />
                         </div>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                         <FormSelect
                             label="Phòng ban"
+                            disabled={true}
                             value={formData.departmentId}
                             options={departmentOptions}
                             onChange={(value) => handleInputChange('departmentId', value)}
@@ -205,6 +137,7 @@ const EmployeeUpdatePage: React.FC = () => {
                         <FormDateInput
                             label="Ngày gia nhập"
                             value={formData.joinDate.toString()}
+                            disabled={true}
                             onChange={(value) => handleInputChange('joinDate', value)}
                         />
                         </div>
@@ -250,11 +183,13 @@ const EmployeeUpdatePage: React.FC = () => {
                     <div className="space-y-3 sm:space-y-4">
                         <div className="grid grid-cols-1 sm:grid-cols-[2fr_1fr] gap-3 sm:gap-4">
                         <FormInput
+                            disabled={true}
                             label="Họ và tên"
                             value={formData.fullName}
                             onChange={(value) => handleInputChange('fullName', value)}
                         />
                         <FormInput
+                            disabled={true}
                             label="CCCD"
                             value={formData.identityCardNumber}
                             onChange={(value) => handleInputChange('identityCardNumber', value)}
@@ -262,11 +197,13 @@ const EmployeeUpdatePage: React.FC = () => {
                         </div>
                         <div className="grid grid-cols-1 sm:grid-cols-[2fr_1fr] gap-3 sm:gap-4">
                         <FormDateInput
+                            disabled={true}
                             label="Ngày sinh"
                             value={formData.dateOfBirth.toString()}
                             onChange={(value) => handleInputChange('dateOfBirth', value)}
                         />
                         <FormSelect
+                            disabled={true}
                             label="Giới tính"
                             value={formData.gender}
                             options={genderOptions}
@@ -283,15 +220,17 @@ const EmployeeUpdatePage: React.FC = () => {
                     </h2>
                     <div className="space-y-3 sm:space-y-4">
                         <FormSelect
-                        label="Ngân hàng"
-                        value={formData.bankName}
-                        options={bankOptions}
-                        onChange={(value) => handleInputChange('bankName', value)}
+                            disabled={true}
+                            label="Ngân hàng"
+                            value={formData.bankName}
+                            options={bankOptions}
+                            onChange={(value) => handleInputChange('bankName', value)}
                         />
                         <FormInput
-                        label="STK Ngân Hàng"
-                        value={formData.bankAccount}
-                        onChange={(value) => handleInputChange('bankAccount', value)}
+                            disabled={true}
+                            label="STK Ngân Hàng"
+                            value={formData.bankAccount}
+                            onChange={(value) => handleInputChange('bankAccount', value)}
                         />
                     </div>
                     </div>
@@ -554,4 +493,4 @@ const EmployeeFetchingError: React.FC = () => {
   );
 };
 
-export default EmployeeUpdatePage;
+export default EmployeePersonalUpdatePage;
