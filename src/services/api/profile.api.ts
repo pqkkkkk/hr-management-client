@@ -515,6 +515,8 @@ export class MockProfileApi implements ProfileApi {
           success: true,
         });
       }, 1000);
+    });
+  }
   deactivateUser(userId: string): Promise<ApiResponse<null>> {
     return new Promise((resolve) => {
       setTimeout(() => {
