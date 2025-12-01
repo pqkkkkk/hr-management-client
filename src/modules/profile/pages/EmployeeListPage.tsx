@@ -1,7 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useApi } from "contexts/ApiContext";
 import { User } from "shared/types";
-import { departmentOptions } from "modules/profile/types/profile.types";
 import SearchAndFilter from "modules/profile/components/SearchAndFilter";
 import EmployeeRow from "modules/profile/components/EmployeeRow";
 import Pagination from "modules/profile/components/Pagination";
@@ -9,14 +8,6 @@ import EmptyList from "modules/profile/components/EmptyList";
 import { File } from "lucide-react";
 import ConfirmationModal from "modules/profile/components/ConfirmationModal";
 import ExportModal from "modules/profile/components/ExportModal";
-
-// Ánh xạ cục bộ từ departmentId -> nhãn (vì departmentOptions hiện đang sử dụng tên)
-const departmentIdToName: Record<string, string> = {
-  DPT01: "Kế toán",
-  DPT02: "Nhân sự",
-  DPT03: "IT",
-  DPT04: "Marketing",
-};
 
 const EmployeeListPage: React.FC = () => {
   const { profileApi } = useApi();
@@ -65,26 +56,25 @@ const EmployeeListPage: React.FC = () => {
   // Lọc nhân viên dựa trên filters
   const filtered = useMemo(() => {
     const q = (filters.search || "").toLowerCase().trim();
+    const mapGender = (g?: string) => {
+      if (!g) return "";
+      const upper = String(g).toUpperCase();
+      if (upper === "MALE") return "Nam";
+      if (upper === "FEMALE") return "Nữ";
+      return g; // assume already localized
+    };
     return users.filter((u) => {
       if (filters.department) {
-        const deptName = u.departmentId
-          ? departmentIdToName[u.departmentId] || u.departmentId
-          : "";
-        if (
-          deptName !== filters.department &&
-          u.departmentId !== filters.department
-        )
-          return false;
+        // Use departmentName directly from backend
+        const deptName = u.departmentName;
+        if (deptName !== filters.department) return false;
       }
       if (filters.position && u.position !== filters.position) return false;
-      if (filters.gender && (u.gender || "") !== filters.gender) return false;
+      if (filters.gender && mapGender(u.gender) !== filters.gender)
+        return false;
       if (filters.status && u.status !== filters.status) return false;
       if (!q) return true;
-      return (
-        u.fullName?.toLowerCase().includes(q) ||
-        u.userId?.toLowerCase().includes(q) ||
-        u.email?.toLowerCase().includes(q)
-      );
+      return u.fullName?.toLowerCase().includes(q);
     });
   }, [users, filters]);
 
@@ -93,6 +83,25 @@ const EmployeeListPage: React.FC = () => {
     const start = (page - 1) * limit;
     return filtered.slice(start, start + limit);
   }, [filtered, page]);
+
+  // Build department options from backend-provided `departmentName` values
+  const departmentFilterOptions = useMemo(() => {
+    const names = Array.from(
+      new Set(users.map((u) => u.departmentName).filter(Boolean) as string[])
+    );
+    // map to option objects
+    const opts = names.map((n) => ({ value: n, label: n }));
+    // keep an existing order if you need, otherwise return as-is
+    return opts;
+  }, [users]);
+
+  // Build position options from backend-provided `position` values
+  const positionFilterOptions = useMemo(() => {
+    const names = Array.from(
+      new Set(users.map((u) => u.position).filter(Boolean) as string[])
+    );
+    return names.map((n) => ({ value: n, label: n }));
+  }, [users]);
 
   const exportDisabled = exportLoading || (filtered && filtered.length === 0);
 
@@ -170,6 +179,8 @@ const EmployeeListPage: React.FC = () => {
           setFilters(f);
           setPage(1);
         }}
+        departmentOptions={departmentFilterOptions}
+        positionOptions={positionFilterOptions}
       />
 
       {/* Danh sách nhân viên */}
@@ -245,7 +256,6 @@ const EmployeeListPage: React.FC = () => {
             <table className="min-w-max table-auto border-collapse">
               <thead>
                 <tr className="text-left border-b">
-                  <th className="px-6 py-3 whitespace-nowrap">Mã NV</th>
                   <th className="px-6 py-3 whitespace-nowrap">Họ tên</th>
                   <th className="px-6 py-3">Ngày sinh</th>
                   <th className="px-6 py-3">Giới tính</th>
@@ -264,11 +274,6 @@ const EmployeeListPage: React.FC = () => {
                   <EmployeeRow
                     key={u.userId}
                     user={u}
-                    departmentName={
-                      u.departmentId
-                        ? departmentIdToName[u.departmentId] || u.departmentId
-                        : ""
-                    }
                     onDeactivate={() => handleDeactivateRequest(u)}
                     isDeactivating={deactivatingUserId === u.userId}
                   />

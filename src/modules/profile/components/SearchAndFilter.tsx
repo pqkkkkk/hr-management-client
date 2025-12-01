@@ -2,6 +2,8 @@ import React from "react";
 import {
   departmentOptions,
   positionOptions,
+  genderOptions,
+  statusOptions,
 } from "modules/profile/types/profile.types";
 import FormSelect from "./FormSelect";
 import { Search } from "lucide-react";
@@ -14,12 +16,18 @@ interface EmployeeFilters {
   status?: string;
 }
 
+type Option = { value: string; label: string };
+
 type Props = {
   filters: EmployeeFilters;
   setFilters: (f: EmployeeFilters) => void;
+  // allow passing position options from parent
+  positionOptions?: Option[];
+  // allow passing department options from parent (e.g., fetched from backend)
+  departmentOptions?: Option[];
 };
 
-const SearchAndFilter: React.FC<Props> = ({ filters, setFilters }) => {
+const SearchAndFilter: React.FC<Props> = ({ filters, setFilters, positionOptions: posOpts, departmentOptions: deptOpts }) => {
   return (
     <div className="bg-white rounded-lg shadow-sm p-4">
       <div className="relative bg-blue-400 rounded-lg p-4 mb-3">
@@ -27,7 +35,7 @@ const SearchAndFilter: React.FC<Props> = ({ filters, setFilters }) => {
           <Search className="text-white" size={24} />
           <input
             className="flex-1 rounded-full px-4 py-2 outline-none"
-            placeholder="Tìm kiếm bằng tên, ID"
+            placeholder="Tìm kiếm bằng tên"
             value={filters.search || ""}
             onChange={(e) => setFilters({ ...filters, search: e.target.value })}
           />
@@ -46,12 +54,7 @@ const SearchAndFilter: React.FC<Props> = ({ filters, setFilters }) => {
             label="Giới tính"
             value={filters.gender || ""}
             onChange={(v) => setFilters({ ...filters, gender: v })}
-            options={[
-              { value: "", label: "Tất cả" },
-              { value: "Nam", label: "Nam" },
-              { value: "Nữ", label: "Nữ" },
-              { value: "Khác", label: "Khác" },
-            ]}
+            options={[{ value: "", label: "Tất cả" }, ...genderOptions]}
           />
         </div>
         <div className="flex-1">
@@ -59,7 +62,7 @@ const SearchAndFilter: React.FC<Props> = ({ filters, setFilters }) => {
             label="Phòng ban"
             value={filters.department || ""}
             onChange={(v) => setFilters({ ...filters, department: v })}
-            options={[{ value: "", label: "Tất cả" }, ...departmentOptions]}
+            options={[{ value: "", label: "Tất cả" }, ...(deptOpts || departmentOptions)]}
           />
         </div>
 
@@ -68,7 +71,7 @@ const SearchAndFilter: React.FC<Props> = ({ filters, setFilters }) => {
             label="Vị trí"
             value={filters.position || ""}
             onChange={(v) => setFilters({ ...filters, position: v })}
-            options={[{ value: "", label: "Tất cả" }, ...positionOptions]}
+            options={[{ value: "", label: "Tất cả" }, ...(posOpts || positionOptions)]}
           />
         </div>
 
@@ -77,12 +80,7 @@ const SearchAndFilter: React.FC<Props> = ({ filters, setFilters }) => {
             label="Trạng thái"
             value={filters.status || ""}
             onChange={(v) => setFilters({ ...filters, status: v })}
-            options={[
-              { value: "", label: "Tất cả" },
-              { value: "ACTIVE", label: "Đang làm việc" },
-              { value: "ON_LEAVE", label: "Đang nghỉ phép" },
-              { value: "INACTIVE", label: "Đã nghỉ việc" },
-            ]}
+            options={[{ value: "", label: "Tất cả" }, ...statusOptions]}
           />
         </div>
       </div>

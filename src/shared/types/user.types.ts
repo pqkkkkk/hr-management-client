@@ -18,6 +18,7 @@ export interface User {
   createdAt: Date | string;
   updatedAt: Date | string;
   departmentId?: string;
+  departmentName?: string;
 }
 export interface Department {
   departmentId: string;

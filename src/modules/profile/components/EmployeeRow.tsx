@@ -18,13 +18,20 @@ const EmployeeRow: React.FC<Props> = ({
 }) => {
   return (
     <tr className="border-b">
-      <td className="px-6 py-4 whitespace-nowrap">{user.userId}</td>
-
       <td className="px-6 py-4 whitespace-nowrap">{user.fullName}</td>
 
       <td className="px-6 py-4">{formatDate(user.dateOfBirth)}</td>
 
-      <td className="px-6 py-4">{user.gender || "-"}</td>
+      <td className="px-6 py-4">
+        {(() => {
+          const g = user.gender;
+          if (!g) return "-";
+          const up = String(g).toUpperCase();
+          if (up === "MALE") return "Nam";
+          if (up === "FEMALE") return "Nữ";
+          return g;
+        })()}
+      </td>
 
       <td className="px-6 py-4">{user.address || "-"}</td>
 
@@ -36,7 +43,7 @@ const EmployeeRow: React.FC<Props> = ({
 
       <td className="px-6 py-4">{user.position || "-"}</td>
 
-      <td className="px-6 py-4">{departmentName || "-"}</td>
+      <td className="px-6 py-4">{user.departmentName || "-"}</td>
 
       <td className="px-6 py-4">
         {(() => {
