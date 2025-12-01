@@ -3,22 +3,27 @@ export interface EmployeeFormErrors {
 }
 
 export const positionOptions = [
-  { value: "Nhân viên", label: "Nhân viên" },
-  { value: "Trưởng phòng", label: "Trưởng phòng" },
-  { value: "Giám đốc", label: "Giám đốc" },
+  { value: "PROJECT_MANAGER", label: "PROJECT_MANAGER" },
+  { value: "HR_SPECIALIST", label: "HR_SPECIALIST" },
+  { value: "MARKETING_MANAGER", label: "MARKETING_MANAGER" },
+  { value: "FINANCE_ANALYST", label: "FINANCE_ANALYST" },
+  { value: "JUNIOR_DEVELOPER", label: "JUNIOR_DEVELOPER" },
+  { value: "INTERN", label: "INTERN" },
+  { value: "SENIOR_DEVELOPER", label: "SENIOR_DEVELOPER" },
+  { value: "SALES_REPRESENTATIVE", label: "SALES_REPRESENTATIVE" },
 ];
 
 export const departmentOptions = [
-  { value: "Kế toán", label: "Kế toán" },
-  { value: "Nhân sự", label: "Nhân sự" },
-  { value: "IT", label: "IT" },
+  { value: "Engineering", label: "Engineering" },
+  { value: "Human Resources", label: "Human Resources" },
   { value: "Marketing", label: "Marketing" },
+  { value: "Finance", label: "Finance" },
+  { value: "Sales", label: "Sales" },
 ];
 
 export const genderOptions = [
   { value: "Nam", label: "Nam" },
   { value: "Nữ", label: "Nữ" },
-  { value: "Khác", label: "Khác" },
 ];
 
 export const bankOptions = [

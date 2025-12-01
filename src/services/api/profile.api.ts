@@ -6,6 +6,7 @@ import {
   departmentIdToName,
   usersToRows,
 } from "shared/utils/export-utils";
+import apiClient from "./api.client";
 
 export interface ProfileApi {
   getProfiles(): Promise<ApiResponse<User[]>>;
@@ -634,14 +635,83 @@ export class RestProfileApi implements ProfileApi {
   ): Promise<ApiResponse<User>> {
     throw new Error("Method not implemented.");
   }
-  getProfiles(): Promise<ApiResponse<User[]>> {
-    throw new Error("Method not implemented.");
+
+  async getProfiles(): Promise<ApiResponse<User[]>> {
+    try {
+      // Gọi GET /api/v1/users
+      const raw = await apiClient.get<any>("/users");
+
+      const list: any[] = raw?.data?.content ?? [];
+
+      const users: User[] = list.map(
+        (u: any): User => ({
+          userId: u.userId,
+          fullName: u.fullName,
+          email: u.email,
+          role: u.role,
+          status: u.status,
+          position: u.position,
+          joinDate: u.joinDate,
+          identityCardNumber: u.identityCardNumber,
+          dateOfBirth: u.dateOfBirth,
+          gender: u.gender,
+          phoneNumber: u.phoneNumber,
+          address: u.address,
+          bankName: u.bankName,
+          bankAccount: u.bankAccountNumber,
+          departmentId: u.departmentId,
+          departmentName: u.departmentName,
+          createdAt: u.createdAt,
+          updatedAt: u.updatedAt,
+        })
+      );
+
+      return {
+        data: users,
+        statusCode: 200,
+        message: "OK",
+        success: true,
+      };
+    } catch (error: any) {
+      const status = error?.response?.status ?? 500;
+
+      return {
+        data: [],
+        statusCode: status,
+        message: "Không thể tải danh sách nhân viên",
+        success: false,
+      };
+    }
   }
+
   getProfileById(id: string): Promise<ApiResponse<User>> {
     throw new Error("Method not implemented.");
   }
-  deactivateUser(userId: string): Promise<ApiResponse<null>> {
-    throw new Error("Method not implemented.");
+  async deactivateUser(userId: string): Promise<ApiResponse<null>> {
+    try {
+      const resp = await apiClient.put<any>(`/users/${userId}/deactivate`);
+
+      if (resp && typeof resp === "object" && "success" in resp) {
+        return resp as ApiResponse<null>;
+      }
+
+      return {
+        data: null,
+        success: true,
+        statusCode: 200,
+        message: (resp && resp.message) || "User deactivated",
+      };
+    } catch (err: any) {
+      const status = err?.response?.status || 500;
+      const message =
+        err?.response?.data?.message || err?.message || "Deactivate failed";
+      return {
+        data: null,
+        success: false,
+        statusCode: status,
+        message,
+      };
+    }
   }
   exportUsers(filter?: any): Promise<ApiResponse<string>> {
     throw new Error("Method not implemented.");
