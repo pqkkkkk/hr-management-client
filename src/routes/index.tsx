@@ -6,6 +6,7 @@ import Dashboard from "shared/components/Dashboard";
 import UnauthorizedPage from "shared/components/UnauthorizedPage";
 import Layout from "shared/components/Layout";
 import { ProfileRoutes } from "modules/profile/pages/profile.routes";
+import RequestRoutes from "modules/request/request.routes";
 
 // Placeholder components for routes that will be implemented later
 const PlaceholderPage: React.FC<{ title: string }> = ({ title }) => (
@@ -14,24 +15,6 @@ const PlaceholderPage: React.FC<{ title: string }> = ({ title }) => (
     <p className="text-gray-600">Trang này đang được phát triển...</p>
   </div>
 );
-
-// Request placeholder pages
-const RequestListPage = () => <PlaceholderPage title="Danh sách yêu cầu" />;
-const CreateLeaveRequestPage = () => (
-  <PlaceholderPage title="Tạo yêu cầu nghỉ phép" />
-);
-const CreateCheckInRequestPage = () => (
-  <PlaceholderPage title="Tạo yêu cầu check-in" />
-);
-const CreateCheckOutRequestPage = () => (
-  <PlaceholderPage title="Tạo yêu cầu check-out" />
-);
-const CreateTimesheetUpdatePage = () => (
-  <PlaceholderPage title="Cập nhật timesheet" />
-);
-const CreateWFHRequestPage = () => <PlaceholderPage title="Tạo yêu cầu WFH" />;
-const ManageRequestsPage = () => <PlaceholderPage title="Quản lý yêu cầu" />;
-const AttendancePage = () => <PlaceholderPage title="Bảng chấm công" />;
 
 
 // Activity placeholder pages
@@ -80,32 +63,7 @@ const AppRoutes: React.FC = () => {
         <Route path="dashboard" element={<Dashboard />} />
 
         {/* Request routes */}
-        <Route path="requests">
-          <Route index element={<RequestListPage />} />
-          <Route path="leave/create" element={<CreateLeaveRequestPage />} />
-          <Route
-            path="check-in/create"
-            element={<CreateCheckInRequestPage />}
-          />
-          <Route
-            path="check-out/create"
-            element={<CreateCheckOutRequestPage />}
-          />
-          <Route
-            path="timesheet/create"
-            element={<CreateTimesheetUpdatePage />}
-          />
-          <Route path="wfh/create" element={<CreateWFHRequestPage />} />
-          <Route path="attendance" element={<AttendancePage />} />
-          <Route
-            path="manage"
-            element={
-              <ProtectedRoute allowedRoles={["MANAGER", "HR", "ADMIN"]}>
-                <ManageRequestsPage />
-              </ProtectedRoute>
-            }
-          />
-        </Route>
+        {RequestRoutes}
 
         {/* Profile routes */}
         {ProfileRoutes}
