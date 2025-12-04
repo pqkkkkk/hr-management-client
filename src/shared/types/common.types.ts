@@ -3,44 +3,38 @@ export type ApiType = 'REST' | 'MOCK';
 
 export type UserRole = 'EMPLOYEE' | 'MANAGER' | 'HR' | 'ADMIN';
 
-export type RequestStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
-
-export type RequestType = 
-  | 'LEAVE' 
-  | 'CHECK_IN' 
-  | 'CHECK_OUT' 
-  | 'TIMESHEET_UPDATE' 
-  | 'WFH';
-
-export type LeaveType = 
-  | 'ANNUAL_LEAVE' 
-  | 'SICK_LEAVE' 
-  | 'UNPAID_LEAVE' 
-  | 'EMERGENCY_LEAVE';
-
 export type ActivityStatus = 'UPCOMING' | 'ONGOING' | 'COMPLETED';
 
 export type UserStatus = 'ACTIVE' | 'INACTIVE' | 'ON_LEAVE';
 
-export type TransactionType = 
-  | 'EARNED' 
-  | 'GIFT_RECEIVED' 
-  | 'GIFT_SENT' 
-  | 'REWARD_REDEEMED' 
-  | 'MONTHLY_ALLOWANCE';
-
-export interface PaginationParams {
-  page: number;
-  limit: number;
-  sortBy?: string;
-  sortOrder?: 'asc' | 'desc';
+export interface Pageable {
+  pageNumber: number;
+  pageSize: number;
+  sort: {
+    sorted: boolean;
+    unsorted: boolean;
+    empty: boolean;
+  };
+  offset: number;
+  paged: boolean;
+  unpaged: boolean;
 }
-
-export interface PaginatedResponse<T> {
-  data: T[];
-  total: number;
-  page: number;
+export interface Page<T> {
+  content: T[];
+  pageable: Pageable;
+  last: boolean;
+  totalElements: number;
   totalPages: number;
+  first: boolean;
+  size: number;
+  number: number;
+  sort: {
+    sorted: boolean;
+    unsorted: boolean;
+    empty: boolean;
+  };
+  numberOfElements: number;
+  empty: boolean;
 }
 
 export interface ApiResponse<T> {
@@ -53,10 +47,6 @@ export interface ApiResponse<T> {
 export interface ApiError {
     statusCode: number;
     message: string;
-}
-
-export interface FilterOptions {
-  [key: string]: any;
 }
 
 export interface DateRange {

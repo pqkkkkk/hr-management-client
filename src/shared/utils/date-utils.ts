@@ -33,3 +33,18 @@ export const formatDate = (d?: Date | string): string => {
     return "-";
   }
 };
+
+export const parseDate = (dateStr: string): Date | null => {
+  // Expected format: DD/MM/YYYY
+  const parts = dateStr.split("/");
+  if (parts.length === 3) {
+    const day = parseInt(parts[0], 10);
+    const month = parseInt(parts[1], 10) - 1; // Month is 0-indexed
+    const year = parseInt(parts[2], 10);
+    const date = new Date(year, month, day);
+    if (!isNaN(date.getTime())) {
+      return date;
+    }
+  }
+  return null;
+};

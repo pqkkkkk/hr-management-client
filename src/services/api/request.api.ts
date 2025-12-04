@@ -1,0 +1,323 @@
+import { ApiResponse, Page } from "shared/types";
+import {
+  Request,
+  CreateLeaveRequestDTO,
+  CreateWfhRequestDTO,
+  RequestFilter,
+  RemainingLeaveDays,
+  RequestType,
+  RequestStatus,
+  LeaveType,
+  ShiftType,
+} from "modules/request/types/request.types";
+
+export interface RequestApi {
+  getRequests(filter?: RequestFilter): Promise<ApiResponse<Page<Request>>>;
+  getRequestById(requestId: string): Promise<ApiResponse<Request>>;
+  createLeaveRequest(data: CreateLeaveRequestDTO): Promise<ApiResponse<Request>>;
+  createWfhRequest(data: CreateWfhRequestDTO): Promise<ApiResponse<Request>>;
+  cancelRequest(requestId: string): Promise<ApiResponse<null>>;
+  getRemainingLeaveDays(): Promise<ApiResponse<RemainingLeaveDays>>;
+}
+
+export class MockRequestApi implements RequestApi {
+  private mockRequests: Request[] = [
+    {
+      requestId: "REQ001",
+      requestType: RequestType.LEAVE,
+      status: RequestStatus.APPROVED,
+      title: "Nghỉ phép gia đình",
+      userReason: "Kỳ nghỉ gia đình",
+      employeeId: "NV001",
+      employeeName: "Nguyễn Văn A",
+      approverId: "NV002",
+      approverName: "Trần Thị B",
+      processedAt: "2023-10-27T10:30:00Z",
+      createdAt: "2023-10-26T08:00:00Z",
+      updatedAt: "2023-10-27T10:30:00Z",
+      additionalLeaveInfo: {
+        leaveType: LeaveType.ANNUAL,
+        totalDays: 3,
+        leaveDates: [
+          { date: "2023-11-01", shift: ShiftType.FULL_DAY },
+          { date: "2023-11-02", shift: ShiftType.FULL_DAY },
+          { date: "2023-11-03", shift: ShiftType.FULL_DAY },
+        ],
+      },
+    },
+    {
+      requestId: "REQ002",
+      requestType: RequestType.LEAVE,
+      status: RequestStatus.PENDING,
+      title: "Nghỉ khám bệnh",
+      userReason: "Hẹn khám bác sĩ",
+      employeeId: "NV001",
+      employeeName: "Nguyễn Văn A",
+      createdAt: "2023-10-24T09:00:00Z",
+      updatedAt: "2023-10-24T09:00:00Z",
+      additionalLeaveInfo: {
+        leaveType: LeaveType.SICK,
+        totalDays: 1,
+        leaveDates: [
+          { date: "2023-10-30", shift: ShiftType.FULL_DAY },
+        ],
+      },
+    },
+    {
+      requestId: "REQ003",
+      requestType: RequestType.LEAVE,
+      status: RequestStatus.REJECTED,
+      title: "Nghỉ việc cá nhân",
+      userReason: "Việc cá nhân",
+      rejectReason: "Yêu cầu được gửi quá gần ngày nghỉ.",
+      employeeId: "NV001",
+      employeeName: "Nguyễn Văn A",
+      approverId: "NV002",
+      approverName: "Trần Thị B",
+      processedAt: "2023-10-21T14:00:00Z",
+      createdAt: "2023-10-20T10:00:00Z",
+      updatedAt: "2023-10-21T14:00:00Z",
+      additionalLeaveInfo: {
+        leaveType: LeaveType.UNPAID,
+        totalDays: 2,
+        leaveDates: [
+          { date: "2023-10-25", shift: ShiftType.FULL_DAY },
+          { date: "2023-10-26", shift: ShiftType.FULL_DAY },
+        ],
+      },
+    },
+    {
+      requestId: "REQ004",
+      requestType: RequestType.WFH,
+      status: RequestStatus.APPROVED,
+      title: "Làm việc từ xa",
+      userReason: "Làm việc từ nhà để hoàn thành dự án",
+      employeeId: "NV001",
+      employeeName: "Nguyễn Văn A",
+      approverId: "NV002",
+      approverName: "Trần Thị B",
+      processedAt: "2023-10-18T11:00:00Z",
+      createdAt: "2023-10-17T08:00:00Z",
+      updatedAt: "2023-10-18T11:00:00Z",
+      additionalWfhInfo: {
+        wfhCommitment: true,
+        workLocation: "Nhà riêng, quận 7, TP.HCM",
+        totalDays: 2,
+        wfhDates: [
+          { date: "2023-10-23", shift: ShiftType.FULL_DAY },
+          { date: "2023-10-24", shift: ShiftType.FULL_DAY },
+        ],
+      },
+    },
+  ];
+
+  async getRequests(filter?: RequestFilter): Promise<ApiResponse<Page<Request>>> {
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        let filteredRequests = [...this.mockRequests];
+
+        // Apply filters
+        if (filter?.requestType) {
+          filteredRequests = filteredRequests.filter(
+            (req) => req.requestType === filter.requestType
+          );
+        }
+
+        if (filter?.status) {
+          filteredRequests = filteredRequests.filter(
+            (req) => req.status === filter.status
+          );
+        }
+
+        if (filter?.employeeId) {
+          filteredRequests = filteredRequests.filter(
+            (req) => req.employeeId === filter.employeeId
+          );
+        }
+
+        // Sort
+        const sortOrder = filter?.sortOrder || 'DESC';
+        filteredRequests.sort((a, b) => {
+          const dateA = new Date(a.createdAt).getTime();
+          const dateB = new Date(b.createdAt).getTime();
+          return sortOrder === 'ASC' ? dateA - dateB : dateB - dateA;
+        });
+
+        // Pagination
+        const page = filter?.page || 1;
+        const pageSize = filter?.pageSize || 10;
+        const startIndex = (page - 1) * pageSize;
+        const endIndex = startIndex + pageSize;
+        const paginatedRequests = filteredRequests.slice(startIndex, endIndex);
+
+        resolve({
+          data: {
+            content: paginatedRequests,
+            totalElements: filteredRequests.length,
+            totalPages: Math.ceil(filteredRequests.length / pageSize),
+            number: page,
+            size: pageSize,
+            pageable: { pageNumber: page, pageSize: pageSize, sort: { sorted: false, unsorted: true, empty: true }, offset: startIndex, paged: true, unpaged: false },
+            first: page === 1,
+            last: endIndex >= filteredRequests.length,
+            numberOfElements: paginatedRequests.length,
+            empty: paginatedRequests.length === 0,
+            sort: { sorted: false, unsorted: true, empty: true },
+          },
+          success: true,
+          statusCode: 200,
+          message: "Requests retrieved successfully",
+        });
+      }, 500);
+    });
+  }
+
+  async getRequestById(requestId: string): Promise<ApiResponse<Request>> {
+    return new Promise((resolve, reject) => {
+      setTimeout(() => {
+        const request = this.mockRequests.find((req) => req.requestId === requestId);
+        if (request) {
+          resolve({
+            data: request,
+            success: true,
+            statusCode: 200,
+            message: "Request retrieved successfully",
+          });
+        } else {
+          reject({
+            success: false,
+            statusCode: 404,
+            message: "Request not found",
+          });
+        }
+      }, 300);
+    });
+  }
+
+  async createLeaveRequest(data: CreateLeaveRequestDTO): Promise<ApiResponse<Request>> {
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        const newRequest: Request = {
+          requestId: `REQ${String(this.mockRequests.length + 1).padStart(3, '0')}`,
+          requestType: data.requestType,
+          status: RequestStatus.PENDING,
+          title: data.title,
+          userReason: data.userReason,
+          employeeId: data.employeeId,
+          employeeName: "Nguyễn Văn A",
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          additionalLeaveInfo: data.additionalInfo,
+        };
+
+        this.mockRequests.unshift(newRequest);
+
+        resolve({
+          data: newRequest,
+          success: true,
+          statusCode: 201,
+          message: "Leave request created successfully",
+        });
+      }, 800);
+    });
+  }
+
+  async createWfhRequest(data: CreateWfhRequestDTO): Promise<ApiResponse<Request>> {
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        const totalDays = data.wfhDates.reduce((sum, date) => {
+          return sum + (date.shift === ShiftType.FULL_DAY ? 1 : 0.5);
+        }, 0);
+
+        const newRequest: Request = {
+          requestId: `REQ${String(this.mockRequests.length + 1).padStart(3, '0')}`,
+          requestType: RequestType.WFH,
+          status: RequestStatus.PENDING,
+          title: data.title,
+          userReason: data.userReason,
+          employeeId: "NV001", // Current user ID
+          employeeName: "Nguyễn Văn A",
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          additionalWfhInfo: {
+            wfhCommitment: data.wfhCommitment,
+            workLocation: data.workLocation,
+            totalDays,
+            wfhDates: data.wfhDates,
+          },
+        };
+
+        this.mockRequests.unshift(newRequest);
+
+        resolve({
+          data: newRequest,
+          success: true,
+          statusCode: 201,
+          message: "WFH request created successfully",
+        });
+      }, 800);
+    });
+  }
+
+  async cancelRequest(requestId: string): Promise<ApiResponse<null>> {
+    return new Promise((resolve, reject) => {
+      setTimeout(() => {
+        const requestIndex = this.mockRequests.findIndex(
+          (req) => req.requestId === requestId
+        );
+
+        if (requestIndex === -1) {
+          reject({
+            success: false,
+            statusCode: 404,
+            message: "Request not found",
+          });
+          return;
+        }
+
+        const request = this.mockRequests[requestIndex];
+        if (request.status !== RequestStatus.PENDING) {
+          reject({
+            success: false,
+            statusCode: 400,
+            message: "Only pending requests can be cancelled",
+          });
+          return;
+        }
+
+        request.status = RequestStatus.CANCELLED;
+        request.updatedAt = new Date().toISOString();
+
+        resolve({
+          data: null,
+          success: true,
+          statusCode: 200,
+          message: "Request cancelled successfully",
+        });
+      }, 500);
+    });
+  }
+
+  async getRemainingLeaveDays(): Promise<ApiResponse<RemainingLeaveDays>> {
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        // Mock data for remaining leave days
+        const data: RemainingLeaveDays = {
+          totalAnnualLeave: 12,
+          usedAnnualLeave: 3.5,
+          remainingAnnualLeave: 8.5,
+        };
+
+        resolve({
+          data,
+          success: true,
+          statusCode: 200,
+          message: "Remaining leave days retrieved successfully",
+        });
+      }, 300);
+    });
+  }
+}
+
+// Export singleton instance
+export const mockRequestApi = new MockRequestApi();
