@@ -14,9 +14,16 @@ import {
 export interface RequestApi {
   getRequests(filter?: RequestFilter): Promise<ApiResponse<Page<Request>>>;
   getRequestById(requestId: string): Promise<ApiResponse<Request>>;
-  createLeaveRequest(data: CreateLeaveRequestDTO): Promise<ApiResponse<Request>>;
+  createLeaveRequest(
+    data: CreateLeaveRequestDTO
+  ): Promise<ApiResponse<Request>>;
   createWfhRequest(data: CreateWfhRequestDTO): Promise<ApiResponse<Request>>;
   cancelRequest(requestId: string): Promise<ApiResponse<null>>;
+  approveRequest(requestId: string): Promise<ApiResponse<Request>>;
+  rejectRequest(
+    requestId: string,
+    reason: string
+  ): Promise<ApiResponse<Request>>;
   getRemainingLeaveDays(): Promise<ApiResponse<RemainingLeaveDays>>;
 }
 
@@ -28,6 +35,7 @@ export class MockRequestApi implements RequestApi {
       status: RequestStatus.APPROVED,
       title: "Nghỉ phép gia đình",
       userReason: "Kỳ nghỉ gia đình",
+      attachmentUrl: "https://example.com/attachment1.pdf",
       employeeId: "NV001",
       employeeName: "Nguyễn Văn A",
       approverId: "NV002",
@@ -51,6 +59,7 @@ export class MockRequestApi implements RequestApi {
       status: RequestStatus.PENDING,
       title: "Nghỉ khám bệnh",
       userReason: "Hẹn khám bác sĩ",
+      attachmentUrl: "https://example.com/attachment2.pdf",
       employeeId: "NV001",
       employeeName: "Nguyễn Văn A",
       createdAt: "2023-10-24T09:00:00Z",
@@ -58,9 +67,7 @@ export class MockRequestApi implements RequestApi {
       additionalLeaveInfo: {
         leaveType: LeaveType.SICK,
         totalDays: 1,
-        leaveDates: [
-          { date: "2023-10-30", shift: ShiftType.FULL_DAY },
-        ],
+        leaveDates: [{ date: "2023-10-30", shift: ShiftType.FULL_DAY }],
       },
     },
     {
@@ -70,6 +77,7 @@ export class MockRequestApi implements RequestApi {
       title: "Nghỉ việc cá nhân",
       userReason: "Việc cá nhân",
       rejectReason: "Yêu cầu được gửi quá gần ngày nghỉ.",
+      attachmentUrl: "https://example.com/attachment3.pdf",
       employeeId: "NV001",
       employeeName: "Nguyễn Văn A",
       approverId: "NV002",
@@ -92,6 +100,7 @@ export class MockRequestApi implements RequestApi {
       status: RequestStatus.APPROVED,
       title: "Làm việc từ xa",
       userReason: "Làm việc từ nhà để hoàn thành dự án",
+      attachmentUrl: "https://example.com/attachment4.pdf",
       employeeId: "NV001",
       employeeName: "Nguyễn Văn A",
       approverId: "NV002",
@@ -111,7 +120,9 @@ export class MockRequestApi implements RequestApi {
     },
   ];
 
-  async getRequests(filter?: RequestFilter): Promise<ApiResponse<Page<Request>>> {
+  async getRequests(
+    filter?: RequestFilter
+  ): Promise<ApiResponse<Page<Request>>> {
     return new Promise((resolve) => {
       setTimeout(() => {
         let filteredRequests = [...this.mockRequests];
@@ -136,11 +147,11 @@ export class MockRequestApi implements RequestApi {
         }
 
         // Sort
-        const sortOrder = filter?.sortOrder || 'DESC';
+        const sortOrder = filter?.sortOrder || "DESC";
         filteredRequests.sort((a, b) => {
           const dateA = new Date(a.createdAt).getTime();
           const dateB = new Date(b.createdAt).getTime();
-          return sortOrder === 'ASC' ? dateA - dateB : dateB - dateA;
+          return sortOrder === "ASC" ? dateA - dateB : dateB - dateA;
         });
 
         // Pagination
@@ -157,7 +168,14 @@ export class MockRequestApi implements RequestApi {
             totalPages: Math.ceil(filteredRequests.length / pageSize),
             number: page,
             size: pageSize,
-            pageable: { pageNumber: page, pageSize: pageSize, sort: { sorted: false, unsorted: true, empty: true }, offset: startIndex, paged: true, unpaged: false },
+            pageable: {
+              pageNumber: page,
+              pageSize: pageSize,
+              sort: { sorted: false, unsorted: true, empty: true },
+              offset: startIndex,
+              paged: true,
+              unpaged: false,
+            },
             first: page === 1,
             last: endIndex >= filteredRequests.length,
             numberOfElements: paginatedRequests.length,
@@ -175,7 +193,9 @@ export class MockRequestApi implements RequestApi {
   async getRequestById(requestId: string): Promise<ApiResponse<Request>> {
     return new Promise((resolve, reject) => {
       setTimeout(() => {
-        const request = this.mockRequests.find((req) => req.requestId === requestId);
+        const request = this.mockRequests.find(
+          (req) => req.requestId === requestId
+        );
         if (request) {
           resolve({
             data: request,
@@ -194,11 +214,16 @@ export class MockRequestApi implements RequestApi {
     });
   }
 
-  async createLeaveRequest(data: CreateLeaveRequestDTO): Promise<ApiResponse<Request>> {
+  async createLeaveRequest(
+    data: CreateLeaveRequestDTO
+  ): Promise<ApiResponse<Request>> {
     return new Promise((resolve) => {
       setTimeout(() => {
         const newRequest: Request = {
-          requestId: `REQ${String(this.mockRequests.length + 1).padStart(3, '0')}`,
+          requestId: `REQ${String(this.mockRequests.length + 1).padStart(
+            3,
+            "0"
+          )}`,
           requestType: data.requestType,
           status: RequestStatus.PENDING,
           title: data.title,
@@ -222,7 +247,9 @@ export class MockRequestApi implements RequestApi {
     });
   }
 
-  async createWfhRequest(data: CreateWfhRequestDTO): Promise<ApiResponse<Request>> {
+  async createWfhRequest(
+    data: CreateWfhRequestDTO
+  ): Promise<ApiResponse<Request>> {
     return new Promise((resolve) => {
       setTimeout(() => {
         const totalDays = data.wfhDates.reduce((sum, date) => {
@@ -230,7 +257,10 @@ export class MockRequestApi implements RequestApi {
         }, 0);
 
         const newRequest: Request = {
-          requestId: `REQ${String(this.mockRequests.length + 1).padStart(3, '0')}`,
+          requestId: `REQ${String(this.mockRequests.length + 1).padStart(
+            3,
+            "0"
+          )}`,
           requestType: RequestType.WFH,
           status: RequestStatus.PENDING,
           title: data.title,
@@ -295,6 +325,68 @@ export class MockRequestApi implements RequestApi {
           message: "Request cancelled successfully",
         });
       }, 500);
+    });
+  }
+
+  async approveRequest(requestId: string): Promise<ApiResponse<Request>> {
+    return new Promise((resolve, reject) => {
+      setTimeout(() => {
+        const idx = this.mockRequests.findIndex(
+          (r) => r.requestId === requestId
+        );
+        if (idx === -1) {
+          reject({
+            success: false,
+            statusCode: 404,
+            message: "Request not found",
+          });
+          return;
+        }
+        const req = this.mockRequests[idx];
+        req.status = RequestStatus.APPROVED;
+        req.processedAt = new Date().toISOString();
+        req.approverName = "Bạn";
+        req.updatedAt = new Date().toISOString();
+        resolve({
+          data: req,
+          success: true,
+          statusCode: 200,
+          message: "Request approved",
+        });
+      }, 400);
+    });
+  }
+
+  async rejectRequest(
+    requestId: string,
+    reason: string
+  ): Promise<ApiResponse<Request>> {
+    return new Promise((resolve, reject) => {
+      setTimeout(() => {
+        const idx = this.mockRequests.findIndex(
+          (r) => r.requestId === requestId
+        );
+        if (idx === -1) {
+          reject({
+            success: false,
+            statusCode: 404,
+            message: "Request not found",
+          });
+          return;
+        }
+        const req = this.mockRequests[idx];
+        req.status = RequestStatus.REJECTED;
+        req.rejectReason = reason;
+        req.processedAt = new Date().toISOString();
+        req.approverName = "Bạn";
+        req.updatedAt = new Date().toISOString();
+        resolve({
+          data: req,
+          success: true,
+          statusCode: 200,
+          message: "Request rejected",
+        });
+      }, 400);
     });
   }
 
