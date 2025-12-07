@@ -9,7 +9,7 @@ import EmployeePersonalUpdatePage from "./EmployeePersonalUpdatePage"
 export const ProfileRoutes = (
     <Route path="profile">
         <Route path="users" element={
-            <ProtectedRoute allowedRoles={["ADMIN", "HR"]}>
+            <ProtectedRoute allowedRoles={["ADMIN", "HR", "MANAGER"]}>
                 <EmployeeListPage />
             </ProtectedRoute>
         }

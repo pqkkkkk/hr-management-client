@@ -10,7 +10,7 @@ function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
-        <ApiProvider apiType="REST">
+        <ApiProvider apiType="MOCK">
           <AppRoutes />
           <ToastContainer />
         </ApiProvider>
