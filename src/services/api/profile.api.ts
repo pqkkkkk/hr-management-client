@@ -11,8 +11,14 @@ import apiClient from "./api.client";
 export interface ProfileApi {
   getProfiles(): Promise<ApiResponse<User[]>>;
   getProfileById(id: string): Promise<ApiResponse<User>>;
-  updateProfileForHR(userId: string, profileData: Partial<User>): Promise<ApiResponse<User>>;
-  updateProfileForEmployee(userId: string, profileData: Partial<User>): Promise<ApiResponse<User>>;
+  updateProfileForHR(
+    userId: string,
+    profileData: Partial<User>
+  ): Promise<ApiResponse<User>>;
+  updateProfileForEmployee(
+    userId: string,
+    profileData: Partial<User>
+  ): Promise<ApiResponse<User>>;
   deactivateUser(userId: string): Promise<ApiResponse<null>>;
   exportUsers?(filter?: any): Promise<ApiResponse<string>>;
 }
@@ -502,7 +508,10 @@ export class MockProfileApi implements ProfileApi {
     });
   }
 
-  updateProfileForEmployee(userId: string, profileData: Partial<User>): Promise<ApiResponse<User>> {
+  updateProfileForEmployee(
+    userId: string,
+    profileData: Partial<User>
+  ): Promise<ApiResponse<User>> {
     return new Promise((resolve) => {
       setTimeout(() => {
         resolve({
@@ -626,7 +635,10 @@ export class MockProfileApi implements ProfileApi {
 }
 
 export class RestProfileApi implements ProfileApi {
-  updateProfileForEmployee(userId: string, profileData: Partial<User>): Promise<ApiResponse<User>> {
+  updateProfileForEmployee(
+    userId: string,
+    profileData: Partial<User>
+  ): Promise<ApiResponse<User>> {
     throw new Error("Method not implemented.");
   }
   updateProfileForHR(
