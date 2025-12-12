@@ -1,5 +1,6 @@
-import { on } from "events";
 import React, { useState } from "react";
+import { mockRequestApi } from "services/api/request.api";
+import { RequestType, RequestStatus } from "modules/request/types/request.types";
 
 interface CheckoutModalProps {
   open?: boolean;
@@ -12,7 +13,7 @@ interface CheckoutModalProps {
   }) => Promise<void>;
 }
 
-export default function CheckoutModal({ open, onClose,onSubmit }: CheckoutModalProps) {
+export default function CheckoutModal({ open, onClose, onSubmit }: CheckoutModalProps) {
   const [date, setDate] = useState("");
   const [time, setTime] = useState("");
   const [reason, setReason] = useState("");
@@ -22,33 +23,80 @@ export default function CheckoutModal({ open, onClose,onSubmit }: CheckoutModalP
 
   if (!open) return null;
 
-  const validate = () => {
+  const validate = async () => {
     const newErrors: Record<string, string> = {};
 
-    if (!date) newErrors.date = "Vui lòng chọn ngày";
-    if (!time) newErrors.time = "Vui lòng chọn giờ";
-    console.log("Validating with time:", time, "and reason:", reason);
+    // Kiểm tra ngày
+    if (!date) {
+      newErrors.date = "Vui lòng chọn ngày";
+    } else {
+      // Kiểm tra không được chọn ngày trong tương lai
+      const selectedDate = new Date(date);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      selectedDate.setHours(0, 0, 0, 0);
+      
+      if (selectedDate > today) {
+        newErrors.date = "Không được chọn ngày trong tương lai";
+      }
+    }
+
+    // Kiểm tra giờ
+    if (!time) {
+      newErrors.time = "Vui lòng chọn giờ";
+    } else if (date && !newErrors.date) {
+      // Kiểm tra không được chọn thời điểm trong tương lai
+      const selectedDateTime = new Date(`${date}T${time}`);
+      const now = new Date();
+      
+      if (selectedDateTime > now) {
+        newErrors.time = "Không được chọn thời điểm trong tương lai";
+      }
+    }
+
+    // Bắt buộc nhập lý do nếu check-out trước 17:00
     if (time && time < "17:00" && !reason.trim()) {
       newErrors.reason = "Bạn phải nhập lý do nếu check-out trước 17h";
+    }
+
+    if (date && !newErrors.date) {
+      try {
+        const response = await mockRequestApi.getRequests({
+          page: 1,
+          pageSize: 100,
+          requestType: RequestType.CHECK_IN,
+        });
+
+        if (response.success) {
+          const selectedDateStr = date;
+          const checkInRequests = response.data.content.filter((req) => {
+            const reqDate = req.createdAt.split('T')[0];
+            return (
+              reqDate === selectedDateStr &&
+              (req.status === RequestStatus.APPROVED || 
+               req.status === RequestStatus.PENDING)
+            );
+          });
+
+          if (checkInRequests.length === 0) {
+            newErrors.date = "Phải có yêu cầu check-in đã được chấp thuận hoặc đang chờ trong cùng ngày";
+          }
+        }
+      } catch (error) {
+        console.error("Error checking check-in requests:", error);
+      }
     }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  // 🟡 Mock API
-  // const fakeApi = () =>
-  //   new Promise((resolve) => {
-  //     setTimeout(() => resolve(true), 2000); 
-  //   });
-
   const handleSubmit = async () => {
-    if (!validate()) return;
+    const isValid = await validate();
+    if (!isValid) return;
 
     try {
       setLoading(true);
-
-      // await fakeApi();
       await onSubmit?.({ date, time, reason, file });
       setLoading(false);
       onClose?.();
@@ -123,7 +171,7 @@ export default function CheckoutModal({ open, onClose,onSubmit }: CheckoutModalP
 
         <div className="mt-5">
           <label className="font-medium">
-            Lý do về sớm (nếu check-out trước 17h)
+            Lý do về sớm (bắt buộc nếu check-out trước 17h)
           </label>
           <textarea
             className={`w-full h-28 border rounded-lg px-3 py-2 mt-1 resize-none ${
@@ -145,7 +193,7 @@ export default function CheckoutModal({ open, onClose,onSubmit }: CheckoutModalP
         </div>
 
         <div className="mt-5">
-          <label className="font-medium">Đính kèm file</label>
+          <label className="font-medium">Đính kèm file (không bắt buộc)</label>
           <input
             type="file"
             className="mt-2 block w-full text-sm border rounded-lg p-2"
