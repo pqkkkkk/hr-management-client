@@ -1,28 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-
-const formatDate = (d: Date) => {
-  const yyyy = d.getFullYear();
-  const mm = String(d.getMonth() + 1).padStart(2, "0");
-  const dd = String(d.getDate()).padStart(2, "0");
-  return `${yyyy}-${mm}-${dd}`;
-};
-
-const formatTime = (d: Date) => {
-  const hh = String(d.getHours()).padStart(2, "0");
-  const mm = String(d.getMinutes()).padStart(2, "0");
-  return `${hh}:${mm}`;
-};
-
-const humanTime = (t: string) => {
-  // convert HH:MM -> HH:MM AM/PM
-  const [h, m] = t.split(":").map(Number);
-  const suffix = h >= 12 ? "PM" : "AM";
-  const hour12 = ((h + 11) % 12) + 1;
-  return `${String(hour12).padStart(2, "0")}:${String(m).padStart(
-    2,
-    "0"
-  )} ${suffix}`;
-};
+import { formatDateForInput, formatTimeForInput } from "shared/utils/date-utils";
 
 const CheckInRequestForm: React.FC = () => {
   const [date, setDate] = useState<string>("");
@@ -40,8 +17,8 @@ const CheckInRequestForm: React.FC = () => {
 
   useEffect(() => {
     const now = new Date();
-    setDate(formatDate(now));
-    setTime(formatTime(now));
+    setDate(formatDateForInput(now));
+    setTime(formatTimeForInput(now));
   }, []);
 
   useEffect(() => {
@@ -76,7 +53,7 @@ const CheckInRequestForm: React.FC = () => {
     e.preventDefault();
     setError(null);
     // Chặn việc tạo yêu cầu cho các ngày trong tương lai
-    const todayStr = formatDate(new Date());
+    const todayStr = formatDateForInput(new Date());
     if (date && date > todayStr) {
       setError("Không thể tạo yêu cầu cho thời gian ở tương lai.");
       return;
