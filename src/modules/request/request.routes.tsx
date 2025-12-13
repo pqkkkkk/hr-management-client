@@ -5,6 +5,7 @@ import {
   RequestHistoryPage,
   RequestManagementPage,
   RequestDetailPage,
+  CheckInRequestForm,
 } from "./pages";
 
 const RequestRoutes = (
@@ -13,6 +14,7 @@ const RequestRoutes = (
     <Route path="create/leave" element={<CreateLeaveRequestPage />} />
     <Route path="manage" element={<RequestManagementPage />} />
     <Route path="manage/:requestId" element={<RequestDetailPage />} />
+    <Route path="create/check-in" element={<CheckInRequestForm />} />
   </Route>
 );
 
