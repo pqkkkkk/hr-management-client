@@ -1,4 +1,3 @@
-import React from "react";
 import { Route } from "react-router-dom";
 import {
   CreateLeaveRequestPage,
@@ -6,6 +5,7 @@ import {
   RequestManagementPage,
   RequestDetailPage,
   CheckInRequestForm,
+  CheckOutRequestForm,
 } from "./pages";
 
 const RequestRoutes = (
@@ -15,6 +15,7 @@ const RequestRoutes = (
     <Route path="manage" element={<RequestManagementPage />} />
     <Route path="manage/:requestId" element={<RequestDetailPage />} />
     <Route path="create/check-in" element={<CheckInRequestForm />} />
+    <Route path="create/check-out" element={<CheckOutRequestForm/>} />
   </Route>
 );
 
