@@ -127,6 +127,10 @@ export interface CreateWfhRequestDTO {
   wfhDates: WfhDate[];
 }
 
+export interface RejectLeaveRequestDTO {
+  reason: string;
+}
+
 // Filter and pagination
 export interface RequestFilter {
   page?: number;

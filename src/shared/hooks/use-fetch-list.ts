@@ -31,7 +31,7 @@ export const useFetchList = <Q extends object, T extends object>(
         setData([]);
         setPage(null);
       }
-    } catch (err: any) {
+    } catch (err) {
       console.error("Error fetching data:", err);
       setError(err?.message || "An error occurred");
       setData([]);
