@@ -6,6 +6,7 @@ import FormDateInput from '../components/FormDateInput';
 import { User } from 'shared/types';
 import { useApi } from 'contexts/ApiContext';
 import { toast } from 'react-toastify';
+import { UpdateProfileRequestForHR } from '../types/profile.req.types';
 
 const EmployeeUpdatePage: React.FC = () => {
     const {profileApi} = useApi();
@@ -149,7 +150,8 @@ const EmployeeUpdatePage: React.FC = () => {
       try {
         setIsSaving(true);
 
-        const updatedUser = await profileApi.updateProfileForHR(formData.userId, formData);
+        const req : UpdateProfileRequestForHR = UpdateProfileRequestForHR.fromUser(formData);
+        const updatedUser = await profileApi.updateProfileForHR(formData.userId, req);
 
         toast.success("Cập nhật thông tin nhân viên thành công.");
         setFormData(updatedUser.data);

@@ -1,27 +1,57 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
+import { ApiResponse, Page } from "shared/types";
 
-export const useFetchList = <Q extends object, T extends object> (entity: string, query: Q) => {
+export const useFetchList = <Q extends object, T extends object>(
+  fetchFn: (query: Q) => Promise<ApiResponse<Page<T>>>,
+  query: Q
+) => {
+  const [data, setData] = useState<T[]>([]);
+  const [page, setPage] = useState<Page<T> | null>(null);
+  const [isFetching, setIsFetching] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
 
-    const [data, setData] = useState<T[]>([]);
-    const [totalPages, setTotalPages] = useState<number>(0);
-    
-    useEffect(() => {
-        const fetchData = async () => {
-            try {
+  // Sử dụng useRef để lưu fetchFn, tránh dependency thay đổi
+  const fetchFnRef = useRef(fetchFn);
+  
+  // Cập nhật ref mỗi khi fetchFn thay đổi
+  useEffect(() => {
+    fetchFnRef.current = fetchFn;
+  }, [fetchFn]);
 
-            } catch (error) {
-                console.error("Error fetching data:", error);
-            }
-        };
-        fetchData();
-    }, [entity, query]);
-
-    const addToList = (newObject: T) =>{
-        setData(prevData => [...prevData, newObject]);
+  const refetch = useCallback(async () => {
+    setIsFetching(true);
+    setError(null);
+    try {
+      const response = await fetchFnRef.current(query);
+      if (response.success && response.data) {
+        setData(response.data.content);
+        setPage(response.data);
+      } else {
+        setError(response.message || "Failed to fetch data");
+        setData([]);
+        setPage(null);
+      }
+    } catch (err: any) {
+      console.error("Error fetching data:", err);
+      setError(err?.message || "An error occurred");
+      setData([]);
+      setPage(null);
+    } finally {
+      setIsFetching(false);
     }
-    return {
-        data,
-        totalPages,
-        addToList
-    };
-}
+  }, [query]);
+
+  useEffect(() => {
+    refetch();
+  }, [refetch]);
+
+  return {
+    data,
+    page,
+    totalPages: page?.totalPages || 0,
+    totalElements: page?.totalElements || 0,
+    isFetching,
+    error,
+    refetch,
+  };
+};
