@@ -7,7 +7,7 @@ import UnauthorizedPage from "shared/components/UnauthorizedPage";
 import Layout from "shared/components/Layout";
 import { ProfileRoutes } from "modules/profile/pages/profile.routes";
 import RequestRoutes from "modules/request/request.routes";
-
+import CheckoutModal from "modules/request/components/CreateCheckOutRequest";
 // Placeholder components for routes that will be implemented later
 const PlaceholderPage: React.FC<{ title: string }> = ({ title }) => (
   <div className="bg-white rounded-lg shadow p-6">
@@ -47,6 +47,7 @@ const AppRoutes: React.FC = () => {
   return (
     <Routes>
       {/* Public routes */}
+      <Route path="/test" element={<CheckoutModal open={true} />} />
       <Route path="/login" element={<LoginPage />} />
       <Route path="/unauthorized" element={<UnauthorizedPage />} />
 

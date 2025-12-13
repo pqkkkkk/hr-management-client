@@ -1,6 +1,7 @@
 import React, { useState } from "react";
-import { mockRequestApi } from "services/api/request.api";
-import { RequestType, RequestStatus } from "modules/request/types/request.types";
+import { useApi } from "contexts/ApiContext";
+import { RequestType, RequestStatus, CreateCheckOutRequestDTO } from "modules/request/types/request.types";
+import { useNavigate } from "react-router-dom";
 
 interface CheckoutModalProps {
   open?: boolean;
@@ -14,12 +15,15 @@ interface CheckoutModalProps {
 }
 
 export default function CheckoutModal({ open, onClose, onSubmit }: CheckoutModalProps) {
+  const { requestApi } = useApi();
+  const navigate = useNavigate();
   const [date, setDate] = useState("");
   const [time, setTime] = useState("");
   const [reason, setReason] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
+  const [apiError, setApiError] = useState<string>("");
 
   if (!open) return null;
 
@@ -35,7 +39,7 @@ export default function CheckoutModal({ open, onClose, onSubmit }: CheckoutModal
       const today = new Date();
       today.setHours(0, 0, 0, 0);
       selectedDate.setHours(0, 0, 0, 0);
-      
+
       if (selectedDate > today) {
         newErrors.date = "Không được chọn ngày trong tương lai";
       }
@@ -48,7 +52,7 @@ export default function CheckoutModal({ open, onClose, onSubmit }: CheckoutModal
       // Kiểm tra không được chọn thời điểm trong tương lai
       const selectedDateTime = new Date(`${date}T${time}`);
       const now = new Date();
-      
+
       if (selectedDateTime > now) {
         newErrors.time = "Không được chọn thời điểm trong tương lai";
       }
@@ -61,7 +65,7 @@ export default function CheckoutModal({ open, onClose, onSubmit }: CheckoutModal
 
     if (date && !newErrors.date) {
       try {
-        const response = await mockRequestApi.getRequests({
+        const response = await requestApi.getRequests({
           page: 1,
           pageSize: 100,
           requestType: RequestType.CHECK_IN,
@@ -73,7 +77,7 @@ export default function CheckoutModal({ open, onClose, onSubmit }: CheckoutModal
             const reqDate = req.createdAt.split('T')[0];
             return (
               reqDate === selectedDateStr &&
-              (req.status === RequestStatus.APPROVED || 
+              (req.status === RequestStatus.APPROVED ||
                req.status === RequestStatus.PENDING)
             );
           });
@@ -92,18 +96,106 @@ export default function CheckoutModal({ open, onClose, onSubmit }: CheckoutModal
   };
 
   const handleSubmit = async () => {
+    setApiError("");
     const isValid = await validate();
     if (!isValid) return;
 
     try {
       setLoading(true);
-      await onSubmit?.({ date, time, reason, file });
+
+      // If custom onSubmit is provided, use it
+      if (onSubmit) {
+        await onSubmit({ date, time, reason, file });
+        setLoading(false);
+        handleSuccess();
+        return;
+      }
+      const desiredCheckOutTime = `${date}T${time}:00`;
+      const attachmentUrl = file ? `uploads/${file.name}` : undefined;
+
+      const requestData: CreateCheckOutRequestDTO = {
+        title: time < "17:00"
+          ? `Yêu cầu check-out sớm - ${date} ${time}`
+          : `Yêu cầu check-out - ${date} ${time}`,
+        userReason: reason || undefined,
+        desiredCheckOutTime,
+        attachmentUrl,
+      };
+
+      const response = await requestApi.createCheckOutRequest(requestData);
+
+      if (response.success) {
+        setLoading(false);
+        handleSuccess();
+      } else {
+        throw new Error(response.message || "Có lỗi xảy ra khi tạo yêu cầu");
+      }
+    } catch (error: any) {
       setLoading(false);
-      onClose?.();
-      alert("Gửi yêu cầu thành công!");
-    } catch (e) {
-      setLoading(false);
-      alert("Có lỗi xảy ra!");
+      handleError(error);
+    }
+  };
+
+  const handleSuccess = () => {
+    setDate("");
+    setTime("");
+    setReason("");
+    setFile(null);
+    setErrors({});
+    setApiError("");
+
+    alert("Gửi yêu cầu check-out thành công!");
+
+    // Close modal
+    onClose?.();
+
+    navigate("/requests/history");
+  };
+
+  const handleError = (error: any) => {
+    console.error("Error creating check-out request:", error);
+
+    if (error.response) {
+      const statusCode = error.response.status;
+      const message = error.response.data?.message || error.message;
+
+      switch (statusCode) {
+        case 400:
+          if (message.includes("check-in")) {
+            setErrors({ date: message });
+          } else if (message.includes("duplicate") || message.includes("tồn tại")) {
+            setErrors({ date: message });
+          } else {
+            setApiError(message);
+          }
+          break;
+        case 401:
+          setApiError("Phiên đăng nhập hết hạn. Vui lòng đăng nhập lại.");
+          setTimeout(() => navigate("/login"), 2000);
+          break;
+        case 403:
+          setApiError("Bạn không có quyền thực hiện thao tác này.");
+          break;
+        case 404:
+          setApiError("Không tìm thấy tài nguyên.");
+          break;
+        case 500:
+          setApiError("Lỗi server. Vui lòng thử lại sau.");
+          break;
+        default:
+          setApiError(message || "Có lỗi xảy ra. Vui lòng thử lại.");
+      }
+    } else if (error.request) {
+      setApiError("Không thể kết nối đến server. Vui lòng kiểm tra kết nối mạng.");
+    } else {
+      const message = error.message || "Có lỗi xảy ra!";
+      if (message.includes("check-in")) {
+        setErrors({ date: message });
+      } else if (message.includes("tồn tại")) {
+        setErrors({ date: message });
+      } else {
+        setApiError(message);
+      }
     }
   };
 
@@ -124,6 +216,12 @@ export default function CheckoutModal({ open, onClose, onSubmit }: CheckoutModal
         <p className="text-gray-500 text-sm mt-1">
           Điền thông tin yêu cầu của bạn. Quản lý sẽ xem xét và phê duyệt.
         </p>
+
+        {apiError && (
+          <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+            <p className="text-red-600 text-sm">{apiError}</p>
+          </div>
+        )}
 
         <div className="grid grid-cols-2 gap-4 mt-6">
           <div>
@@ -246,3 +344,4 @@ export default function CheckoutModal({ open, onClose, onSubmit }: CheckoutModal
     </div>
   );
 }
+
