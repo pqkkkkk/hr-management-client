@@ -45,9 +45,3 @@ export interface RefreshTokenResponse {
   accessToken: string;
   refreshToken: string;
 }
-
-export interface UpdateProfileRequest {
-  phoneNumber?: string;
-  dateOfBirth?: Date | string;
-  address?: string;
-}

@@ -1,9 +1,10 @@
 import React from "react";
+import { SupportedFileFormat } from "../types/profile.req.types";
 
 type Props = {
   open: boolean;
-  format: "excel" | "pdf";
-  setFormat: (f: "excel" | "pdf") => void;
+  format: SupportedFileFormat;
+  setFormat: (f: SupportedFileFormat) => void;
   loading?: boolean;
   onClose: () => void;
   onExport: () => Promise<void> | void;

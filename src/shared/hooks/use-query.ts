@@ -1,26 +1,28 @@
-import { useCallback, useRef, useState, useEffect } from "react"
-
+import { useCallback, useRef, useState } from "react";
 
 export const useQuery = <T extends object>(initialQuery: T) => {
+  const [query, setQuery] = useState<T>(initialQuery);
+  const initialQueryRef = useRef<T>(initialQuery);
 
-    const [query, setQuery] = useState<T>(initialQuery);
+  const updateQuery = useCallback((newQuery: Partial<T>) => {
+    setQuery((prevQuery) => ({
+      ...prevQuery,
+      ...newQuery,
+    }));
+  }, []);
 
-    const initialQueryRef = useRef<T>(initialQuery);
+  const resetQuery = useCallback(() => {
+    setQuery(initialQueryRef.current);
+  }, []);
 
-    const updateQuery = useCallback((newQuery: Partial<T>) =>{
-        setQuery(prevQuery => ({
-            ...prevQuery,
-            ...newQuery
-        }));
-    }, []);
+  const setQuery_ = useCallback((newQuery: T) => {
+    setQuery(newQuery);
+  }, []);
 
-    const resetQuery = useCallback(() =>{
-        setQuery(initialQueryRef.current);
-    }, []);
-
-    return {
-        query,
-        updateQuery,
-        resetQuery
-    };
-}
+  return {
+    query,
+    updateQuery,
+    resetQuery,
+    setQuery: setQuery_,
+  };
+};
