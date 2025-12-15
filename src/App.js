@@ -1,9 +1,10 @@
 import React from "react";
 import { BrowserRouter } from "react-router-dom";
 import { AuthProvider } from "contexts/AuthContext";
+import { ApiProvider } from "contexts/ApiContext";
+import { NotificationProvider } from "contexts/NotificationContext";
 import AppRoutes from "routes";
 import "./App.css";
-import { ApiProvider } from "contexts/ApiContext";
 import { ToastContainer } from "react-toastify";
 
 function App() {
@@ -11,8 +12,10 @@ function App() {
     <BrowserRouter>
       <AuthProvider>
         <ApiProvider apiType="REST">
-          <AppRoutes />
-          <ToastContainer />
+          <NotificationProvider>
+            <AppRoutes />
+            <ToastContainer />
+          </NotificationProvider>
         </ApiProvider>
       </AuthProvider>
     </BrowserRouter>

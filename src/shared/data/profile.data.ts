@@ -420,3 +420,23 @@ export const users: User[] = [
     departmentId: "DPT03",
     },
 ];
+
+export const mockEmployee: User = {
+  userId: "u5e6f7a8-c9d0-1234-ef01-345678901234",
+  fullName: "Hoàng Văn Em",
+  email: "hoangvanem@company.com",
+  role: "EMPLOYEE",
+  status: "ACTIVE",
+  position: "MARKETING_MANAGER",
+  joinDate: "12/11/2024",
+  identityCardNumber: "293492390420",
+  dateOfBirth: "08/05/2004",
+  gender: "Nam",
+  phoneNumber: "0123456789",
+  address: "TP.HCM",
+  bankName: "Vietcombank",
+  bankAccount: "0123456789",
+  createdAt: new Date().toISOString(),
+  updatedAt: new Date().toISOString(),
+  departmentId: "DPT03",
+};

@@ -1,5 +1,6 @@
 import { SignInRequest, SignInResponse, User, ApiResponse, RefreshTokenRequest, RefreshTokenResponse } from 'shared/types';
 import apiClient from './api.client';
+import { mockEmployee } from 'shared/data/profile.data';
 
 export interface AuthApi {
   signIn(req: SignInRequest): Promise<ApiResponse<SignInResponse>>;
@@ -23,19 +24,10 @@ export class MockAuthApi implements AuthApi {
       setTimeout(() => {
         resolve({
           data: {
-            accessToken: 'mock-access-token',
-            refreshToken: 'mock-refresh-token',
+            user: mockEmployee,
+            accessToken: "mock-access-token",
+            refreshToken: "mock-refresh-token",
             authenticated: true,
-            user: {
-              userId: '1',
-              email: req.email,
-              fullName: 'Nguyễn Văn A',
-              role: 'MANAGER',
-              status: 'ACTIVE',
-              joinDate: new Date().toISOString(),
-              createdAt: new Date().toISOString(),
-              updatedAt: new Date().toISOString(),
-            }
           },
           statusCode: 200,
           message: 'Mock sign-in successful',
