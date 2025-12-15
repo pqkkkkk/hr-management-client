@@ -1,9 +1,18 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from 'contexts/AuthContext';
+import { useNotifications } from 'contexts/NotificationContext';
+import { NotificationBell } from 'shared/components/notifications';
 
 const Header: React.FC = () => {
   const { user, logout } = useAuth();
+  const {
+    notifications,
+    unreadCount,
+    connectionStatus,
+    markAsRead,
+    markAllAsRead,
+  } = useNotifications();
 
   const handleLogout = async () => {
     try {
@@ -25,17 +34,29 @@ const Header: React.FC = () => {
           </div>
           <div className="flex items-center gap-4">
             {user && (
-              <div className="flex items-center gap-3">
-                <div className="hidden md:flex flex-col items-end">
-                  <span className="font-medium">{user.fullName}</span>
-                  <span className="text-sm text-blue-100">({user.role})</span>
+              <div className="flex items-center gap-4">
+                {/* Notification Bell */}
+                <NotificationBell
+                  notifications={notifications}
+                  unreadCount={unreadCount}
+                  connectionStatus={connectionStatus}
+                  onMarkAsRead={markAsRead}
+                  onMarkAllAsRead={markAllAsRead}
+                />
+
+                {/* User Info & Logout */}
+                <div className="flex items-center gap-3">
+                  <div className="hidden md:flex flex-col items-end">
+                    <span className="font-medium">{user.fullName}</span>
+                    <span className="text-sm text-blue-100">({user.role})</span>
+                  </div>
+                  <button
+                    onClick={handleLogout}
+                    className="bg-white/20 hover:bg-white/30 px-4 py-2 rounded-lg transition duration-200"
+                  >
+                    Đăng xuất
+                  </button>
                 </div>
-                <button
-                  onClick={handleLogout}
-                  className="bg-white/20 hover:bg-white/30 px-4 py-2 rounded-lg transition duration-200"
-                >
-                  Đăng xuất
-                </button>
               </div>
             )}
           </div>

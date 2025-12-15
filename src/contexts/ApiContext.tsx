@@ -1,10 +1,12 @@
 import React, { createContext, ReactNode, useContext } from "react";
 import { MockProfileApi, ProfileApi, RestProfileApi } from "services/api/profile.api";
+import { MockNotificationApi, NotificationApi, RestNotificationApi } from "services/api/notification.api";
 import { ApiType } from "shared/types/common.types";
 
 
 interface ApiContextType {
-    profileApi: ProfileApi
+    profileApi: ProfileApi;
+    notificationApi: NotificationApi;
 }
 
 interface ApiProviderProps {
@@ -18,10 +20,12 @@ const createApiServices = (apiType: ApiType): ApiContextType => {
         case 'MOCK':
             return {
                 profileApi: new MockProfileApi(),
+                notificationApi: new MockNotificationApi(),
             };
         case 'REST':
             return {
                 profileApi: new RestProfileApi(),
+                notificationApi: new RestNotificationApi(),
             };
         default:
             throw new Error(`Unsupported API type: ${apiType}`);
