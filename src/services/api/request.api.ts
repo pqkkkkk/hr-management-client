@@ -494,7 +494,7 @@ export class MockRequestApi implements RequestApi {
 
 // REST API Implementation
 export class RestRequestApi implements RequestApi {
-  private baseUrl = "/v1/requests";
+  private baseUrl = "http://localhost:3001/v1/requests";
 
   async getRequests(
     filter?: RequestFilter
