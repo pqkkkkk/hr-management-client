@@ -1,6 +1,7 @@
-import React from "react";
+import React, { useState } from "react";
 import { formatDate } from "shared/utils/date-utils";
 import { useNavigate } from "react-router-dom";
+import { toast } from "react-toastify";
 import {
   Request,
   RequestStatus,
@@ -8,11 +9,13 @@ import {
   requestTypeOptions,
   requestStatusOptions,
 } from "../types/request.types";
+import DelegationForm, { CreateDelegationRequest } from "./DelegationForm";
 
 type Props = {
   request: Request;
   onApprove?: (id: string) => void;
   onReject?: (id: string) => void;
+  onDelegate?: (requestId: string, data: CreateDelegationRequest) => void;
 };
 
 const getStatusBadgeClass = (status: RequestStatus): string => {
@@ -42,8 +45,24 @@ const getTypeLabel = (type: RequestType) => {
   return opt?.label ?? type;
 };
 
-const RequestRow: React.FC<Props> = ({ request, onApprove, onReject }) => {
+const RequestRow: React.FC<Props> = ({
+  request,
+  onApprove,
+  onReject,
+  onDelegate,
+}) => {
   const navigate = useNavigate();
+  const [isDelegateOpen, setIsDelegateOpen] = useState(false);
+
+  const handleDelegateSubmit = (data: CreateDelegationRequest) => {
+    if (onDelegate) {
+      onDelegate(request.requestId, data);
+    } else {
+      toast.success("Ủy quyền thành công");
+    }
+    setIsDelegateOpen(false);
+  };
+
   return (
     <tr className="border-b last:border-b-0">
       <td className="py-4 px-10 text-sm font-medium text-gray-800">
@@ -68,12 +87,13 @@ const RequestRow: React.FC<Props> = ({ request, onApprove, onReject }) => {
         }
       </td>
       <td className="py-4 px-10">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1">
           {request.status === RequestStatus.PENDING ? (
             <>
               <button
                 onClick={() => onApprove && onApprove(request.requestId)}
-                className="flex items-center gap-2 bg-green-500 hover:bg-green-600 text-white text-sm px-3 py-1 rounded"
+                className="w-8 h-8 flex items-center justify-center bg-green-500 hover:bg-green-600 text-white rounded"
+                title="Phê duyệt"
               >
                 <svg
                   className="w-4 h-4"
@@ -81,26 +101,20 @@ const RequestRow: React.FC<Props> = ({ request, onApprove, onReject }) => {
                   fill="none"
                   aria-hidden
                 >
-                  <circle
-                    cx="12"
-                    cy="12"
-                    r="10"
-                    stroke="currentColor"
-                    strokeWidth="1.5"
-                  />
                   <path
-                    d="M9 12.5l1.8 1.8L15 10"
+                    d="M5 13l4 4L19 7"
                     stroke="currentColor"
                     strokeWidth="1.8"
                     strokeLinecap="round"
                     strokeLinejoin="round"
                   />
                 </svg>
-                <span>Phê duyệt</span>
               </button>
+
               <button
                 onClick={() => onReject && onReject(request.requestId)}
-                className="flex items-center gap-2 bg-red-500 hover:bg-red-600 text-white text-sm px-3 py-1 rounded"
+                className="w-8 h-8 flex items-center justify-center bg-red-500 hover:bg-red-600 text-white rounded"
+                title="Từ chối"
               >
                 <svg
                   className="w-4 h-4"
@@ -108,13 +122,6 @@ const RequestRow: React.FC<Props> = ({ request, onApprove, onReject }) => {
                   fill="none"
                   aria-hidden
                 >
-                  <circle
-                    cx="12"
-                    cy="12"
-                    r="10"
-                    stroke="currentColor"
-                    strokeWidth="1.5"
-                  />
                   <path
                     d="M15 9L9 15M9 9l6 6"
                     stroke="currentColor"
@@ -123,7 +130,6 @@ const RequestRow: React.FC<Props> = ({ request, onApprove, onReject }) => {
                     strokeLinejoin="round"
                   />
                 </svg>
-                <span>Từ chối</span>
               </button>
             </>
           ) : null}
@@ -132,10 +138,11 @@ const RequestRow: React.FC<Props> = ({ request, onApprove, onReject }) => {
             onClick={() => {
               navigate(`/requests/manage/${request.requestId}`);
             }}
-            className="flex items-center gap-2 border border-gray-200 text-sm px-3 py-1 rounded"
+            className="w-8 h-8 flex items-center justify-center border border-gray-200 text-gray-700 rounded"
+            title="Xem chi tiết"
           >
             <svg
-              className="w-4 h-4 text-gray-700"
+              className="w-4 h-4"
               viewBox="0 0 24 24"
               fill="none"
               aria-hidden
@@ -155,10 +162,37 @@ const RequestRow: React.FC<Props> = ({ request, onApprove, onReject }) => {
                 strokeWidth="1.5"
               />
             </svg>
-            <span>Xem</span>
           </button>
+
+          {request.status === RequestStatus.PENDING ? (
+            <button
+              onClick={() => setIsDelegateOpen(true)}
+              className="w-8 h-8 flex items-center justify-center border border-gray-200 text-blue-600 rounded"
+              title="Ủy quyền xử lý"
+            >
+              <svg
+                className="w-4 h-4"
+                viewBox="0 0 24 24"
+                fill="none"
+                aria-hidden
+              >
+                <path
+                  d="M12 11c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM4 20v-1c0-2.5 4-3.5 8-3.5s8 1 8 3.5V20"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            </button>
+          ) : null}
         </div>
       </td>
+      <DelegationForm
+        isOpen={isDelegateOpen}
+        onClose={() => setIsDelegateOpen(false)}
+        onSubmit={handleDelegateSubmit}
+      />
     </tr>
   );
 };

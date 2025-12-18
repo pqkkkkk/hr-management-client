@@ -4,3 +4,4 @@ export { default as RequestManagementPage } from "./RequestManagementPage";
 export { default as RequestDetailPage } from "./RequestDetailPage";
 export { default as CheckInRequestForm } from "./CreateCheckInRequest";
 export { default as CheckOutRequestForm } from "./CreateCheckOutRequest";
+export { default as TimesheetViewPage } from "./TimesheetViewPage";

@@ -9,6 +9,7 @@ import {
   RequestStatus,
   LeaveType,
   ShiftType,
+  TimesheetResponse,
 } from "modules/request/types/request.types";
 
 export interface RequestApi {
@@ -25,6 +26,12 @@ export interface RequestApi {
     reason: string
   ): Promise<ApiResponse<Request>>;
   getRemainingLeaveDays(): Promise<ApiResponse<RemainingLeaveDays>>;
+
+  // Timesheet
+  getTimesheet(
+    employeeId: string,
+    yearMonth: string
+  ): Promise<ApiResponse<TimesheetResponse>>;
 }
 
 export class MockRequestApi implements RequestApi {
@@ -407,6 +414,108 @@ export class MockRequestApi implements RequestApi {
           message: "Remaining leave days retrieved successfully",
         });
       }, 300);
+    });
+  }
+
+  // Mock timesheet data
+  async getTimesheet(
+    employeeId: string,
+    yearMonth: string
+  ): Promise<ApiResponse<TimesheetResponse>> {
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        const data: TimesheetResponse = {
+          employeeId: employeeId,
+          employeeName: "Nguyễn Văn A",
+          yearMonth: yearMonth,
+          timesheets: [
+            {
+              dailyTsId: "TS001",
+              date: `${yearMonth}-01`,
+              morningStatus: "PRESENT",
+              afternoonStatus: "PRESENT",
+              morningWfh: false,
+              afternoonWfh: false,
+              totalWorkCredit: 1.0,
+              checkInTime: `${yearMonth}-01T08:25:00Z`,
+              checkOutTime: `${yearMonth}-01T18:40:00Z`,
+              lateMinutes: 0,
+              earlyLeaveMinutes: 0,
+              overtimeMinutes: 70,
+              isFinalized: false,
+              employeeId,
+              employeeName: "Nguyễn Văn A",
+            },
+            {
+              dailyTsId: "TS002",
+              date: `${yearMonth}-02`,
+              morningStatus: "PRESENT",
+              afternoonStatus: "LEAVE",
+              morningWfh: false,
+              afternoonWfh: false,
+              totalWorkCredit: 0.5,
+              checkInTime: `${yearMonth}-02T09:15:00Z`,
+              checkOutTime: `${yearMonth}-02T17:30:00Z`,
+              lateMinutes: 45,
+              earlyLeaveMinutes: 0,
+              overtimeMinutes: 0,
+              isFinalized: false,
+              employeeId,
+              employeeName: "Nguyễn Văn A",
+            },
+            {
+              dailyTsId: "TS003",
+              date: `${yearMonth}-03`,
+              morningStatus: "PRESENT",
+              afternoonStatus: "PRESENT",
+              morningWfh: true,
+              afternoonWfh: true,
+              totalWorkCredit: 1.0,
+              checkInTime: `${yearMonth}-03T08:30:00Z`,
+              checkOutTime: `${yearMonth}-03T17:30:00Z`,
+              lateMinutes: 20,
+              earlyLeaveMinutes: 0,
+              overtimeMinutes: 0,
+              isFinalized: true,
+              employeeId,
+              employeeName: "Nguyễn Văn A",
+            },
+            {
+              dailyTsId: "TS004",
+              date: `${yearMonth}-04`,
+              morningStatus: "PRESENT",
+              afternoonStatus: "ABSENT",
+              morningWfh: true,
+              afternoonWfh: false,
+              totalWorkCredit: 1.0,
+              checkInTime: `${yearMonth}-03T08:30:00Z`,
+              checkOutTime: `${yearMonth}-03T17:30:00Z`,
+              lateMinutes: 20,
+              earlyLeaveMinutes: 0,
+              overtimeMinutes: 0,
+              isFinalized: true,
+              employeeId,
+              employeeName: "Nguyễn Văn A",
+            },
+          ],
+          summary: {
+            totalDays: 31,
+            morningPresentCount: 20,
+            afternoonPresentCount: 21,
+            lateDaysCount: 4,
+            totalLateMinutes: 110,
+            totalOvertimeMinutes: 70,
+            totalWorkCredit: 21.5,
+          },
+        };
+
+        resolve({
+          data,
+          success: true,
+          statusCode: 200,
+          message: "Timesheet retrieved successfully",
+        });
+      }, 500);
     });
   }
 }
