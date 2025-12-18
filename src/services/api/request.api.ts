@@ -494,8 +494,6 @@ export class MockRequestApi implements RequestApi {
 
 // REST API Implementation
 export class RestRequestApi implements RequestApi {
-  private baseUrl = "http://localhost:3001/v1/requests";
-
   async getRequests(
     filter?: RequestFilter
   ): Promise<ApiResponse<Page<Request>>> {
@@ -512,43 +510,43 @@ export class RestRequestApi implements RequestApi {
     if (filter?.sortBy) params.append("sortBy", filter.sortBy);
     if (filter?.sortOrder) params.append("sortOrder", filter.sortOrder);
 
-    return apiClient.get(`${this.baseUrl}?${params.toString()}`);
+    return apiClient.get(`/requests?${params.toString()}`);
   }
 
   async getRequestById(requestId: string): Promise<ApiResponse<Request>> {
     const { default: apiClient } = await import("./api.client");
-    return apiClient.get(`${this.baseUrl}/${requestId}`);
+    return apiClient.get(`/requests/${requestId}`);
   }
 
   async createLeaveRequest(
     data: CreateLeaveRequestDTO
   ): Promise<ApiResponse<Request>> {
     const { default: apiClient } = await import("./api.client");
-    return apiClient.post(`${this.baseUrl}/leave`, data);
+    return apiClient.post(`/requests/leave`, data);
   }
 
   async createWfhRequest(
     data: CreateWfhRequestDTO
   ): Promise<ApiResponse<Request>> {
     const { default: apiClient } = await import("./api.client");
-    return apiClient.post(`${this.baseUrl}/wfh`, data);
+    return apiClient.post(`/requests/wfh`, data);
   }
 
   async createCheckOutRequest(
     data: CreateCheckOutRequestDTO
   ): Promise<ApiResponse<Request>> {
     const { default: apiClient } = await import("./api.client");
-    return apiClient.post(`${this.baseUrl}/check-out`, data);
+    return apiClient.post(`/requests/check-out`, data);
   }
 
   async cancelRequest(requestId: string): Promise<ApiResponse<null>> {
     const { default: apiClient } = await import("./api.client");
-    return apiClient.patch(`${this.baseUrl}/${requestId}/cancel`);
+    return apiClient.patch(`/requests/${requestId}/cancel`);
   }
 
   async approveRequest(requestId: string): Promise<ApiResponse<Request>> {
     const { default: apiClient } = await import("./api.client");
-    return apiClient.patch(`${this.baseUrl}/${requestId}/approve`);
+    return apiClient.patch(`/requests/${requestId}/approve`);
   }
 
   async rejectRequest(
@@ -556,12 +554,12 @@ export class RestRequestApi implements RequestApi {
     reason: string
   ): Promise<ApiResponse<Request>> {
     const { default: apiClient } = await import("./api.client");
-    return apiClient.patch(`${this.baseUrl}/${requestId}/reject`, { reason });
+    return apiClient.patch(`/requests/${requestId}/reject`, { reason });
   }
 
   async getRemainingLeaveDays(): Promise<ApiResponse<RemainingLeaveDays>> {
     const { default: apiClient } = await import("./api.client");
-    return apiClient.get(`${this.baseUrl}/remaining-leave-days`);
+    return apiClient.get(`/requests/remaining-leave-days`);
   }
 }
 
