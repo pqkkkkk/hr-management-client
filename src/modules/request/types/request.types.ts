@@ -1,35 +1,35 @@
 // Enums
 export enum RequestType {
-  CHECK_IN = 'CHECK_IN',
-  CHECK_OUT = 'CHECK_OUT',
-  TIMESHEET = 'TIMESHEET',
-  LEAVE = 'LEAVE',
-  WFH = 'WFH'
+  CHECK_IN = "CHECK_IN",
+  CHECK_OUT = "CHECK_OUT",
+  TIMESHEET = "TIMESHEET",
+  LEAVE = "LEAVE",
+  WFH = "WFH",
 }
 
 export enum RequestStatus {
-  PENDING = 'PENDING',
-  APPROVED = 'APPROVED',
-  REJECTED = 'REJECTED',
-  CANCELLED = 'CANCELLED',
-  PROCESSING = 'PROCESSING'
+  PENDING = "PENDING",
+  APPROVED = "APPROVED",
+  REJECTED = "REJECTED",
+  CANCELLED = "CANCELLED",
+  PROCESSING = "PROCESSING",
 }
 
 export enum LeaveType {
-  ANNUAL = 'ANNUAL',
-  SICK = 'SICK',
-  UNPAID = 'UNPAID',
-  MATERNITY = 'MATERNITY',
-  PATERNITY = 'PATERNITY',
-  BEREAVEMENT = 'BEREAVEMENT',
-  MARRIAGE = 'MARRIAGE',
-  OTHER = 'OTHER'
+  ANNUAL = "ANNUAL",
+  SICK = "SICK",
+  UNPAID = "UNPAID",
+  MATERNITY = "MATERNITY",
+  PATERNITY = "PATERNITY",
+  BEREAVEMENT = "BEREAVEMENT",
+  MARRIAGE = "MARRIAGE",
+  OTHER = "OTHER",
 }
 
 export enum ShiftType {
-  FULL_DAY = 'FULL_DAY',
-  MORNING = 'MORNING',
-  AFTERNOON = 'AFTERNOON'
+  FULL_DAY = "FULL_DAY",
+  MORNING = "MORNING",
+  AFTERNOON = "AFTERNOON",
 }
 
 // Date types
@@ -100,7 +100,7 @@ export interface Request {
   processedAt?: string; // ISO datetime string
   createdAt: string; // ISO datetime string
   updatedAt: string; // ISO datetime string
-  
+
   // Additional info (only one will be populated based on requestType)
   additionalLeaveInfo?: AdditionalLeaveInfo;
   additionalWfhInfo?: AdditionalWfhInfo;
@@ -148,7 +148,7 @@ export interface RequestFilter {
   startDate?: string;
   endDate?: string;
   sortBy?: string;
-  sortOrder?: 'ASC' | 'DESC';
+  sortOrder?: "ASC" | "DESC";
 }
 
 export interface RemainingLeaveDays {
@@ -159,34 +159,71 @@ export interface RemainingLeaveDays {
 
 // Options for selects
 export const leaveTypeOptions = [
-  { value: LeaveType.ANNUAL, label: 'Nghỉ phép năm' },
-  { value: LeaveType.SICK, label: 'Nghỉ ốm' },
-  { value: LeaveType.UNPAID, label: 'Nghỉ không lương' },
-  { value: LeaveType.MATERNITY, label: 'Nghỉ thai sản' },
-  { value: LeaveType.PATERNITY, label: 'Nghỉ chăm con' },
-  { value: LeaveType.BEREAVEMENT, label: 'Nghỉ tang' },
-  { value: LeaveType.MARRIAGE, label: 'Nghỉ cưới' },
-  { value: LeaveType.OTHER, label: 'Khác' }
+  { value: LeaveType.ANNUAL, label: "Nghỉ phép năm" },
+  { value: LeaveType.SICK, label: "Nghỉ ốm" },
+  { value: LeaveType.UNPAID, label: "Nghỉ không lương" },
+  { value: LeaveType.MATERNITY, label: "Nghỉ thai sản" },
+  { value: LeaveType.PATERNITY, label: "Nghỉ chăm con" },
+  { value: LeaveType.BEREAVEMENT, label: "Nghỉ tang" },
+  { value: LeaveType.MARRIAGE, label: "Nghỉ cưới" },
+  { value: LeaveType.OTHER, label: "Khác" },
 ];
 
 export const requestStatusOptions = [
-  { value: RequestStatus.PENDING, label: 'Chờ duyệt' },
-  { value: RequestStatus.APPROVED, label: 'Đã duyệt' },
-  { value: RequestStatus.REJECTED, label: 'Từ chối' },
-  { value: RequestStatus.CANCELLED, label: 'Đã hủy' },
-  { value: RequestStatus.PROCESSING, label: 'Đang xử lý' }
+  { value: RequestStatus.PENDING, label: "Chờ duyệt" },
+  { value: RequestStatus.APPROVED, label: "Đã duyệt" },
+  { value: RequestStatus.REJECTED, label: "Từ chối" },
+  { value: RequestStatus.CANCELLED, label: "Đã hủy" },
+  { value: RequestStatus.PROCESSING, label: "Đang xử lý" },
 ];
 
 export const requestTypeOptions = [
-  { value: RequestType.LEAVE, label: 'Nghỉ phép' },
-  { value: RequestType.WFH, label: 'Làm việc từ xa' },
-  { value: RequestType.CHECK_IN, label: 'Chấm công vào' },
-  { value: RequestType.CHECK_OUT, label: 'Chấm công ra' },
-  { value: RequestType.TIMESHEET, label: 'Chỉnh sửa chấm công' }
+  { value: RequestType.LEAVE, label: "Nghỉ phép" },
+  { value: RequestType.WFH, label: "Làm việc từ xa" },
+  { value: RequestType.CHECK_IN, label: "Chấm công vào" },
+  { value: RequestType.CHECK_OUT, label: "Chấm công ra" },
+  { value: RequestType.TIMESHEET, label: "Chỉnh sửa chấm công" },
 ];
 
 export const shiftTypeOptions = [
-  { value: ShiftType.FULL_DAY, label: 'Cả ngày' },
-  { value: ShiftType.MORNING, label: 'Buổi sáng' },
-  { value: ShiftType.AFTERNOON, label: 'Buổi chiều' }
+  { value: ShiftType.FULL_DAY, label: "Cả ngày" },
+  { value: ShiftType.MORNING, label: "Buổi sáng" },
+  { value: ShiftType.AFTERNOON, label: "Buổi chiều" },
 ];
+
+// Timesheet related types
+export interface TimesheetDailyEntry {
+  dailyTsId: string;
+  date: string;
+  morningStatus: string;
+  afternoonStatus: string;
+  morningWfh: boolean;
+  afternoonWfh: boolean;
+  totalWorkCredit: number;
+  checkInTime?: string;
+  checkOutTime?: string;
+  lateMinutes?: number;
+  earlyLeaveMinutes?: number;
+  overtimeMinutes?: number;
+  isFinalized?: boolean;
+  employeeId?: string;
+  employeeName?: string;
+}
+
+export interface TimesheetSummary {
+  totalDays: number;
+  morningPresentCount: number;
+  afternoonPresentCount: number;
+  lateDaysCount: number;
+  totalLateMinutes: number;
+  totalOvertimeMinutes: number;
+  totalWorkCredit: number;
+}
+
+export interface TimesheetResponse {
+  employeeId: string;
+  employeeName: string;
+  yearMonth: string; // YYYY-MM
+  timesheets: TimesheetDailyEntry[];
+  summary: TimesheetSummary;
+}

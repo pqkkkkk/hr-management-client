@@ -22,9 +22,6 @@ const ErrorState: React.FC = () => {
         <h3 className="text-lg font-semibold text-gray-900 mb-1">
           Không thể tải dữ liệu
         </h3>
-        <p className="text-sm text-gray-500">
-          Đã xảy ra lỗi khi tải danh sách yêu cầu. Vui lòng thử lại sau.
-        </p>
       </div>
     </div>
   );

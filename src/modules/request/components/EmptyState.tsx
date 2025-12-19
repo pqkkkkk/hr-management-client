@@ -44,11 +44,8 @@ const EmptyState: React.FC = () => {
           </svg>
         </div>
         <h3 className="text-lg font-semibold text-gray-900 mb-1">
-          Không có yêu cầu nào thỏa bộ lọc này
+          Không có dữ liệu
         </h3>
-        <p className="text-sm text-gray-500">
-          Hãy thử thay đổi bộ lọc để tìm kiếm yêu cầu khác.
-        </p>
       </div>
     </div>
   );

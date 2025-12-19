@@ -11,6 +11,10 @@ import { leaveTypeOptions, shiftTypeOptions } from "../types/request.types";
 import { formatDate } from "shared/utils/date-utils";
 import ConfirmationApprove from "../components/ConfirmationApprove";
 import ConfirmationReject from "../components/ConfirmationReject";
+import DelegationForm, {
+  CreateDelegationRequest,
+} from "../components/DelegationForm";
+import { toast } from "react-toastify";
 
 const Badge: React.FC<{ status?: RequestStatus }> = ({ status }) => {
   const classMap: Record<string, string> = {
@@ -66,6 +70,7 @@ const RequestDetailPage: React.FC = () => {
 
   const [showApproveModal, setShowApproveModal] = useState(false);
   const [showRejectModal, setShowRejectModal] = useState(false);
+  const [isDelegateOpen, setIsDelegateOpen] = useState(false);
 
   const openApprove = () => setShowApproveModal(true);
   const closeApprove = () => setShowApproveModal(false);
@@ -429,6 +434,28 @@ const RequestDetailPage: React.FC = () => {
                   {request.status === RequestStatus.PENDING ? (
                     <>
                       <button
+                        onClick={() => setIsDelegateOpen(true)}
+                        className="px-3 py-2 flex items-center justify-center border rounded text-blue-600 bg-white"
+                        title="Ủy quyền"
+                      >
+                        <svg
+                          className="w-4 h-4"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          aria-hidden
+                        >
+                          <path
+                            d="M12 11c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM4 20v-1c0-2.5 4-3.5 8-3.5s8 1 8 3.5V20"
+                            stroke="currentColor"
+                            strokeWidth="1.5"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          />
+                        </svg>
+                        Ủy quyền
+                      </button>
+
+                      <button
                         onClick={openReject}
                         className="px-4 py-2 bg-red-600 text-white rounded inline-flex items-center gap-2"
                       >
@@ -484,6 +511,23 @@ const RequestDetailPage: React.FC = () => {
                   )}
                 </div>
               </div>
+
+              <DelegationForm
+                isOpen={isDelegateOpen}
+                onClose={() => setIsDelegateOpen(false)}
+                onSubmit={(data: CreateDelegationRequest) => {
+                  // For now just show a toast and notify other parts of the app
+                  toast.success(`Ủy quyền cho ${data.delegateToId} thành công`);
+                  try {
+                    window.dispatchEvent(
+                      new CustomEvent("delegation-created", {
+                        detail: { requestId: request?.requestId, ...data },
+                      })
+                    );
+                  } catch {}
+                  setIsDelegateOpen(false);
+                }}
+              />
             </div>
           ) : (
             <div className="p-8 text-center text-gray-600">
