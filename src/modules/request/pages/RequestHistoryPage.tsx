@@ -320,7 +320,7 @@ const RequestHistoryPage: React.FC = () => {
               <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
                 <path d="M10 4V16M4 10H16" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
-              Tạo Yêu cầu Mới
+              Gửi Yêu cầu Mới
             </button>
           </div>
 

@@ -3,6 +3,8 @@ export type ApiType = 'REST' | 'MOCK';
 
 export type UserRole = 'EMPLOYEE' | 'MANAGER' | 'HR' | 'ADMIN';
 
+export const USER_ROLES: UserRole[] = ['EMPLOYEE', 'MANAGER', 'HR', 'ADMIN'];
+
 export type ActivityStatus = 'UPCOMING' | 'ONGOING' | 'COMPLETED';
 
 export type UserStatus = 'ACTIVE' | 'INACTIVE' | 'ON_LEAVE';

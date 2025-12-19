@@ -386,19 +386,6 @@ const CheckOutRequestForm: React.FC<CheckoutModalProps> = ({
     <div className="min-h-screen bg-gray-100 flex items-start justify-center py-12 px-4">
       <div className="w-full max-w-lg">
         {formContent}
-
-        {/* Success toast */}
-        {success && (
-          <div className="fixed right-6 bottom-6 bg-green-600 text-white rounded-lg shadow-lg px-4 py-3 flex items-start gap-3">
-            <div className="text-sm">Yêu cầu check-out của bạn đã được gửi.</div>
-            <button
-              className="ml-3 opacity-90"
-              onClick={() => setSuccess(false)}
-            >
-              ✕
-            </button>
-          </div>
-        )}
       </div>
     </div>
   );
