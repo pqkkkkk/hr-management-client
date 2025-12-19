@@ -131,6 +131,13 @@ export interface RejectLeaveRequestDTO {
   reason: string;
 }
 
+export interface CreateCheckOutRequestDTO {
+  title?: string;
+  userReason?: string;
+  desiredCheckOutTime: string;
+  attachmentUrl?: string;
+}
+
 // Filter and pagination
 export interface RequestFilter {
   page?: number;
