@@ -603,6 +603,9 @@ export class MockRequestApi implements RequestApi {
 
 // REST API Implementation
 export class RestRequestApi implements RequestApi {
+  getTimesheet(employeeId: string, yearMonth: string): Promise<ApiResponse<TimesheetResponse>> {
+    throw new Error("Method not implemented.");
+  }
   async getRequests(
     filter?: RequestFilter
   ): Promise<ApiResponse<Page<Request>>> {

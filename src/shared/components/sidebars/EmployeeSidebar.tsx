@@ -47,13 +47,13 @@ const EmployeeSidebar: React.FC = () => {
                 </NavLink>
               </li>
               <li>
-                <NavLink to="/requests/create/leave" className={navLinkClass}>
+                <NavLink to="/requests/create" className={navLinkClass}>
                   <FileText className="w-5 h-5" />
-                  <span>Tạo yêu cầu nghỉ phép</span>
+                  <span>Gửi yêu cầu</span>
                 </NavLink>
               </li>
               <li>
-                <NavLink to="/requests/attendance" className={navLinkClass}>
+                <NavLink to="/requests/timesheet" className={navLinkClass}>
                   <FileText className="w-5 h-5" />
                   <span>Bảng chấm công</span>
                 </NavLink>
