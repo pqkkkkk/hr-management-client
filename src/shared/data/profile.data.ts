@@ -440,3 +440,25 @@ export const mockEmployee: User = {
   updatedAt: new Date().toISOString(),
   departmentId: "DPT03",
 };
+
+export const mockManager: User = {
+  userId: "u2b3c4d5-f6a7-8901-bcde-f12345678901",
+  fullName: "Tran Thi Binh",
+  email: "tranthibinh@company.com",
+  role: "MANAGER",
+  status: "ACTIVE",
+  gender: "Nữ",
+  position: "PROJECT_MANAGER",
+  joinDate: "2022-03-10",
+  identityCardNumber: "001234567891",
+  phoneNumber: "0902345678",
+  dateOfBirth: "1988-08-15",
+  address: "456 Nguyen Hue Street, District 1, Ho Chi Minh City",
+  bankAccount: "2345678901234",
+  bankName: "Techcombank",
+  createdAt: "2025-11-23T10:08:49.231471",
+  updatedAt: "2025-11-23T10:08:49.231471",
+  departmentId: "d1a2b3c4-e5f6-7890-abcd-ef1234567890",
+  departmentName: "Engineering",
+};
+

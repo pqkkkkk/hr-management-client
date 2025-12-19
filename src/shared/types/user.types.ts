@@ -28,6 +28,7 @@ export interface Department {
 export interface SignInRequest {
   email: string;
   password: string;
+  role: UserRole;
 }
 
 export interface SignInResponse {
