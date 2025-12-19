@@ -132,7 +132,7 @@ export interface RejectLeaveRequestDTO {
 }
 
 export interface CreateCheckOutRequestDTO {
-  title: string;
+  title?: string;
   userReason?: string;
   desiredCheckOutTime: string;
   attachmentUrl?: string;
