@@ -9,6 +9,7 @@ import {
   RequestStatus,
   LeaveType,
   ShiftType,
+  CreateCheckOutRequestDTO
 } from "modules/request/types/request.types";
 
 export interface RequestApi {
@@ -18,6 +19,9 @@ export interface RequestApi {
     data: CreateLeaveRequestDTO
   ): Promise<ApiResponse<Request>>;
   createWfhRequest(data: CreateWfhRequestDTO): Promise<ApiResponse<Request>>;
+  createCheckOutRequest(
+    data: CreateCheckOutRequestDTO
+  ): Promise<ApiResponse<Request>>;
   cancelRequest(requestId: string): Promise<ApiResponse<null>>;
   approveRequest(requestId: string): Promise<ApiResponse<Request>>;
   rejectRequest(
@@ -289,6 +293,83 @@ export class MockRequestApi implements RequestApi {
     });
   }
 
+  async createCheckOutRequest(
+    data: CreateCheckOutRequestDTO
+  ): Promise<ApiResponse<Request>> {
+    return new Promise((resolve, reject) => {
+      setTimeout(() => {
+        // Check if there's a check-in request for the same date
+        const checkOutDate = new Date(data.desiredCheckOutTime).toISOString().split('T')[0];
+        const hasCheckIn = this.mockRequests.some((req) => {
+          const reqDate = req.createdAt.split('T')[0];
+          return (
+            req.requestType === RequestType.CHECK_IN &&
+            reqDate === checkOutDate &&
+            (req.status === RequestStatus.APPROVED || req.status === RequestStatus.PENDING)
+          );
+        });
+
+        if (!hasCheckIn) {
+          reject({
+            success: false,
+            statusCode: 400,
+            message: "Phải có yêu cầu check-in đã được chấp thuận hoặc đang chờ trong cùng ngày",
+          });
+          return;
+        }
+
+        // Check for duplicate check-out
+        const hasDuplicateCheckOut = this.mockRequests.some((req) => {
+          const reqDate = req.createdAt.split('T')[0];
+          return (
+            req.requestType === RequestType.CHECK_OUT &&
+            reqDate === checkOutDate &&
+            req.status !== RequestStatus.CANCELLED &&
+            req.status !== RequestStatus.REJECTED
+          );
+        });
+
+        if (hasDuplicateCheckOut) {
+          reject({
+            success: false,
+            statusCode: 400,
+            message: "Đã tồn tại yêu cầu check-out cho ngày này",
+          });
+          return;
+        }
+
+        const newRequest: Request = {
+          requestId: `REQ${String(this.mockRequests.length + 1).padStart(
+            3,
+            "0"
+          )}`,
+          requestType: RequestType.CHECK_OUT,
+          status: RequestStatus.PENDING,
+          title: data.title,
+          userReason: data.userReason,
+          attachmentUrl: data.attachmentUrl,
+          employeeId: "NV001", 
+          employeeName: "Nguyễn Văn A",
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          additionalCheckOutInfo: {
+            desiredCheckOutTime: data.desiredCheckOutTime,
+            currentCheckOutTime: new Date().toISOString(),
+          },
+        };
+
+        this.mockRequests.unshift(newRequest);
+
+        resolve({
+          data: newRequest,
+          success: true,
+          statusCode: 201,
+          message: "Check-out request created successfully",
+        });
+      }, 800);
+    });
+  }
+
   async cancelRequest(requestId: string): Promise<ApiResponse<null>> {
     return new Promise((resolve, reject) => {
       setTimeout(() => {
@@ -411,5 +492,77 @@ export class MockRequestApi implements RequestApi {
   }
 }
 
-// Export singleton instance
+// REST API Implementation
+export class RestRequestApi implements RequestApi {
+  async getRequests(
+    filter?: RequestFilter
+  ): Promise<ApiResponse<Page<Request>>> {
+    const { default: apiClient } = await import("./api.client");
+    const params = new URLSearchParams();
+
+    if (filter?.page) params.append("page", String(filter.page - 1));
+    if (filter?.pageSize) params.append("size", String(filter.pageSize));
+    if (filter?.requestType) params.append("requestType", filter.requestType);
+    if (filter?.status) params.append("status", filter.status);
+    if (filter?.employeeId) params.append("employeeId", filter.employeeId);
+    if (filter?.startDate) params.append("startDate", filter.startDate);
+    if (filter?.endDate) params.append("endDate", filter.endDate);
+    if (filter?.sortBy) params.append("sortBy", filter.sortBy);
+    if (filter?.sortOrder) params.append("sortOrder", filter.sortOrder);
+
+    return apiClient.get(`/requests?${params.toString()}`);
+  }
+
+  async getRequestById(requestId: string): Promise<ApiResponse<Request>> {
+    const { default: apiClient } = await import("./api.client");
+    return apiClient.get(`/requests/${requestId}`);
+  }
+
+  async createLeaveRequest(
+    data: CreateLeaveRequestDTO
+  ): Promise<ApiResponse<Request>> {
+    const { default: apiClient } = await import("./api.client");
+    return apiClient.post(`/requests/leave`, data);
+  }
+
+  async createWfhRequest(
+    data: CreateWfhRequestDTO
+  ): Promise<ApiResponse<Request>> {
+    const { default: apiClient } = await import("./api.client");
+    return apiClient.post(`/requests/wfh`, data);
+  }
+
+  async createCheckOutRequest(
+    data: CreateCheckOutRequestDTO
+  ): Promise<ApiResponse<Request>> {
+    const { default: apiClient } = await import("./api.client");
+    return apiClient.post(`/requests/check-out`, data);
+  }
+
+  async cancelRequest(requestId: string): Promise<ApiResponse<null>> {
+    const { default: apiClient } = await import("./api.client");
+    return apiClient.patch(`/requests/${requestId}/cancel`);
+  }
+
+  async approveRequest(requestId: string): Promise<ApiResponse<Request>> {
+    const { default: apiClient } = await import("./api.client");
+    return apiClient.patch(`/requests/${requestId}/approve`);
+  }
+
+  async rejectRequest(
+    requestId: string,
+    reason: string
+  ): Promise<ApiResponse<Request>> {
+    const { default: apiClient } = await import("./api.client");
+    return apiClient.patch(`/requests/${requestId}/reject`, { reason });
+  }
+
+  async getRemainingLeaveDays(): Promise<ApiResponse<RemainingLeaveDays>> {
+    const { default: apiClient } = await import("./api.client");
+    return apiClient.get(`/requests/remaining-leave-days`);
+  }
+}
+
+// Export singleton instances
 export const mockRequestApi = new MockRequestApi();
+export const restRequestApi = new RestRequestApi();
