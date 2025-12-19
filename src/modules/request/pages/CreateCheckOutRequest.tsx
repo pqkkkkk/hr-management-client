@@ -1,30 +1,27 @@
 import React, { useState, useEffect, useRef } from "react";
-import { mockRequestApi } from "services/api/request.api";
-import { RequestType, RequestStatus } from "modules/request/types/request.types";
 import { formatDateForInput, formatTimeForInput } from "shared/utils/date-utils";
+import { useApi } from "contexts/ApiContext";
+import { toast } from "react-toastify";
+import { CreateCheckOutRequestDTO } from "../types/request.types";
+import { useNavigate } from "react-router-dom";
 
 interface CheckoutModalProps {
   isModalMode?: boolean;
   open?: boolean;
   onClose?: () => void;
-  onSubmit?: (data: {
-    date: string;
-    time: string;
-    reason: string;
-    files?: File[];
-  }) => Promise<void>;
 }
 
 const CheckOutRequestForm: React.FC<CheckoutModalProps> = ({ 
   isModalMode = false, 
   open, 
-  onClose, 
-  onSubmit 
+  onClose 
 }) => {
+  const { requestApi } = useApi();
+  const navigate = useNavigate();
   const [date, setDate] = useState("");
   const [time, setTime] = useState("");
   const [reason, setReason] = useState("");
-  const [files, setFiles] = useState<File[]>([]);
+  const [file, setFile] = useState<File | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
   const [dragOver, setDragOver] = useState(false);
@@ -58,106 +55,97 @@ const CheckOutRequestForm: React.FC<CheckoutModalProps> = ({
     if (!date) {
       newErrors.date = "Vui lòng chọn ngày";
     } else {
-      // Kiểm tra không được chọn ngày trong tương lai
       const selectedDate = new Date(date);
       const today = new Date();
       today.setHours(0, 0, 0, 0);
       selectedDate.setHours(0, 0, 0, 0);
-      
+
       if (selectedDate > today) {
         newErrors.date = "Không được chọn ngày trong tương lai";
       }
     }
 
-    // Kiểm tra giờ
     if (!time) {
       newErrors.time = "Vui lòng chọn giờ";
     } else if (date && !newErrors.date) {
-      // Kiểm tra không được chọn thời điểm trong tương lai
       const selectedDateTime = new Date(`${date}T${time}`);
       const now = new Date();
-      
+
       if (selectedDateTime > now) {
         newErrors.time = "Không được chọn thời điểm trong tương lai";
       }
     }
 
     // Bắt buộc nhập lý do nếu check-out trước 17:00
-    if (isBeforeSeventeen && !reason.trim()) {
+    if (time && time < "17:00" && !reason.trim()) {
       newErrors.reason = "Bạn phải nhập lý do nếu check-out trước 17h";
-    }
-
-    if (date && !newErrors.date) {
-      try {
-        const response = await mockRequestApi.getRequests({
-          page: 1,
-          pageSize: 100,
-          requestType: RequestType.CHECK_IN,
-        });
-
-        if (response.success) {
-          const selectedDateStr = date;
-          const checkInRequests = response.data.content.filter((req) => {
-            const reqDate = req.createdAt.split('T')[0];
-            return (
-              reqDate === selectedDateStr &&
-              (req.status === RequestStatus.APPROVED || 
-               req.status === RequestStatus.PENDING)
-            );
-          });
-
-          if (checkInRequests.length === 0) {
-            newErrors.date = "Phải có yêu cầu check-in đã được chấp thuận hoặc đang chờ trong cùng ngày";
-          }
-        }
-      } catch (error) {
-        console.error("Error checking check-in requests:", error);
-      }
     }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  const onFiles = (fList: FileList | null) => {
+  const onFileSelect = (fList: FileList | null) => {
     if (!fList) return;
     const arr = Array.from(fList);
-    const filtered = arr.filter((f) => f.size <= 5 * 1024 * 1024);
-    setFiles((prev) => [...prev, ...filtered]);
+
+    setFile(arr[0]);
   };
 
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     setDragOver(false);
-    onFiles(e.dataTransfer.files);
+    onFileSelect(e.dataTransfer.files);
   };
 
-  const removeFile = (index: number) => {
-    setFiles((f) => f.filter((_, i) => i !== index));
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async () => {
     const isValid = await validate();
     if (!isValid) return;
 
     try {
       setLoading(true);
-      if (onSubmit) {
-        await onSubmit({ date, time, reason, files });
+
+      // Upload attachment file if exists to get attachmentUrl first
+      
+      const desiredCheckOutTime = `${date}T${time}:00`;
+      const attachmentUrl = file ? `uploads/${file.name}` : undefined;
+
+      const requestData: CreateCheckOutRequestDTO = {
+        title: time < "17:00"
+          ? `Yêu cầu check-out sớm - ${date} ${time}`
+          : `Yêu cầu check-out - ${date} ${time}`,
+        userReason: reason || undefined,
+        desiredCheckOutTime,
+        attachmentUrl,
+      };
+
+      const response = await requestApi.createCheckOutRequest(requestData);
+
+      if (response.success) {
+        setLoading(false);
+        handleSuccess();
       } else {
-        // Default behavior for page mode
-        console.log("Submit data:", { date, time, reason, files });
+        throw new Error(response.message || "Có lỗi xảy ra khi tạo yêu cầu");
       }
-      setSuccess(true);
-      setReason("");
-      setFiles([]);
+    } catch (error: any) {
       setLoading(false);
-      onClose?.();
-    } catch (e) {
-      setLoading(false);
-      setErrors({ ...errors, submit: "Có lỗi xảy ra!" });
+      toast.error(error?.message || "Có lỗi xảy ra khi tạo yêu cầu check-out");
     }
+  };
+  
+  const handleSuccess = () => {
+    setDate("");
+    setTime("");
+    setReason("");
+    setFile(null);
+    setErrors({});
+
+    toast.success("Gửi yêu cầu check-out thành công!");
+
+    // Close modal
+    onClose?.();
+
+    navigate("/requests/history");
   };
 
   // Form content component
@@ -291,34 +279,31 @@ const CheckOutRequestForm: React.FC<CheckoutModalProps> = ({
           <input
             ref={fileInputRef}
             type="file"
-            multiple
-            onChange={(e) => onFiles(e.target.files)}
+            onChange={(e) => onFileSelect(e.target.files)}
             className="hidden"
             disabled={!isBeforeSeventeen || loading}
           />
         </div>
-        {files.length > 0 && (
+        {file && (
           <ul className="mt-3">
-            {files.map((f, i) => (
               <li
-                key={i}
+                key={file.name}
                 className="flex items-center justify-between bg-gray-50 border rounded px-3 py-2 text-sm mb-2"
               >
                 <div>
-                  <div className="font-medium">{f.name}</div>
+                  <div className="font-medium">{file.name}</div>
                   <div className="text-xs text-gray-500">
-                    {(f.size / 1024).toFixed(0)} KB
+                    {(file.size / 1024).toFixed(0)} KB
                   </div>
                 </div>
                 <button
                   type="button"
-                  onClick={() => removeFile(i)}
+                  onClick={() => setFile(null)}
                   className="text-red-500 text-sm"
                 >
                   Xóa
                 </button>
               </li>
-            ))}
           </ul>
         )}
       </div>
@@ -334,7 +319,7 @@ const CheckOutRequestForm: React.FC<CheckoutModalProps> = ({
             type="button"
             onClick={() => {
               setReason("");
-              setFiles([]);
+              setFile(null);
               setErrors({});
             }}
             className="px-4 py-2 border rounded bg-white"

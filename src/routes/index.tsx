@@ -7,7 +7,6 @@ import UnauthorizedPage from "shared/components/UnauthorizedPage";
 import Layout from "shared/components/Layout";
 import { ProfileRoutes } from "modules/profile/pages/profile.routes";
 import RequestRoutes from "modules/request/request.routes";
-
 // Placeholder components for routes that will be implemented later
 const PlaceholderPage: React.FC<{ title: string }> = ({ title }) => (
   <div className="bg-white rounded-lg shadow p-6">
