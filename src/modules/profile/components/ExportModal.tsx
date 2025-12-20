@@ -28,12 +28,12 @@ const ExportModal: React.FC<Props> = ({
           <label className="block text-sm mb-2">Định dạng</label>
           <select
             value={format}
-            onChange={(e) => setFormat(e.target.value as any)}
+            onChange={(e) => setFormat(e.target.value as SupportedFileFormat)}
             className="w-full rounded border px-2 py-1"
             disabled={loading}
           >
-            <option value="excel">Excel</option>
-            <option value="pdf">PDF</option>
+            <option value="EXCEL">EXCEL</option>
+            <option value="PDF">PDF</option>
           </select>
         </div>
 

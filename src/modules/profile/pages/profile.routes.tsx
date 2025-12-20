@@ -15,14 +15,14 @@ export const ProfileRoutes = (
         }
         />
         <Route path="users/:userId/for-hr" element={
-            <ProtectedRoute allowedRoles={["ADMIN", "HR"]}>
+            <ProtectedRoute allowedRoles={["ADMIN", "HR", "MANAGER"]}>
                 <EmployeeUpdatePage />
             </ProtectedRoute>
-        }/>
+        } />
         <Route path="users/:userId/for-employee" element={
             <ProtectedRoute allowedRoles={["EMPLOYEE", "MANAGER", "HR", "ADMIN"]}>
                 <EmployeePersonalUpdatePage />
             </ProtectedRoute>
-        }/>
+        } />
     </Route>
 )

@@ -1,13 +1,29 @@
-import React, { useState, useEffect } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { 
-  Request, 
+import { formatDate } from 'shared/utils/date-utils';
+import { useApi } from 'contexts/ApiContext';
+import { useQuery } from 'shared/hooks/use-query';
+import { useFetchList } from 'shared/hooks/use-fetch-list';
+import EmptyState from '../components/EmptyState';
+import ErrorState from '../components/ErrorState';
+import Pagination from '../components/Pagination';
+import {
+  Request,
   RequestStatus,
   RequestType,
   requestStatusOptions,
   requestTypeOptions,
+  RequestFilter,
 } from '../types/request.types';
-import { mockRequestApi } from 'services/api/request.api';
+import { useAuth } from 'contexts/AuthContext';
+
+// ==================== Types ====================
+export type Filters = {
+  dateFrom?: string;
+  dateTo?: string;
+  requestType?: RequestType | "";
+  status?: RequestStatus | "";
+};
 
 // ==================== RequestStatusBadge Component ====================
 interface RequestStatusBadgeProps {
@@ -46,51 +62,130 @@ const RequestStatusBadge: React.FC<RequestStatusBadgeProps> = ({ status }) => {
 };
 
 // ==================== FilterSection Component ====================
-const FilterSection: React.FC = () => {
+const FilterSection: React.FC<{
+  filters: Filters;
+  onChange: (f: Filters) => void;
+  onClear?: () => void;
+}> = ({ filters, onChange, onClear }) => {
   return (
-    <div className="px-6 py-3 border-t border-b border-gray-200 flex items-center gap-3 flex-wrap">
-      <div className="relative">
-        <select
-          className="h-9 px-4 pr-10 bg-gray-100 rounded-lg text-sm font-medium appearance-none focus:outline-none focus:ring-2 focus:ring-blue-500"
-        >
-          <option value="">Loại yêu cầu</option>
-          {requestTypeOptions.map((option) => (
-            <option key={option.value} value={option.value}>
-              {option.label}
-            </option>
-          ))}
-        </select>
-        <div className="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
-          <svg width="16" height="20" viewBox="0 0 16 20" fill="none">
-            <path d="M4 7L8 11L12 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-          </svg>
+    <div className="px-6 py-3 border-t border-b border-gray-200 flex items-center gap-3 flex-nowrap overflow-x-auto bg-white">
+      <div className="flex flex-col">
+        <label className="text-xl text-gray-600 mb-1">Ngày gửi</label>
+        <div className="flex items-center gap-2">
+          <input
+            type="date"
+            value={filters.dateFrom ?? ""}
+            onChange={(e) => onChange({ ...filters, dateFrom: e.target.value })}
+            className="h-9 px-3 bg-gray-100 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+          <span className="text-sm text-gray-400">—</span>
+          <input
+            type="date"
+            value={filters.dateTo ?? ""}
+            onChange={(e) => onChange({ ...filters, dateTo: e.target.value })}
+            className="h-9 px-3 bg-gray-100 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
         </div>
       </div>
 
-      <div className="relative">
-        <select
-          className="h-9 px-4 pr-10 bg-gray-100 rounded-lg text-sm font-medium appearance-none focus:outline-none focus:ring-2 focus:ring-blue-500"
-        >
-          <option value="">Trạng thái</option>
-          {requestStatusOptions.map((option) => (
-            <option key={option.value} value={option.value}>
-              {option.label}
-            </option>
-          ))}
-        </select>
-        <div className="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
-          <svg width="16" height="20" viewBox="0 0 16 20" fill="none">
-            <path d="M4 7L8 11L12 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-          </svg>
+      <div className="flex flex-col">
+        <label className="text-xl text-gray-600 mb-1">Loại yêu cầu</label>
+        <div className="relative">
+          <select
+            value={filters.requestType ?? ""}
+            onChange={(e) =>
+              onChange({
+                ...filters,
+                requestType: e.target.value as RequestType | "",
+              })
+            }
+            className="h-9 px-4 pr-10 bg-gray-100 rounded-lg text-sm font-medium appearance-none focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            <option value="">Tất cả</option>
+            {requestTypeOptions.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+          <div className="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
+            <svg width="16" height="20" viewBox="0 0 16 20" fill="none">
+              <path
+                d="M4 7L8 11L12 7"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+          </div>
         </div>
       </div>
 
-      <button className="h-9 px-3 flex items-center gap-2 text-sm font-medium text-blue-600 hover:bg-blue-50 rounded-lg">
-        <svg width="16" height="20" viewBox="0 0 16 20" fill="none">
-          <path d="M12 4L4 12M4 4L12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-        </svg>
-        Xóa bộ lọc
-      </button>
+      <div className="flex flex-col">
+        <label className="text-xl text-gray-600 mb-1">Trạng thái</label>
+        <div className="relative">
+          <select
+            value={filters.status ?? ""}
+            onChange={(e) =>
+              onChange({
+                ...filters,
+                status: e.target.value as RequestStatus | "",
+              })
+            }
+            className="h-9 px-4 pr-10 bg-gray-100 rounded-lg text-sm font-medium appearance-none focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            <option value="">Tất cả</option>
+            {requestStatusOptions.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+          <div className="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
+            <svg width="16" height="20" viewBox="0 0 16 20" fill="none">
+              <path
+                d="M4 7L8 11L12 7"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+          </div>
+        </div>
+      </div>
+
+      <div className="ml-auto flex items-center">
+        <button
+          onClick={() => {
+            onChange({
+              dateFrom: "",
+              dateTo: "",
+              requestType: "",
+              status: "",
+            });
+            if (onClear) onClear();
+          }}
+          className="h-9 px-3 flex items-center gap-2 text-sm font-medium text-blue-600 hover:bg-blue-50 rounded-lg"
+          aria-label="Xóa bộ lọc"
+        >
+          <svg
+            className="w-4 h-4 inline-block align-middle"
+            viewBox="0 0 16 16"
+            fill="none"
+            aria-hidden
+          >
+            <path
+              d="M12 4L4 12M4 4L12 12"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+            />
+          </svg>
+          <span className="align-middle">Xóa bộ lọc</span>
+        </button>
+      </div>
     </div>
   );
 };
@@ -98,20 +193,13 @@ const FilterSection: React.FC = () => {
 // ==================== RequestHistoryTable Component ====================
 interface RequestHistoryTableProps {
   requests: Request[];
+  onRowClick?: (requestId: string) => void;
 }
 
-const RequestHistoryTable: React.FC<RequestHistoryTableProps> = ({ requests }) => {
+const RequestHistoryTable: React.FC<RequestHistoryTableProps> = ({ requests, onRowClick }) => {
   const getRequestTypeLabel = (type: RequestType): string => {
     const option = requestTypeOptions.find(opt => opt.value === type);
     return option?.label || type;
-  };
-
-  const formatDate = (dateString: string): string => {
-    const date = new Date(dateString);
-    const day = String(date.getDate()).padStart(2, '0');
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const year = date.getFullYear();
-    return `${day}/${month}/${year}`;
   };
 
   return (
@@ -137,11 +225,18 @@ const RequestHistoryTable: React.FC<RequestHistoryTableProps> = ({ requests }) =
             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
               Ngày cập nhật
             </th>
+            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              Hành động
+            </th>
           </tr>
         </thead>
         <tbody>
           {requests.map((request) => (
-            <tr key={request.requestId} className="border-t border-gray-200 hover:bg-gray-50">
+            <tr
+              key={request.requestId}
+              className="border-t border-gray-200 hover:bg-gray-50 cursor-pointer"
+              onClick={() => onRowClick?.(request.requestId)}
+            >
               <td className="px-6 py-4">
                 <span className="text-sm font-medium text-gray-900">
                   {request.requestId}
@@ -170,6 +265,38 @@ const RequestHistoryTable: React.FC<RequestHistoryTableProps> = ({ requests }) =
                   {formatDate(request.updatedAt)}
                 </span>
               </td>
+              <td className="px-6 py-4">
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onRowClick?.(request.requestId);
+                  }}
+                  className="w-8 h-8 flex items-center justify-center border border-gray-200 text-gray-700 rounded hover:bg-gray-100"
+                  title="Xem chi tiết"
+                >
+                  <svg
+                    className="w-4 h-4"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    aria-hidden
+                  >
+                    <path
+                      d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"
+                      stroke="currentColor"
+                      strokeWidth="1.5"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                    <circle
+                      cx="12"
+                      cy="12"
+                      r="3"
+                      stroke="currentColor"
+                      strokeWidth="1.5"
+                    />
+                  </svg>
+                </button>
+              </td>
             </tr>
           ))}
         </tbody>
@@ -178,119 +305,67 @@ const RequestHistoryTable: React.FC<RequestHistoryTableProps> = ({ requests }) =
   );
 };
 
-// ==================== EmptyState Component ====================
-const EmptyState: React.FC = () => {
-  return (
-    <div className="px-6 py-20">
-      <div className="flex flex-col items-center justify-center">
-        <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
-          <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
-            <rect x="6" y="8" width="20" height="20" rx="2" stroke="currentColor" strokeWidth="2"/>
-            <line x1="6" y1="13" x2="26" y2="13" stroke="currentColor" strokeWidth="2"/>
-            <line x1="11" y1="6" x2="11" y2="10" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-            <line x1="21" y1="6" x2="21" y2="10" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-          </svg>
-        </div>
-        <h3 className="text-lg font-semibold text-gray-900 mb-1">
-          Chưa có yêu cầu nào
-        </h3>
-        <p className="text-sm text-gray-500">
-          Bạn chưa tạo yêu cầu nào. Hãy bắt đầu tạo yêu cầu mới.
-        </p>
-      </div>
-    </div>
-  );
-};
-
-// ==================== ErrorState Component ====================
-const ErrorState: React.FC = () => {
-  return (
-    <div className="px-6 py-20">
-      <div className="flex flex-col items-center justify-center">
-        <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mb-4">
-          <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
-            <circle cx="16" cy="16" r="12" stroke="#DC2626" strokeWidth="2"/>
-            <line x1="16" y1="10" x2="16" y2="18" stroke="#DC2626" strokeWidth="2" strokeLinecap="round"/>
-            <circle cx="16" cy="22" r="1" fill="#DC2626"/>
-          </svg>
-        </div>
-        <h3 className="text-lg font-semibold text-gray-900 mb-1">
-          Không thể tải dữ liệu
-        </h3>
-        <p className="text-sm text-gray-500">
-          Đã xảy ra lỗi khi tải danh sách yêu cầu. Vui lòng thử lại sau.
-        </p>
-      </div>
-    </div>
-  );
-};
-
-// ==================== PaginationSection Component ====================
-const PaginationSection: React.FC = () => {
-  return (
-    <div className="px-4 py-4 border-t border-gray-200 rounded-b-xl flex items-center justify-center">
-      <div className="flex items-center gap-1">
-        <button className="w-9 h-9 flex items-center justify-center rounded-md hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed">
-          <svg width="20" height="24" viewBox="0 0 20 24" fill="none">
-            <path d="M15 18L9 12L15 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-          </svg>
-        </button>
-        <button className="w-9 h-9 flex items-center justify-center rounded-md text-sm font-normal bg-blue-600 text-white font-bold">
-          1
-        </button>
-        <button className="w-9 h-9 flex items-center justify-center rounded-md text-sm font-normal text-gray-900 hover:bg-gray-100">
-          2
-        </button>
-        <button className="w-9 h-9 flex items-center justify-center rounded-md text-sm font-normal text-gray-900 hover:bg-gray-100">
-          3
-        </button>
-        <span className="w-9 h-9 flex items-center justify-center text-sm text-gray-900">
-          ...
-        </span>
-        <button className="w-9 h-9 flex items-center justify-center rounded-md text-sm font-normal text-gray-900 hover:bg-gray-100">
-          10
-        </button>
-        <button className="w-9 h-9 flex items-center justify-center rounded-md hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed">
-          <svg width="20" height="24" viewBox="0 0 20 24" fill="none">
-            <path d="M9 6L15 12L9 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-          </svg>
-        </button>
-      </div>
-    </div>
-  );
-};
-
 // ==================== Main Component ====================
 const RequestHistoryPage: React.FC = () => {
   const navigate = useNavigate();
-  const [requests, setRequests] = useState<Request[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(false);
+  const { requestApi } = useApi();
+  const { user } = useAuth();
+  const PAGE_SIZE = 5;
 
-  useEffect(() => {
-    const fetchRequests = async () => {
-      setLoading(true);
-      setError(false);
-      try {
-        const response = await mockRequestApi.getRequests({
-          page: 1,
-          pageSize: 100,
-        });
-        if (response.success) {
-          setRequests(response.data.content);
-        } else {
-          setError(true);
-        }
-      } catch (err) {
-        console.error('Failed to fetch requests:', err);
-        setError(true);
-      } finally {
-        setLoading(false);
-      }
-    };
+  // Sử dụng useQuery cho filter state
+  const { query, updateQuery, resetQuery } = useQuery<RequestFilter>({
+    currentPage: 1,
+    pageSize: PAGE_SIZE,
+    employeeId: user?.userId,
+  });
 
-    fetchRequests();
-  }, []);
+  // Sử dụng useFetchList để fetch data với server-side filtering
+  const fetchMyRequests = useMemo(
+    () => requestApi.getMyRequests.bind(requestApi),
+    [requestApi]
+  );
+
+  const {
+    data: requests,
+    page: pageData,
+    isFetching: loading,
+    error,
+  } = useFetchList<RequestFilter, Request>(fetchMyRequests, query);
+
+  // Handler cho filter changes
+  const handleFilterChange = useCallback(
+    (newFilters: Filters) => {
+      updateQuery({
+        currentPage: 1, // Reset về trang 1 khi filter thay đổi
+        type: newFilters.requestType ? (newFilters.requestType as RequestType) : undefined,
+        status: newFilters.status ? (newFilters.status as RequestStatus) : undefined,
+        startDate: newFilters.dateFrom || undefined,
+        endDate: newFilters.dateTo || undefined,
+      });
+    },
+    [updateQuery]
+  );
+
+  // Handler cho page changes
+  const handlePageChange = useCallback(
+    (newPage: number) => {
+      updateQuery({ currentPage: newPage });
+    },
+    [updateQuery]
+  );
+
+  // Handler cho clear filters
+  const handleClearFilters = useCallback(() => {
+    resetQuery();
+  }, [resetQuery]);
+
+  // Navigate to detail page
+  const handleRowClick = useCallback(
+    (requestId: string) => {
+      navigate(`/requests/${requestId}`);
+    },
+    [navigate]
+  );
 
   return (
     <div className="min-h-screen bg-gray-50 py-5 px-8">
@@ -299,10 +374,10 @@ const RequestHistoryPage: React.FC = () => {
         <div className="bg-white border-b border-gray-200 rounded-t-xl px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-              <rect x="3" y="4" width="18" height="18" rx="2" stroke="currentColor" strokeWidth="2"/>
-              <line x1="3" y1="9" x2="21" y2="9" stroke="currentColor" strokeWidth="2"/>
-              <line x1="8" y1="2" x2="8" y2="6" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-              <line x1="16" y1="2" x2="16" y2="6" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+              <rect x="3" y="4" width="18" height="18" rx="2" stroke="currentColor" strokeWidth="2" />
+              <line x1="3" y1="9" x2="21" y2="9" stroke="currentColor" strokeWidth="2" />
+              <line x1="8" y1="2" x2="8" y2="6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+              <line x1="16" y1="2" x2="16" y2="6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
             </svg>
             <h2 className="text-lg font-bold text-gray-900">Quản lý Yêu cầu</h2>
           </div>
@@ -318,22 +393,31 @@ const RequestHistoryPage: React.FC = () => {
               className="h-10 px-4 bg-blue-600 text-white text-sm font-bold rounded-lg hover:bg-blue-700 flex items-center gap-2"
             >
               <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-                <path d="M10 4V16M4 10H16" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M10 4V16M4 10H16" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
-              Gửi Yêu cầu Mới
+              Gửi Yêu cầu Mới
             </button>
           </div>
 
           {/* Filters */}
-          <FilterSection />
+          <FilterSection
+            filters={{
+              dateFrom: query.startDate,
+              dateTo: query.endDate,
+              requestType: query.type,
+              status: query.status,
+            }}
+            onChange={handleFilterChange}
+            onClear={handleClearFilters}
+          />
 
           {/* Table or States */}
           {loading ? (
             <div className="px-6 py-20 text-center">
               <div className="flex justify-center">
                 <svg className="animate-spin h-8 w-8 text-blue-600" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none"/>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"/>
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                 </svg>
               </div>
             </div>
@@ -343,8 +427,20 @@ const RequestHistoryPage: React.FC = () => {
             <EmptyState />
           ) : (
             <>
-              <RequestHistoryTable requests={requests} />
-              <PaginationSection />
+              <RequestHistoryTable
+                requests={requests}
+                onRowClick={handleRowClick}
+              />
+              {pageData && (
+                <div className="px-6">
+                  <Pagination
+                    page={query.currentPage || 1}
+                    total={pageData.totalElements}
+                    limit={PAGE_SIZE}
+                    setPage={handlePageChange}
+                  />
+                </div>
+              )}
             </>
           )}
         </div>

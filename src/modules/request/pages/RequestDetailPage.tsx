@@ -1,19 +1,19 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { mockRequestApi } from "services/api/request.api";
+import { useApi } from "contexts/ApiContext";
+import { useAuth } from "contexts/AuthContext";
 import {
   Request,
   RequestStatus,
   requestTypeOptions,
   requestStatusOptions,
+  CreateDelegationRequest,
 } from "../types/request.types";
 import { leaveTypeOptions, shiftTypeOptions } from "../types/request.types";
 import { formatDate } from "shared/utils/date-utils";
 import ConfirmationApprove from "../components/ConfirmationApprove";
 import ConfirmationReject from "../components/ConfirmationReject";
-import DelegationForm, {
-  CreateDelegationRequest,
-} from "../components/DelegationForm";
+import DelegationForm from "../components/DelegationForm";
 import { toast } from "react-toastify";
 
 const Badge: React.FC<{ status?: RequestStatus }> = ({ status }) => {
@@ -29,9 +29,8 @@ const Badge: React.FC<{ status?: RequestStatus }> = ({ status }) => {
   const label = opt?.label ?? status;
   return (
     <span
-      className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
-        classMap[status] || "bg-gray-100 text-gray-800"
-      }`}
+      className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${classMap[status] || "bg-gray-100 text-gray-800"
+        }`}
     >
       {label}
     </span>
@@ -41,6 +40,8 @@ const Badge: React.FC<{ status?: RequestStatus }> = ({ status }) => {
 const RequestDetailPage: React.FC = () => {
   const { requestId } = useParams();
   const navigate = useNavigate();
+  const { requestApi } = useApi();
+  const { user } = useAuth();
   const [request, setRequest] = useState<Request | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -51,7 +52,7 @@ const RequestDetailPage: React.FC = () => {
       setError(null);
       try {
         if (!requestId) throw new Error("Missing request id");
-        const res = await mockRequestApi.getRequestById(requestId);
+        const res = await requestApi.getRequestById(requestId);
         if (res && res.success) {
           setRequest(res.data);
         } else {
@@ -64,7 +65,7 @@ const RequestDetailPage: React.FC = () => {
       }
     };
     fetch();
-  }, [requestId]);
+  }, [requestId, requestApi]);
 
   const handleClose = () => navigate(-1);
 
@@ -78,37 +79,40 @@ const RequestDetailPage: React.FC = () => {
   const closeReject = () => setShowRejectModal(false);
 
   const doApprove = async () => {
-    if (!request) return;
+    if (!request || !user) return;
     try {
-      const res = await mockRequestApi.approveRequest(request.requestId);
+      const res = await requestApi.approveRequest(request.requestId, user.userId);
+
       if (res && res.success) setRequest(res.data);
-      // notify other parts of app
-      try {
-        window.dispatchEvent(
-          new CustomEvent("request-updated", { detail: res?.data })
-        );
-      } catch {}
+
     } catch (err) {
-      console.error("Approve failed", err);
+      toast.error(err?.message || "Không thể duyệt yêu cầu");
     } finally {
       closeApprove();
     }
   };
 
   const doReject = async (reason: string) => {
-    if (!request) return;
+    if (!request || !user) return;
     try {
-      const res = await mockRequestApi.rejectRequest(request.requestId, reason);
+      const res = await requestApi.rejectRequest(request.requestId, user.userId, reason);
       if (res && res.success) setRequest(res.data);
-      try {
-        window.dispatchEvent(
-          new CustomEvent("request-updated", { detail: res?.data })
-        );
-      } catch {}
     } catch (err) {
-      console.error("Reject failed", err);
+      toast.error(err?.message || "Không thể từ chối yêu cầu");
     } finally {
       closeReject();
+    }
+  };
+
+  const doDelegate = async (data: CreateDelegationRequest) => {
+    if (!request || !user) return;
+    try {
+      const res = await requestApi.delegateRequest(request.requestId, data.delegateToId);
+      if (res && res.success) setRequest(res.data);
+    } catch (err) {
+      toast.error(err?.message || "Không thể ủy quyền");
+    } finally {
+      setIsDelegateOpen(false);
     }
   };
 
@@ -160,7 +164,7 @@ const RequestDetailPage: React.FC = () => {
               <div className="col-span-4 bg-gray-50 p-5 rounded-md">
                 <div className="flex items-center gap-4">
                   <div className="w-16 h-16 bg-blue-600 text-white rounded-full flex items-center justify-center text-xl font-semibold">
-                    {(request.employeeName || "?")
+                    {(request.employeeFullName || "?")
                       .split(" ")
                       .map((s) => s[0])
                       .slice(0, 2)
@@ -178,7 +182,7 @@ const RequestDetailPage: React.FC = () => {
                       onConfirm={doReject}
                     />
                     <div className="text-md font-bold text-gray-900">
-                      {request.employeeName}
+                      {request.employeeFullName}
                     </div>
                   </div>
                 </div>
@@ -515,18 +519,7 @@ const RequestDetailPage: React.FC = () => {
               <DelegationForm
                 isOpen={isDelegateOpen}
                 onClose={() => setIsDelegateOpen(false)}
-                onSubmit={(data: CreateDelegationRequest) => {
-                  // For now just show a toast and notify other parts of the app
-                  toast.success(`Ủy quyền cho ${data.delegateToId} thành công`);
-                  try {
-                    window.dispatchEvent(
-                      new CustomEvent("delegation-created", {
-                        detail: { requestId: request?.requestId, ...data },
-                      })
-                    );
-                  } catch {}
-                  setIsDelegateOpen(false);
-                }}
+                onSubmit={doDelegate}
               />
             </div>
           ) : (

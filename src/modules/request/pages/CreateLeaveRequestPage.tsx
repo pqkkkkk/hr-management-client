@@ -1,14 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  LeaveType, 
+import {
+  LeaveType,
   leaveTypeOptions,
   ShiftType,
   shiftTypeOptions,
   LeaveDate,
   CreateLeaveRequestDTO,
-  RequestType,
 } from '../types/request.types';
-import { mockRequestApi } from 'services/api/request.api';
+import { useApi } from 'contexts/ApiContext';
+import { useAuth } from 'contexts/AuthContext';
+import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 
 // ==================== LeaveDatesEditor Component ====================
@@ -116,7 +117,7 @@ const LeaveDatesEditor: React.FC<LeaveDatesEditorProps> = ({
               </select>
               <div className="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                  <path d="M6 9L12 15L18 9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  <path d="M6 9L12 15L18 9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
               </div>
             </div>
@@ -148,10 +149,10 @@ const LeaveDatesEditor: React.FC<LeaveDatesEditorProps> = ({
               >
                 <div className="flex items-center gap-3">
                   <svg width="20" height="24" viewBox="0 0 20 24" fill="none" className="text-blue-600">
-                    <rect x="2" y="4" width="16" height="18" rx="2" stroke="currentColor" strokeWidth="2"/>
-                    <line x1="2" y1="9" x2="18" y2="9" stroke="currentColor" strokeWidth="2"/>
-                    <line x1="6" y1="2" x2="6" y2="6" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-                    <line x1="14" y1="2" x2="14" y2="6" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                    <rect x="2" y="4" width="16" height="18" rx="2" stroke="currentColor" strokeWidth="2" />
+                    <line x1="2" y1="9" x2="18" y2="9" stroke="currentColor" strokeWidth="2" />
+                    <line x1="6" y1="2" x2="6" y2="6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                    <line x1="14" y1="2" x2="14" y2="6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
                   </svg>
                   <div>
                     <p className="text-sm font-medium text-slate-800">
@@ -169,7 +170,7 @@ const LeaveDatesEditor: React.FC<LeaveDatesEditorProps> = ({
                   title="Xóa"
                 >
                   <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-                    <path d="M15 5L5 15M5 5L15 15" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                    <path d="M15 5L5 15M5 5L15 15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
                   </svg>
                 </button>
               </div>
@@ -201,6 +202,10 @@ interface FormErrors {
 }
 
 const CreateLeaveRequestPage: React.FC = () => {
+  const { requestApi } = useApi();
+  const { user } = useAuth();
+  const navigate = useNavigate();
+
   const [formData, setFormData] = useState<LeaveRequestFormData>({
     leaveType: '',
     reason: '',
@@ -213,12 +218,16 @@ const CreateLeaveRequestPage: React.FC = () => {
 
   // Fetch remaining leave days
   useEffect(() => {
-    mockRequestApi.getRemainingLeaveDays().then((response) => {
+    requestApi.getRemainingLeaveDays().then((response) => {
       if (response.success) {
         setRemainingDays(response.data.remainingAnnualLeave);
       }
+    }).catch((error) => {
+      console.error('Failed to fetch remaining leave days:', error);
+      // Set default value if API fails
+      setRemainingDays(12);
     });
-  }, []);
+  }, [requestApi]);
 
   const calculateTotalDays = (dates: LeaveDate[]): number => {
     return dates.reduce((sum, date) => {
@@ -248,39 +257,41 @@ const CreateLeaveRequestPage: React.FC = () => {
 
   const handleSubmit = async () => {
     if (!validateForm()) {
+      const errorMessage = Object.values(errors).join("\n");
+      toast.error(errorMessage);
+      return;
+    }
+
+    if (!formData.reason.trim()) {
+      setErrors({ ...errors, leaveDates: 'Vui lòng nhập lý do nghỉ phép' });
       return;
     }
 
     setIsSubmitting(true);
 
     try {
-      const totalDays = calculateTotalDays(leaveDates);
-
       const requestData: CreateLeaveRequestDTO = {
         title: `Nghỉ ${leaveTypeOptions.find(opt => opt.value === formData.leaveType)?.label || 'phép'}`,
         userReason: formData.reason,
-        employeeId: 'NV001', // TODO: Get from authenticated user
-        requestType: RequestType.LEAVE,
+        employeeId: user?.userId || '',
         leaveType: formData.leaveType as LeaveType,
-        additionalInfo: {
-          leaveType: formData.leaveType as LeaveType,
-          totalDays,
-          leaveDates: leaveDates.map(date => ({
-            date: date.date,
-            shift: date.shift,
-          })),
-        },
+        leaveDates: leaveDates.map(date => ({
+          date: date.date,
+          shiftType: date.shift,
+        })),
       };
 
-      const response = await mockRequestApi.createLeaveRequest(requestData);
+      const response = await requestApi.createLeaveRequest(requestData);
 
       if (response.success) {
         toast.success('Tạo yêu cầu nghỉ phép thành công!');
-        setLeaveDates([]);
-        setErrors({});
+        navigate('/requests/my-requests');
+      } else {
+        throw new Error(response.message || response.error?.message || 'Có lỗi xảy ra khi tạo yêu cầu');
       }
     } catch (error) {
       console.error('Failed to create leave request:', error);
+      toast.error(error?.message || 'Có lỗi xảy ra khi tạo yêu cầu nghỉ phép');
     } finally {
       setIsSubmitting(false);
     }
@@ -334,7 +345,7 @@ const CreateLeaveRequestPage: React.FC = () => {
                 </select>
                 <div className="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
                   <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                    <path d="M6 9L12 15L18 9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    <path d="M6 9L12 15L18 9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                   </svg>
                 </div>
               </div>
@@ -359,9 +370,9 @@ const CreateLeaveRequestPage: React.FC = () => {
             {showWarning && (
               <div className="bg-amber-50 border border-amber-100 rounded-lg p-3 flex items-center gap-3">
                 <svg width="20" height="24" viewBox="0 0 20 24" fill="none">
-                  <path d="M10 2L2 20H18L10 2Z" stroke="#92400E" strokeWidth="2" strokeLinejoin="round"/>
-                  <line x1="10" y1="8" x2="10" y2="14" stroke="#92400E" strokeWidth="2" strokeLinecap="round"/>
-                  <circle cx="10" cy="17" r="1" fill="#92400E"/>
+                  <path d="M10 2L2 20H18L10 2Z" stroke="#92400E" strokeWidth="2" strokeLinejoin="round" />
+                  <line x1="10" y1="8" x2="10" y2="14" stroke="#92400E" strokeWidth="2" strokeLinecap="round" />
+                  <circle cx="10" cy="17" r="1" fill="#92400E" />
                 </svg>
                 <p className="text-sm font-medium text-amber-800">
                   Bạn sắp hết ngày phép năm.
@@ -402,8 +413,8 @@ const CreateLeaveRequestPage: React.FC = () => {
                 {isSubmitting ? (
                   <>
                     <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none"/>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"/>
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                     </svg>
                     <span>Đang xử lý...</span>
                   </>

@@ -7,6 +7,7 @@ type Props = {
   user: User;
   departmentName?: string;
   onDeactivate?: (user: User) => void;
+  onEdit: (userId: string) => void;
   isDeactivating?: boolean;
 };
 
@@ -14,10 +15,12 @@ const EmployeeRow: React.FC<Props> = ({
   user,
   departmentName,
   onDeactivate,
+  onEdit,
   isDeactivating,
 }) => {
   return (
-    <tr className="border-b">
+    <tr className="border-b cursor-pointer hover:bg-gray-100"
+      onClick={() => onEdit(user.userId)}>
       <td className="px-6 py-4 whitespace-nowrap">{user.fullName}</td>
 
       <td className="px-6 py-4">{formatDate(user.dateOfBirth)}</td>
@@ -75,18 +78,17 @@ const EmployeeRow: React.FC<Props> = ({
 
       <td className="px-6 py-4">
         <div className="flex items-center gap-3">
-          <button className="text-black px-2 py-1 rounded hover:bg-gray-100">
+          <button onClick={() => onEdit(user.userId)} className="text-black px-2 py-1 rounded hover:bg-gray-100">
             <Edit2 size={20} />
           </button>
           {user.status !== "INACTIVE" && onDeactivate ? (
             <button
               onClick={() => onDeactivate(user)}
               disabled={isDeactivating}
-              className={`text-red-600 px-2 py-1 rounded ${
-                isDeactivating
-                  ? "opacity-50 cursor-not-allowed"
-                  : "hover:bg-red-50"
-              }`}
+              className={`text-red-600 px-2 py-1 rounded ${isDeactivating
+                ? "opacity-50 cursor-not-allowed"
+                : "hover:bg-red-50"
+                }`}
             >
               <Trash2 size={20} />
             </button>

@@ -10,11 +10,14 @@ import {
   LeaveType,
   ShiftType,
   TimesheetResponse,
-  CreateCheckOutRequestDTO
+  CreateCheckOutRequestDTO,
+  CreateCheckInRequestDTO
 } from "modules/request/types/request.types";
+import apiClient from "./api.client";
 
 export interface RequestApi {
-  getRequests(filter?: RequestFilter): Promise<ApiResponse<Page<Request>>>;
+  getMyRequests(filter?: RequestFilter): Promise<ApiResponse<Page<Request>>>;
+  getTeamRequests(filter?: RequestFilter): Promise<ApiResponse<Page<Request>>>;
   getRequestById(requestId: string): Promise<ApiResponse<Request>>;
   createLeaveRequest(
     data: CreateLeaveRequestDTO
@@ -23,11 +26,18 @@ export interface RequestApi {
   createCheckOutRequest(
     data: CreateCheckOutRequestDTO
   ): Promise<ApiResponse<Request>>;
-  cancelRequest(requestId: string): Promise<ApiResponse<null>>;
-  approveRequest(requestId: string): Promise<ApiResponse<Request>>;
+  createCheckInRequest(
+    data: CreateCheckInRequestDTO
+  ): Promise<ApiResponse<Request>>;
+  approveRequest(requestId: string, approverId: string): Promise<ApiResponse<Request>>;
   rejectRequest(
     requestId: string,
-    reason: string
+    rejecterId: string,
+    rejectReason: string
+  ): Promise<ApiResponse<Request>>;
+  delegateRequest(
+    requestId: string,
+    newProcessorId: string
   ): Promise<ApiResponse<Request>>;
   getRemainingLeaveDays(): Promise<ApiResponse<RemainingLeaveDays>>;
 
@@ -39,6 +49,9 @@ export interface RequestApi {
 }
 
 export class MockRequestApi implements RequestApi {
+  getTeamRequests(filter?: RequestFilter): Promise<ApiResponse<Page<Request>>> {
+    throw new Error("Method not implemented.");
+  }
   private mockRequests: Request[] = [
     {
       requestId: "REQ001",
@@ -48,7 +61,7 @@ export class MockRequestApi implements RequestApi {
       userReason: "Kỳ nghỉ gia đình",
       attachmentUrl: "https://example.com/attachment1.pdf",
       employeeId: "NV001",
-      employeeName: "Nguyễn Văn A",
+      employeeFullName: "Nguyễn Văn A",
       approverId: "NV002",
       approverName: "Trần Thị B",
       processedAt: "2023-10-27T10:30:00Z",
@@ -72,7 +85,7 @@ export class MockRequestApi implements RequestApi {
       userReason: "Hẹn khám bác sĩ",
       attachmentUrl: "https://example.com/attachment2.pdf",
       employeeId: "NV001",
-      employeeName: "Nguyễn Văn A",
+      employeeFullName: "Nguyễn Văn A",
       createdAt: "2023-10-24T09:00:00Z",
       updatedAt: "2023-10-24T09:00:00Z",
       additionalLeaveInfo: {
@@ -90,7 +103,7 @@ export class MockRequestApi implements RequestApi {
       rejectReason: "Yêu cầu được gửi quá gần ngày nghỉ.",
       attachmentUrl: "https://example.com/attachment3.pdf",
       employeeId: "NV001",
-      employeeName: "Nguyễn Văn A",
+      employeeFullName: "Nguyễn Văn A",
       approverId: "NV002",
       approverName: "Trần Thị B",
       processedAt: "2023-10-21T14:00:00Z",
@@ -113,7 +126,7 @@ export class MockRequestApi implements RequestApi {
       userReason: "Làm việc từ nhà để hoàn thành dự án",
       attachmentUrl: "https://example.com/attachment4.pdf",
       employeeId: "NV001",
-      employeeName: "Nguyễn Văn A",
+      employeeFullName: "Nguyễn Văn A",
       approverId: "NV002",
       approverName: "Trần Thị B",
       processedAt: "2023-10-18T11:00:00Z",
@@ -131,7 +144,7 @@ export class MockRequestApi implements RequestApi {
     },
   ];
 
-  async getRequests(
+  async getMyRequests(
     filter?: RequestFilter
   ): Promise<ApiResponse<Page<Request>>> {
     return new Promise((resolve) => {
@@ -139,9 +152,9 @@ export class MockRequestApi implements RequestApi {
         let filteredRequests = [...this.mockRequests];
 
         // Apply filters
-        if (filter?.requestType) {
+        if (filter?.type) {
           filteredRequests = filteredRequests.filter(
-            (req) => req.requestType === filter.requestType
+            (req) => req.requestType === filter.type
           );
         }
 
@@ -158,17 +171,17 @@ export class MockRequestApi implements RequestApi {
         }
 
         // Sort
-        const sortOrder = filter?.sortOrder || "DESC";
+        const sortDirection = filter?.sortDirection || "DESC";
         filteredRequests.sort((a, b) => {
           const dateA = new Date(a.createdAt).getTime();
           const dateB = new Date(b.createdAt).getTime();
-          return sortOrder === "ASC" ? dateA - dateB : dateB - dateA;
+          return sortDirection === "ASC" ? dateA - dateB : dateB - dateA;
         });
 
         // Pagination
-        const page = filter?.page || 1;
+        const currentPage = filter?.currentPage || 1;
         const pageSize = filter?.pageSize || 10;
-        const startIndex = (page - 1) * pageSize;
+        const startIndex = (currentPage - 1) * pageSize;
         const endIndex = startIndex + pageSize;
         const paginatedRequests = filteredRequests.slice(startIndex, endIndex);
 
@@ -177,17 +190,17 @@ export class MockRequestApi implements RequestApi {
             content: paginatedRequests,
             totalElements: filteredRequests.length,
             totalPages: Math.ceil(filteredRequests.length / pageSize),
-            number: page,
+            number: currentPage,
             size: pageSize,
             pageable: {
-              pageNumber: page,
+              pageNumber: currentPage,
               pageSize: pageSize,
               sort: { sorted: false, unsorted: true, empty: true },
               offset: startIndex,
               paged: true,
               unpaged: false,
             },
-            first: page === 1,
+            first: currentPage === 1,
             last: endIndex >= filteredRequests.length,
             numberOfElements: paginatedRequests.length,
             empty: paginatedRequests.length === 0,
@@ -230,20 +243,32 @@ export class MockRequestApi implements RequestApi {
   ): Promise<ApiResponse<Request>> {
     return new Promise((resolve) => {
       setTimeout(() => {
+        // Calculate total days from leaveDates
+        const totalDays = data.leaveDates.reduce((sum, date) => {
+          return sum + (date.shiftType === ShiftType.FULL_DAY ? 1 : 0.5);
+        }, 0);
+
         const newRequest: Request = {
           requestId: `REQ${String(this.mockRequests.length + 1).padStart(
             3,
             "0"
           )}`,
-          requestType: data.requestType,
+          requestType: RequestType.LEAVE,
           status: RequestStatus.PENDING,
           title: data.title,
           userReason: data.userReason,
           employeeId: data.employeeId,
-          employeeName: "Nguyễn Văn A",
+          employeeFullName: "Nguyễn Văn A",
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
-          additionalLeaveInfo: data.additionalInfo,
+          additionalLeaveInfo: {
+            leaveType: data.leaveType,
+            totalDays,
+            leaveDates: data.leaveDates.map((d) => ({
+              date: d.date,
+              shift: d.shiftType,
+            })),
+          },
         };
 
         this.mockRequests.unshift(newRequest);
@@ -277,7 +302,7 @@ export class MockRequestApi implements RequestApi {
           title: data.title,
           userReason: data.userReason,
           employeeId: "NV001", // Current user ID
-          employeeName: "Nguyễn Văn A",
+          employeeFullName: "Nguyễn Văn A",
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
           additionalWfhInfo: {
@@ -355,8 +380,8 @@ export class MockRequestApi implements RequestApi {
           title: data.title,
           userReason: data.userReason,
           attachmentUrl: data.attachmentUrl,
-          employeeId: "NV001", 
-          employeeName: "Nguyễn Văn A",
+          employeeId: "NV001",
+          employeeFullName: "Nguyễn Văn A",
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
           additionalCheckOutInfo: {
@@ -377,46 +402,43 @@ export class MockRequestApi implements RequestApi {
     });
   }
 
-  async cancelRequest(requestId: string): Promise<ApiResponse<null>> {
-    return new Promise((resolve, reject) => {
+  async createCheckInRequest(
+    data: CreateCheckInRequestDTO
+  ): Promise<ApiResponse<Request>> {
+    return new Promise((resolve) => {
       setTimeout(() => {
-        const requestIndex = this.mockRequests.findIndex(
-          (req) => req.requestId === requestId
-        );
+        const newRequest: Request = {
+          requestId: `REQ${String(this.mockRequests.length + 1).padStart(
+            3,
+            "0"
+          )}`,
+          requestType: RequestType.CHECK_IN,
+          status: RequestStatus.PENDING,
+          title: data.title || "Yêu cầu chấm công vào",
+          userReason: data.userReason,
+          employeeId: data.employeeId,
+          employeeFullName: "Nguyễn Văn A",
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          additionalCheckInInfo: {
+            desiredCheckInTime: data.desiredCheckInTime,
+            currentCheckInTime: new Date().toISOString(),
+          },
+        };
 
-        if (requestIndex === -1) {
-          reject({
-            success: false,
-            statusCode: 404,
-            message: "Request not found",
-          });
-          return;
-        }
-
-        const request = this.mockRequests[requestIndex];
-        if (request.status !== RequestStatus.PENDING) {
-          reject({
-            success: false,
-            statusCode: 400,
-            message: "Only pending requests can be cancelled",
-          });
-          return;
-        }
-
-        request.status = RequestStatus.CANCELLED;
-        request.updatedAt = new Date().toISOString();
+        this.mockRequests.unshift(newRequest);
 
         resolve({
-          data: null,
+          data: newRequest,
           success: true,
-          statusCode: 200,
-          message: "Request cancelled successfully",
+          statusCode: 201,
+          message: "Check-in request created successfully",
         });
-      }, 500);
+      }, 800);
     });
   }
 
-  async approveRequest(requestId: string): Promise<ApiResponse<Request>> {
+  async approveRequest(requestId: string, approverId: string): Promise<ApiResponse<Request>> {
     return new Promise((resolve, reject) => {
       setTimeout(() => {
         const idx = this.mockRequests.findIndex(
@@ -433,6 +455,7 @@ export class MockRequestApi implements RequestApi {
         const req = this.mockRequests[idx];
         req.status = RequestStatus.APPROVED;
         req.processedAt = new Date().toISOString();
+        req.approverId = approverId;
         req.approverName = "Bạn";
         req.updatedAt = new Date().toISOString();
         resolve({
@@ -447,7 +470,8 @@ export class MockRequestApi implements RequestApi {
 
   async rejectRequest(
     requestId: string,
-    reason: string
+    rejecterId: string,
+    rejectReason: string
   ): Promise<ApiResponse<Request>> {
     return new Promise((resolve, reject) => {
       setTimeout(() => {
@@ -464,7 +488,7 @@ export class MockRequestApi implements RequestApi {
         }
         const req = this.mockRequests[idx];
         req.status = RequestStatus.REJECTED;
-        req.rejectReason = reason;
+        req.rejectReason = rejectReason;
         req.processedAt = new Date().toISOString();
         req.approverName = "Bạn";
         req.updatedAt = new Date().toISOString();
@@ -473,6 +497,38 @@ export class MockRequestApi implements RequestApi {
           success: true,
           statusCode: 200,
           message: "Request rejected",
+        });
+      }, 400);
+    });
+  }
+
+  async delegateRequest(
+    requestId: string,
+    newProcessorId: string
+  ): Promise<ApiResponse<Request>> {
+    return new Promise((resolve, reject) => {
+      setTimeout(() => {
+        const idx = this.mockRequests.findIndex(
+          (r) => r.requestId === requestId
+        );
+        if (idx === -1) {
+          reject({
+            success: false,
+            statusCode: 404,
+            message: "Request not found",
+          });
+          return;
+        }
+        const req = this.mockRequests[idx];
+        req.processorId = newProcessorId;
+        req.processorName = "Người xử lý được ủy quyền";
+        req.status = RequestStatus.PROCESSING;
+        req.updatedAt = new Date().toISOString();
+        resolve({
+          data: req,
+          success: true,
+          statusCode: 200,
+          message: "Request delegated successfully",
         });
       }, 400);
     });
@@ -603,75 +659,74 @@ export class MockRequestApi implements RequestApi {
 
 // REST API Implementation
 export class RestRequestApi implements RequestApi {
-  getTimesheet(employeeId: string, yearMonth: string): Promise<ApiResponse<TimesheetResponse>> {
-    throw new Error("Method not implemented.");
+  async getTimesheet(employeeId: string, yearMonth: string): Promise<ApiResponse<TimesheetResponse>> {
+    return apiClient.get<ApiResponse<TimesheetResponse>>(
+      `/timesheets/employee/${employeeId}/monthly`,
+      { params: { yearMonth } }
+    );
   }
-  async getRequests(
+
+  async getMyRequests(
     filter?: RequestFilter
   ): Promise<ApiResponse<Page<Request>>> {
-    const { default: apiClient } = await import("./api.client");
-    const params = new URLSearchParams();
+    return apiClient.get(`/requests/my-requests`, { params: filter });
+  }
 
-    if (filter?.page) params.append("page", String(filter.page - 1));
-    if (filter?.pageSize) params.append("size", String(filter.pageSize));
-    if (filter?.requestType) params.append("requestType", filter.requestType);
-    if (filter?.status) params.append("status", filter.status);
-    if (filter?.employeeId) params.append("employeeId", filter.employeeId);
-    if (filter?.startDate) params.append("startDate", filter.startDate);
-    if (filter?.endDate) params.append("endDate", filter.endDate);
-    if (filter?.sortBy) params.append("sortBy", filter.sortBy);
-    if (filter?.sortOrder) params.append("sortOrder", filter.sortOrder);
-
-    return apiClient.get(`/requests?${params.toString()}`);
+  async getTeamRequests(
+    filter?: RequestFilter
+  ): Promise<ApiResponse<Page<Request>>> {
+    return apiClient.get(`/requests/team-requests`, { params: filter });
   }
 
   async getRequestById(requestId: string): Promise<ApiResponse<Request>> {
-    const { default: apiClient } = await import("./api.client");
     return apiClient.get(`/requests/${requestId}`);
   }
 
   async createLeaveRequest(
     data: CreateLeaveRequestDTO
   ): Promise<ApiResponse<Request>> {
-    const { default: apiClient } = await import("./api.client");
     return apiClient.post(`/requests/leave`, data);
   }
 
   async createWfhRequest(
     data: CreateWfhRequestDTO
   ): Promise<ApiResponse<Request>> {
-    const { default: apiClient } = await import("./api.client");
     return apiClient.post(`/requests/wfh`, data);
   }
 
   async createCheckOutRequest(
     data: CreateCheckOutRequestDTO
   ): Promise<ApiResponse<Request>> {
-    const { default: apiClient } = await import("./api.client");
     return apiClient.post(`/requests/check-out`, data);
   }
 
-  async cancelRequest(requestId: string): Promise<ApiResponse<null>> {
-    const { default: apiClient } = await import("./api.client");
-    return apiClient.patch(`/requests/${requestId}/cancel`);
+  async createCheckInRequest(
+    data: CreateCheckInRequestDTO
+  ): Promise<ApiResponse<Request>> {
+    return apiClient.post(`/requests/check-in`, data);
   }
 
-  async approveRequest(requestId: string): Promise<ApiResponse<Request>> {
-    const { default: apiClient } = await import("./api.client");
-    return apiClient.patch(`/requests/${requestId}/approve`);
+  async approveRequest(requestId: string, approverId: string): Promise<ApiResponse<Request>> {
+    return apiClient.patch(`/requests/${requestId}/approve`, { approverId });
   }
 
   async rejectRequest(
     requestId: string,
-    reason: string
+    rejecterId: string,
+    rejectReason: string
   ): Promise<ApiResponse<Request>> {
-    const { default: apiClient } = await import("./api.client");
-    return apiClient.patch(`/requests/${requestId}/reject`, { reason });
+    return apiClient.patch(`/requests/${requestId}/reject`, { rejecterId, rejectReason });
+  }
+
+  async delegateRequest(
+    requestId: string,
+    newProcessorId: string
+  ): Promise<ApiResponse<Request>> {
+    return apiClient.patch(`/requests/${requestId}/delegate`, { newProcessorId });
   }
 
   async getRemainingLeaveDays(): Promise<ApiResponse<RemainingLeaveDays>> {
-    const { default: apiClient } = await import("./api.client");
-    return apiClient.get(`/requests/remaining-leave-days`);
+    throw new Error("Method not available in backend API.");
   }
 }
 

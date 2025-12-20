@@ -1,46 +1,87 @@
 import React from "react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 
-// Static pagination placeholder used when real data isn't available yet.
-const Pagination: React.FC = () => {
+type Props = {
+  page: number;
+  total: number;
+  limit: number;
+  setPage: (p: number) => void;
+};
+
+const Pagination: React.FC<Props> = ({ page, total, limit, setPage }) => {
+  const totalPages = Math.max(1, Math.ceil(total / limit));
+
+  const makePageList = (): (number | "...")[] => {
+    if (totalPages <= 4)
+      return Array.from({ length: totalPages }, (_, i) => i + 1);
+
+    if (page <= 2) {
+      return [1, 2, 3, "...", totalPages];
+    }
+
+    if (page >= totalPages - 1) {
+      return [1, "...", totalPages - 2, totalPages - 1, totalPages];
+    }
+
+    return [1, "...", page, "...", totalPages];
+  };
+
+  const pageList = makePageList();
+
+  const prevDisabled = page === 1;
+  const nextDisabled = page === totalPages;
+
   return (
-    <div className="px-4 py-4 border-t border-gray-200 rounded-b-xl flex items-center justify-center">
-      <div className="flex items-center gap-1">
-        <button className="w-9 h-9 flex items-center justify-center rounded-md hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed">
-          <svg width="20" height="24" viewBox="0 0 20 24" fill="none">
-            <path
-              d="M15 18L9 12L15 6"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
+    <div className="flex items-center justify-between mt-4 px-4 py-4 border-t border-gray-200">
+      <div>
+        <button
+          className={`flex items-center gap-2 px-3 py-2 rounded-lg ${prevDisabled
+              ? "text-gray-400 opacity-50 cursor-not-allowed"
+              : "text-gray-600 hover:bg-gray-50"
+            }`}
+          onClick={() => setPage(Math.max(1, page - 1))}
+          disabled={prevDisabled}
+          aria-label="Trang trước"
+        >
+          <ChevronLeft className="w-4 h-4" />
+          <span>Trang trước</span>
         </button>
-        <button className="w-9 h-9 flex items-center justify-center rounded-md text-sm bg-blue-600 text-white font-bold">
-          1
-        </button>
-        <button className="w-9 h-9 flex items-center justify-center rounded-md text-sm text-gray-900 hover:bg-gray-100">
-          2
-        </button>
-        <button className="w-9 h-9 flex items-center justify-center rounded-md text-sm text-gray-900 hover:bg-gray-100">
-          3
-        </button>
-        <span className="w-9 h-9 flex items-center justify-center text-sm text-gray-900">
-          ...
-        </span>
-        <button className="w-9 h-9 flex items-center justify-center rounded-md text-sm text-gray-900 hover:bg-gray-100">
-          10
-        </button>
-        <button className="w-9 h-9 flex items-center justify-center rounded-md hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed">
-          <svg width="20" height="24" viewBox="0 0 20 24" fill="none">
-            <path
-              d="M9 6L15 12L9 18"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
+      </div>
+
+      <div className="flex items-center gap-2">
+        {pageList.map((p, idx) =>
+          p === "..." ? (
+            <span key={`e-${idx}`} className="text-gray-400 px-2">
+              …
+            </span>
+          ) : (
+            <button
+              key={p}
+              onClick={() => setPage(p)}
+              className={
+                p === page
+                  ? "w-9 h-9 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold"
+                  : "w-9 h-9 rounded-md text-gray-700 hover:bg-gray-100 flex items-center justify-center"
+              }
+            >
+              {p}
+            </button>
+          )
+        )}
+      </div>
+
+      <div>
+        <button
+          className={`flex items-center gap-2 px-3 py-2 rounded-lg ${nextDisabled
+              ? "text-gray-400 opacity-50 cursor-not-allowed"
+              : "text-gray-600 hover:bg-gray-50"
+            }`}
+          onClick={() => setPage(Math.min(totalPages, page + 1))}
+          disabled={nextDisabled}
+          aria-label="Trang sau"
+        >
+          <span>Trang sau</span>
+          <ChevronRight className="w-4 h-4" />
         </button>
       </div>
     </div>

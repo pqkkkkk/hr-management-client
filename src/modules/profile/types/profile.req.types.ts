@@ -1,10 +1,10 @@
 import { User } from "shared/types";
 
 export interface UpdateProfileRequestForEmployee {
-  fullName?: string;
-  email?: string;
-  phoneNumber?: string;
-  address?: string;
+    fullName?: string;
+    email?: string;
+    phoneNumber?: string;
+    address?: string;
 }
 
 export namespace UpdateProfileRequestForEmployee {
@@ -57,21 +57,21 @@ export namespace UpdateProfileRequestForHR {
 }
 
 export interface ProfileFilter {
-  currentPage?: number;
-  pageSize?: number;
-  sortBy?: string;
-  sortDirection?: string;
-  nameTerm?: string;
-  role?: string;
-  gender?: string;
-  status?: string;
-  position?: string;
-  departmentId?: string;
+    currentPage?: number;
+    pageSize?: number;
+    sortBy?: string;
+    sortDirection?: string;
+    nameTerm?: string;
+    role?: string;
+    gender?: string;
+    status?: string;
+    position?: string;
+    departmentId?: string;
 }
 
 export type SupportedFileFormat = "PDF" | "EXCEL";
 
 export interface ExportProfilesRequest {
     fileFormat: SupportedFileFormat;
-    filters?: ProfileFilter;
+    filter?: ProfileFilter;
 }
