@@ -1,4 +1,4 @@
-import React, {useState, useCallback, useMemo } from "react";
+import React, { useState, useCallback, useMemo } from "react";
 import { useApi } from "contexts/ApiContext";
 import { User } from "shared/types";
 import SearchAndFilter from "modules/profile/components/SearchAndFilter";
@@ -13,8 +13,10 @@ import { useQuery } from "shared/hooks/use-query";
 import { useFetchList } from "shared/hooks/use-fetch-list";
 import { departmentOptions, positionOptions } from "../types/profile.types";
 import { toast } from "react-toastify";
+import { useNavigate } from "react-router-dom";
 
 const EmployeeListPage: React.FC = () => {
+  const navigate = useNavigate();
   const { profileApi } = useApi();
   const PAGE_SIZE = 5;
 
@@ -92,7 +94,43 @@ const EmployeeListPage: React.FC = () => {
   };
 
   const handleExport = async () => {
+    setExportLoading(true);
+    try {
+      const response = await profileApi.exportProfiles?.({
+        fileFormat: exportFormat,
+        filter: {
+          nameTerm: query.nameTerm,
+          gender: query.gender,
+          departmentId: query.departmentId,
+          position: query.position,
+          status: query.status,
+        },
+      });
 
+      if (response?.success && response.data?.fileUrl) {
+        // Trigger file download
+        const link = document.createElement("a");
+        link.href = response.data.fileUrl;
+        link.download = `employees_${new Date().toISOString().split("T")[0]}.${exportFormat === "EXCEL" ? "xlsx" : "pdf"}`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+
+        toast.success("Xuất file thành công!");
+        setExportOpen(false);
+      } else {
+        toast.error("Xuất file thất bại");
+      }
+    } catch (err: any) {
+      console.error("Export failed:", err);
+      toast.error(err?.message || "Đã có lỗi xảy ra khi xuất file");
+    } finally {
+      setExportLoading(false);
+    }
+  }
+
+  const handleEditRequest = (userId: string) => {
+    navigate(`/profile/users/${userId}/for-hr`);
   }
 
   return (
@@ -106,11 +144,10 @@ const EmployeeListPage: React.FC = () => {
             if (exportDisabled) return;
             setExportOpen(true);
           }}
-          className={`flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg ${
-            exportDisabled
-              ? "opacity-50 cursor-not-allowed"
-              : "hover:bg-blue-700"
-          }`}
+          className={`flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg ${exportDisabled
+            ? "opacity-50 cursor-not-allowed"
+            : "hover:bg-blue-700"
+            }`}
           disabled={exportDisabled}
         >
           <File size={20} />
@@ -184,6 +221,7 @@ const EmployeeListPage: React.FC = () => {
                   <EmployeeRow
                     key={u.userId}
                     user={u}
+                    onEdit={() => handleEditRequest(u.userId)}
                     onDeactivate={() => handleDeactivateRequest(u)}
                     isDeactivating={deactivatingUserId === u.userId}
                   />

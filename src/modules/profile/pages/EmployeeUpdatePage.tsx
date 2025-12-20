@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { useParams } from "react-router-dom";
 import {
   bankOptions,
   departmentOptions,
@@ -15,6 +16,7 @@ import { UpdateProfileRequestForHR } from "../types/profile.req.types";
 
 const EmployeeUpdatePage: React.FC = () => {
   const { profileApi } = useApi();
+  const { userId } = useParams<{ userId: string }>();
 
   const [formData, setFormData] = useState<User | undefined>();
   const [isFetchingUserData, setIsFetchingUserData] = useState<boolean>(true);
@@ -23,10 +25,16 @@ const EmployeeUpdatePage: React.FC = () => {
 
   useEffect(() => {
     const fetchUserData = async () => {
+      if (!userId) {
+        setIsError(true);
+        setIsFetchingUserData(false);
+        return;
+      }
+
       try {
         setIsFetchingUserData(true);
         setIsError(false);
-        const userData = await profileApi.getProfileById("NV001");
+        const userData = await profileApi.getProfileById(userId);
         setFormData(userData.data);
       } catch (error) {
         console.error("Error fetching user data:", error);
@@ -37,7 +45,7 @@ const EmployeeUpdatePage: React.FC = () => {
     };
 
     fetchUserData();
-  }, [profileApi]);
+  }, [profileApi, userId]);
 
   const handleInputChange = (field: keyof User, value: string) => {
     setFormData((prev) => ({

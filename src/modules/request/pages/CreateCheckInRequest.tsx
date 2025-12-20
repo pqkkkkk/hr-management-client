@@ -1,17 +1,25 @@
 import React, { useEffect, useRef, useState } from "react";
 import { formatDateForInput, formatTimeForInput } from "shared/utils/date-utils";
+import { useApi } from "contexts/ApiContext";
+import { useAuth } from "contexts/AuthContext";
+import { useNavigate } from "react-router-dom";
+import { toast } from "react-toastify";
+import { CreateCheckInRequestDTO } from "../types/request.types";
+
 
 const CheckInRequestForm: React.FC = () => {
+  const { requestApi } = useApi();
+  const { user } = useAuth();
+  const navigate = useNavigate();
+
   const [date, setDate] = useState<string>("");
   const [time, setTime] = useState<string>("");
   const [reason, setReason] = useState<string>("");
   const [files, setFiles] = useState<File[]>([]);
   const [dragOver, setDragOver] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
-  const timeoutRef = useRef<number | null>(null);
 
   const isBeforeEight = !!time && time < "08:00";
 
@@ -19,21 +27,6 @@ const CheckInRequestForm: React.FC = () => {
     const now = new Date();
     setDate(formatDateForInput(now));
     setTime(formatTimeForInput(now));
-  }, []);
-
-  useEffect(() => {
-    if (success) {
-      const t = setTimeout(() => setSuccess(false), 4000);
-      return () => clearTimeout(t);
-    }
-  }, [success]);
-
-  useEffect(() => {
-    return () => {
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current as unknown as number);
-      }
-    };
   }, []);
 
   const onFiles = (fList: FileList | null) => {
@@ -49,32 +42,51 @@ const CheckInRequestForm: React.FC = () => {
     onFiles(e.dataTransfer.files);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-    // Chặn việc tạo yêu cầu cho các ngày trong tương lai
+
+    // Validate date is not in the future
     const todayStr = formatDateForInput(new Date());
     if (date && date > todayStr) {
       setError("Không thể tạo yêu cầu cho thời gian ở tương lai.");
       return;
     }
 
-    // Nếu thời gian >= 08:00 A.M, lý do là bắt buộc. Nếu trước 08:00, lý do bị vô hiệu hóa.
+    // If time >= 08:00 AM, reason is required
     if (!isBeforeEight && !reason.trim()) {
       setError("Vui lòng nhập lý do.");
       return;
     }
 
-    // Mô phỏng độ trễ của server: đặt trạng thái đang gửi, sau đó hiển thị thành công
     setSubmitting(true);
-    //(ví dụ: 1,5 giây)
-    timeoutRef.current = window.setTimeout(() => {
-      setSuccess(true);
-      setReason("");
-      setFiles([]);
+
+    try {
+      const desiredCheckInTime = `${date}T${time}:00`;
+
+      const requestData: CreateCheckInRequestDTO = {
+        title: time >= "08:00"
+          ? `Yêu cầu check-in trễ - ${date} ${time}`
+          : `Yêu cầu check-in - ${date} ${time}`,
+        userReason: isBeforeEight ? undefined : reason,
+        employeeId: user?.userId || "",
+        desiredCheckInTime,
+      };
+
+      const response = await requestApi.createCheckInRequest(requestData);
+
+      if (response.success) {
+        toast.success("Gửi yêu cầu check-in thành công!");
+        navigate("/requests/my-requests");
+      } else {
+        throw new Error(response.message || "Có lỗi xảy ra khi tạo yêu cầu");
+      }
+    } catch (err) {
+      console.error("Failed to create check-in request:", err);
+      toast.error(err?.message || "Có lỗi xảy ra khi tạo yêu cầu check-in");
+    } finally {
       setSubmitting(false);
-      timeoutRef.current = null;
-    }, 1500);
+    }
   };
 
   const removeFile = (index: number) => {
@@ -130,9 +142,8 @@ const CheckInRequestForm: React.FC = () => {
               {isBeforeEight ? null : <span className="text-red-500">*</span>}
             </label>
             <textarea
-              className={`w-full border rounded p-3 min-h-[90px] resize-none ${
-                isBeforeEight ? "opacity-50 pointer-events-none" : ""
-              }`}
+              className={`w-full border rounded p-3 min-h-[90px] resize-none ${isBeforeEight ? "opacity-50 pointer-events-none" : ""
+                }`}
               placeholder={
                 isBeforeEight
                   ? "Không cần nhập lý do"
@@ -160,15 +171,13 @@ const CheckInRequestForm: React.FC = () => {
               onDrop={(e) => {
                 if (!isBeforeEight) handleDrop(e);
               }}
-              className={`border-2 ${
-                dragOver && !isBeforeEight
-                  ? "border-blue-400 bg-blue-50"
-                  : "border-dashed border-gray-300 bg-white"
-              } rounded p-6 text-center ${
-                isBeforeEight
+              className={`border-2 ${dragOver && !isBeforeEight
+                ? "border-blue-400 bg-blue-50"
+                : "border-dashed border-gray-300 bg-white"
+                } rounded p-6 text-center ${isBeforeEight
                   ? "opacity-50 pointer-events-none"
                   : "cursor-pointer"
-              }`}
+                }`}
               onClick={() => {
                 if (!isBeforeEight) fileInputRef.current?.click();
               }}
@@ -267,18 +276,6 @@ const CheckInRequestForm: React.FC = () => {
           </div>
         </form>
 
-        {/* Success toast */}
-        {success && (
-          <div className="fixed right-6 bottom-6 bg-green-600 text-white rounded-lg shadow-lg px-4 py-3 flex items-start gap-3">
-            <div className="text-sm">Yêu cầu check-in của bạn đã được gửi.</div>
-            <button
-              className="ml-3 opacity-90"
-              onClick={() => setSuccess(false)}
-            >
-              ✕
-            </button>
-          </div>
-        )}
       </div>
     </div>
   );

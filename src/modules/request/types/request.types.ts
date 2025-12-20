@@ -92,7 +92,7 @@ export interface Request {
   rejectReason?: string;
   attachmentUrl?: string;
   employeeId: string;
-  employeeName?: string; // For display purposes
+  employeeFullName?: string; // For display purposes
   approverId?: string;
   approverName?: string;
   processorId?: string;
@@ -110,13 +110,19 @@ export interface Request {
 }
 
 // Create request DTOs
+// Matches CreateLeaveRequestRequest from API
+export interface LeaveDateRequest {
+  date: string; // ISO date string (YYYY-MM-DD)
+  shiftType: ShiftType;
+}
+
 export interface CreateLeaveRequestDTO {
   title: string;
-  userReason?: string;
+  userReason: string;
+  attachmentUrl?: string;
   employeeId: string;
-  requestType: RequestType.LEAVE;
   leaveType: LeaveType;
-  additionalInfo: AdditionalLeaveInfo;
+  leaveDates: LeaveDateRequest[];
 }
 
 export interface CreateWfhRequestDTO {
@@ -134,21 +140,36 @@ export interface RejectLeaveRequestDTO {
 export interface CreateCheckOutRequestDTO {
   title?: string;
   userReason?: string;
+  employeeId: string;
   desiredCheckOutTime: string;
   attachmentUrl?: string;
 }
 
-// Filter and pagination
+export interface CreateCheckInRequestDTO {
+  title?: string;
+  userReason?: string;
+  employeeId: string;
+  desiredCheckInTime: string; // ISO datetime string
+}
+
+export type CreateDelegationRequest = {
+  delegateToId: string;
+};
+
+
 export interface RequestFilter {
-  page?: number;
-  pageSize?: number;
-  requestType?: RequestType;
-  status?: RequestStatus;
   employeeId?: string;
+  approverId?: string;
+  processorId?: string;
+  departmentId?: string;
+  status?: RequestStatus;
+  type?: RequestType;
   startDate?: string;
   endDate?: string;
+  currentPage?: number;
+  pageSize?: number;
   sortBy?: string;
-  sortOrder?: "ASC" | "DESC";
+  sortDirection?: "ASC" | "DESC";
 }
 
 export interface RemainingLeaveDays {

@@ -1,8 +1,5 @@
 import React, { useEffect, useState } from "react";
-
-export type CreateDelegationRequest = {
-  delegateToId: string;
-};
+import { CreateDelegationRequest } from "../types/request.types";
 
 interface DelegationFormProps {
   isOpen: boolean;
@@ -77,11 +74,10 @@ const DelegationForm: React.FC<DelegationFormProps> = ({
                 onSubmit({ delegateToId });
               }}
               disabled={!canSubmit}
-              className={`px-4 py-2 rounded ${
-                !canSubmit
+              className={`px-4 py-2 rounded ${!canSubmit
                   ? "bg-blue-300 text-white cursor-not-allowed opacity-70"
                   : "bg-blue-600 text-white"
-              }`}
+                }`}
             >
               Gửi
             </button>

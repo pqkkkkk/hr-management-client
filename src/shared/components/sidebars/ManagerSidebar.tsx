@@ -4,10 +4,9 @@ import { LayoutDashboard, FileText, User, Users, Activity, Gift, BarChart3 } fro
 
 const ManagerSidebar: React.FC = () => {
   const navLinkClass = ({ isActive }: { isActive: boolean }) =>
-    `flex items-center space-x-3 px-6 py-3 text-sm transition-colors duration-200 ${
-      isActive
-        ? 'bg-blue-50 text-blue-600 font-medium border-r-4 border-blue-600'
-        : 'text-gray-700 hover:bg-gray-100'
+    `flex items-center space-x-3 px-6 py-3 text-sm transition-colors duration-200 ${isActive
+      ? 'bg-blue-50 text-blue-600 font-medium border-r-4 border-blue-600'
+      : 'text-gray-700 hover:bg-gray-100'
     }`;
 
   const sectionTitleClass = "px-6 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider mt-6";
@@ -47,27 +46,9 @@ const ManagerSidebar: React.FC = () => {
             <h3 className={sectionTitleClass}>Yêu cầu</h3>
             <ul className="mt-2 space-y-1">
               <li>
-                <NavLink to="/requests/my-requests" end className={navLinkClass}>
-                  <FileText className="w-5 h-5" />
-                  <span>Yêu cầu của tôi</span>
-                </NavLink>
-              </li>
-              <li>
                 <NavLink to="/requests/manage" end className={navLinkClass}>
                   <FileText className="w-5 h-5" />
                   <span>Quản lý yêu cầu team</span>
-                </NavLink>
-              </li>
-              <li>
-                <NavLink to="/requests/create/leave" end className={navLinkClass}>
-                  <FileText className="w-5 h-5" />
-                  <span>Tạo yêu cầu nghỉ phép</span>
-                </NavLink>
-              </li>
-              <li>
-                <NavLink to="/requests/attendance" end className={navLinkClass}>
-                  <FileText className="w-5 h-5" />
-                  <span>Bảng chấm công</span>
                 </NavLink>
               </li>
             </ul>

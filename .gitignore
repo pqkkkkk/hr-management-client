@@ -1,6 +1,6 @@
-api-docs.json
+#api-docs.json
 .github/instructions
-
+.agent
 # Logs
 logs
 *.log

@@ -1,27 +1,29 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useMemo, useState } from "react";
 import { formatDate } from "shared/utils/date-utils";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
-import DelegationForm, {
-  CreateDelegationRequest,
-} from "../components/DelegationForm";
+import DelegationForm from "../components/DelegationForm";
 import Pagination from "../components/Pagination";
 import ConfirmationApprove from "../components/ConfirmationApprove";
 import ConfirmationReject from "../components/ConfirmationReject";
-import { mockRequestApi } from "services/api/request.api";
+import { useApi } from "contexts/ApiContext";
+import { useAuth } from "contexts/AuthContext";
 import {
   Request,
   RequestStatus,
   RequestType,
   requestTypeOptions,
   requestStatusOptions,
+  CreateDelegationRequest,
+  RequestFilter,
 } from "../types/request.types";
 import EmptyState from "../components/EmptyState";
 import ErrorState from "../components/ErrorState";
+import { useQuery } from "shared/hooks/use-query";
+import { useFetchList } from "shared/hooks/use-fetch-list";
 
 // --- Component: SearchAndFilter ---
 export type Filters = {
-  name?: string;
   dateFrom?: string; // ISO yyyy-mm-dd
   dateTo?: string; // ISO yyyy-mm-dd
   requestType?: RequestType | "";
@@ -35,35 +37,7 @@ const SearchAndFilter: React.FC<{
 }> = ({ filters, onChange, onClear }) => {
   return (
     <div className="px-6 py-3 border-t border-b border-gray-200 flex items-center gap-3 flex-nowrap overflow-x-auto bg-white">
-      <div className="flex flex-col">
-        <label className="text-xl text-gray-600 mb-1">Tìm nhân viên</label>
-        <div className="relative">
-          <input
-            value={filters.name ?? ""}
-            onChange={(e) => onChange({ ...filters, name: e.target.value })}
-            placeholder="Tìm kiếm theo tên"
-            className="h-9 px-4 pl-10 bg-gray-100 rounded-lg text-sm w-48"
-          />
-          <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-              <path
-                d="M21 21l-4.35-4.35"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-              <circle
-                cx="11"
-                cy="11"
-                r="6"
-                stroke="currentColor"
-                strokeWidth="2"
-              />
-            </svg>
-          </div>
-        </div>
-      </div>
+
       <div className="flex flex-col">
         <label className="text-xl text-gray-600 mb-1">Ngày gửi</label>
         <div className="flex items-center gap-2">
@@ -152,7 +126,6 @@ const SearchAndFilter: React.FC<{
         <button
           onClick={() => {
             onChange({
-              name: "",
               dateFrom: "",
               dateTo: "",
               requestType: "",
@@ -239,7 +212,7 @@ const RequestRow: React.FC<RequestRowProps> = ({
   return (
     <tr className="border-b last:border-b-0">
       <td className="py-4 px-10 text-sm font-medium text-gray-800">
-        {request.employeeName}
+        {request.employeeFullName}
       </td>
       <td className="py-4 px-10 text-sm text-gray-600">
         {getTypeLabel(request.requestType)}
@@ -367,91 +340,60 @@ const RequestRow: React.FC<RequestRowProps> = ({
 
 // --- Main Page Component ---
 const RequestManagementPage: React.FC = () => {
-  const [allRequests, setAllRequests] = useState<Request[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(false);
+  const { requestApi } = useApi();
+  const { user } = useAuth();
+  const PAGE_SIZE = 6;
 
-  const [filters, setFilters] = useState<Filters>({
-    name: "",
-    dateFrom: "",
-    dateTo: "",
-    requestType: "",
-    status: "",
+  const { query, updateQuery, resetQuery } = useQuery<RequestFilter>({
+    currentPage: 1,
+    pageSize: PAGE_SIZE,
+    approverId: user?.userId,
   });
-  const [page, setPage] = useState(1);
-  const pageSize = 6; // rows per page to match design
 
-  useEffect(() => {
-    const fetchAll = async () => {
-      setLoading(true);
-      setError(false);
-      try {
-        const res = await mockRequestApi.getRequests({
-          page: 1,
-          pageSize: 200,
-        });
-        if (res.success) {
-          setAllRequests(res.data.content);
-        } else {
-          setError(true);
-        }
-      } catch (err) {
-        console.error("Failed to fetch requests:", err);
-        setError(true);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchAll();
-  }, []);
-
-  const filtered = useMemo(() => {
-    return allRequests.filter((r) => {
-      if (
-        filters.name &&
-        !(r.employeeName ?? "")
-          .toLowerCase()
-          .includes(filters.name!.toLowerCase())
-      )
-        return false;
-      // date range filter (inclusive)
-      const d = (r.createdAt || "").slice(0, 10);
-      if (filters.dateFrom) {
-        if (d < filters.dateFrom) return false;
-      }
-      if (filters.dateTo) {
-        if (d > filters.dateTo) return false;
-      }
-      if (filters.requestType) {
-        if (r.requestType !== (filters.requestType as any)) return false;
-      }
-      if (filters.status) {
-        if (r.status !== (filters.status as any)) return false;
-      }
-      return true;
-    });
-  }, [allRequests, filters]);
-
-  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
-  useEffect(() => {
-    if (page > totalPages) setPage(1);
-  }, [totalPages]);
-
-  const pageItems = useMemo(
-    () => filtered.slice((page - 1) * pageSize, page * pageSize),
-    [filtered, page]
+  const fetchTeamRequests = useMemo(
+    () => requestApi.getTeamRequests.bind(requestApi),
+    [requestApi]
   );
 
-  const [selectedRequestId, setSelectedRequestId] = useState<string | null>(
-    null
-  );
+  const {
+    data: requests,
+    page: pageData,
+    isFetching: loading,
+    error,
+    refetch,
+  } = useFetchList<RequestFilter, Request>(fetchTeamRequests, query);
+
+  const [selectedRequestId, setSelectedRequestId] = useState<string | null>(null);
   const [showApproveModal, setShowApproveModal] = useState(false);
   const [showRejectModal, setShowRejectModal] = useState(false);
 
-  const pendingCount = allRequests.filter(
+  const pendingCount = requests.filter(
     (r) => r.status === RequestStatus.PENDING
   ).length;
+
+  const handleFilterChange = useCallback(
+    (newFilters: Filters) => {
+      updateQuery({
+        currentPage: 1,
+        type: newFilters.requestType ? (newFilters.requestType as RequestType) : undefined,
+        status: newFilters.status ? (newFilters.status as RequestStatus) : undefined,
+        startDate: newFilters.dateFrom || undefined,
+        endDate: newFilters.dateTo || undefined,
+      });
+    },
+    [updateQuery]
+  );
+
+  const handlePageChange = useCallback(
+    (newPage: number) => {
+      updateQuery({ currentPage: newPage });
+    },
+    [updateQuery]
+  );
+
+  const handleClearFilters = useCallback(() => {
+    resetQuery();
+  }, [resetQuery]);
 
   const badgeBgClass =
     pendingCount === 0
@@ -470,19 +412,17 @@ const RequestManagementPage: React.FC = () => {
   };
 
   const doApprove = async () => {
-    if (!selectedRequestId) return;
+    if (!selectedRequestId || !user) return;
     try {
-      const res = await mockRequestApi.approveRequest(selectedRequestId);
+      const res = await requestApi.approveRequest(selectedRequestId, user.userId);
       if (res && res.success) {
-        setAllRequests((prev) =>
-          prev.map((r) => (r.requestId === selectedRequestId ? res.data : r))
-        );
-        window.dispatchEvent(
-          new CustomEvent("request-updated", { detail: res.data })
-        );
+        // Refetch data from server to get updated list
+        await refetch();
+        toast.success("Phê duyệt thành công");
       }
     } catch (err) {
       console.error("Approve failed", err);
+      toast.error("Phê duyệt thất bại");
     } finally {
       setShowApproveModal(false);
       setSelectedRequestId(null);
@@ -490,22 +430,21 @@ const RequestManagementPage: React.FC = () => {
   };
 
   const doReject = async (reason: string) => {
-    if (!selectedRequestId) return;
+    if (!selectedRequestId || !user) return;
     try {
-      const res = await mockRequestApi.rejectRequest(
+      const res = await requestApi.rejectRequest(
         selectedRequestId,
+        user.userId,
         reason || ""
       );
       if (res && res.success) {
-        setAllRequests((prev) =>
-          prev.map((r) => (r.requestId === selectedRequestId ? res.data : r))
-        );
-        window.dispatchEvent(
-          new CustomEvent("request-updated", { detail: res.data })
-        );
+        // Refetch data from server to get updated list
+        await refetch();
+        toast.success("Từ chối thành công");
       }
     } catch (err) {
       console.error("Reject failed", err);
+      toast.error("Từ chối thất bại");
     } finally {
       setShowRejectModal(false);
       setSelectedRequestId(null);
@@ -555,7 +494,7 @@ const RequestManagementPage: React.FC = () => {
                 strokeLinecap="round"
               />
             </svg>
-            <h2 className="text-lg font-bold text-gray-900">Quản lý Yêu cầu</h2>
+            <h2 className="text-lg font-bold text-gray-900">Quản lý Yêu cầu Team</h2>
           </div>
           <div
             className={`inline-flex items-center gap-2 ${badgeBgClass} px-3 py-1 rounded-full text-sm`}
@@ -569,29 +508,17 @@ const RequestManagementPage: React.FC = () => {
 
         {/* Main card */}
         <div className="bg-white">
-          <div className="px-6 py-6 flex items-center justify-between">
-            <h1 className="text-3xl font-extrabold text-gray-900">
-              Danh sách Yêu cầu
-            </h1>
-          </div>
 
           <div className="px-6">
             <SearchAndFilter
-              filters={filters}
-              onChange={(f) => {
-                setFilters(f);
-                setPage(1);
+              filters={{
+                dateFrom: query.startDate,
+                dateTo: query.endDate,
+                requestType: query.type,
+                status: query.status,
               }}
-              onClear={() => {
-                setFilters({
-                  name: "",
-                  dateFrom: "",
-                  dateTo: "",
-                  requestType: "",
-                  status: "",
-                });
-                setPage(1);
-              }}
+              onChange={handleFilterChange}
+              onClear={handleClearFilters}
             />
           </div>
 
@@ -621,7 +548,7 @@ const RequestManagementPage: React.FC = () => {
             </div>
           ) : error ? (
             <ErrorState />
-          ) : filtered.length === 0 ? (
+          ) : requests.length === 0 ? (
             <EmptyState />
           ) : (
             <>
@@ -648,7 +575,7 @@ const RequestManagementPage: React.FC = () => {
                       </tr>
                     </thead>
                     <tbody className="bg-white">
-                      {pageItems.map((r) => (
+                      {requests.map((r) => (
                         <RequestRow
                           key={r.requestId}
                           request={r}
@@ -661,9 +588,16 @@ const RequestManagementPage: React.FC = () => {
                 </div>
               </div>
 
-              <div className="px-6">
-                <Pagination />
-              </div>
+              {pageData && (
+                <div className="px-6">
+                  <Pagination
+                    page={query.currentPage || 1}
+                    total={pageData.totalElements}
+                    limit={PAGE_SIZE}
+                    setPage={handlePageChange}
+                  />
+                </div>
+              )}
             </>
           )}
         </div>

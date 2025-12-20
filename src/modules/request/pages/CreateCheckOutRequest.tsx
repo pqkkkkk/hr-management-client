@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { formatDateForInput, formatTimeForInput } from "shared/utils/date-utils";
 import { useApi } from "contexts/ApiContext";
+import { useAuth } from "contexts/AuthContext";
 import { toast } from "react-toastify";
 import { CreateCheckOutRequestDTO } from "../types/request.types";
 import { useNavigate } from "react-router-dom";
@@ -11,12 +12,13 @@ interface CheckoutModalProps {
   onClose?: () => void;
 }
 
-const CheckOutRequestForm: React.FC<CheckoutModalProps> = ({ 
-  isModalMode = false, 
-  open, 
-  onClose 
+const CheckOutRequestForm: React.FC<CheckoutModalProps> = ({
+  isModalMode = false,
+  open,
+  onClose
 }) => {
-  const { requestApi } = useApi();
+  const { requestApi, fileApi } = useApi();
+  const { user } = useAuth();
   const navigate = useNavigate();
   const [date, setDate] = useState("");
   const [time, setTime] = useState("");
@@ -44,7 +46,7 @@ const CheckOutRequestForm: React.FC<CheckoutModalProps> = ({
       return () => clearTimeout(timer);
     }
   }, [success]);
-  
+
   // If in modal mode and not open, don't render
   if (isModalMode && !open) return null;
 
@@ -106,15 +108,28 @@ const CheckOutRequestForm: React.FC<CheckoutModalProps> = ({
       setLoading(true);
 
       // Upload attachment file if exists to get attachmentUrl first
-      
+      let attachmentUrl: string | undefined = undefined;
+      if (file) {
+        try {
+          const uploadResponse = await fileApi.uploadFile(file);
+          if (uploadResponse.success && uploadResponse.data) {
+            attachmentUrl = uploadResponse.data;
+          }
+        } catch (uploadError) {
+          console.error("Failed to upload file:", uploadError);
+          // Continue without attachment if upload fails
+          toast.warning("Không thể tải lên tệp đính kèm. Yêu cầu sẽ được gửi không có tệp.");
+        }
+      }
+
       const desiredCheckOutTime = `${date}T${time}:00`;
-      const attachmentUrl = file ? `uploads/${file.name}` : undefined;
 
       const requestData: CreateCheckOutRequestDTO = {
         title: time < "17:00"
           ? `Yêu cầu check-out sớm - ${date} ${time}`
           : `Yêu cầu check-out - ${date} ${time}`,
         userReason: reason || undefined,
+        employeeId: user?.userId || "",
         desiredCheckOutTime,
         attachmentUrl,
       };
@@ -132,7 +147,7 @@ const CheckOutRequestForm: React.FC<CheckoutModalProps> = ({
       toast.error(error?.message || "Có lỗi xảy ra khi tạo yêu cầu check-out");
     }
   };
-  
+
   const handleSuccess = () => {
     setDate("");
     setTime("");
@@ -165,49 +180,47 @@ const CheckOutRequestForm: React.FC<CheckoutModalProps> = ({
         Vui lòng điền đầy đủ thông tin bên dưới
       </p>
 
-    <div className="grid grid-cols-2 gap-4 mt-6">
+      <div className="grid grid-cols-2 gap-4 mt-6">
         <div>
           <label className="text-sm text-gray-600 block mb-2">Ngày</label>
           <input
             type="date"
-            className={`w-full border rounded px-3 py-2 ${
-                errors.date ? "border-red-500" : "focus:ring-2 focus:ring-black"
+            className={`w-full border rounded px-3 py-2 ${errors.date ? "border-red-500" : "focus:ring-2 focus:ring-black"
               }`}
-              value={date}
-              onChange={(e) => {
-                setDate(e.target.value);
-                if (errors.date) {
-                  setErrors({ ...errors, date: "" });
-                }
-              }}
-              disabled={loading}
-            />
-            {errors.date && (
-              <p className="text-red-500 text-sm mt-1">{errors.date}</p>
-            )}
-          </div>
-
-          <div>
-            <label className="text-sm text-gray-600 block mb-2">Giờ</label>
-            <input
-              type="time"
-              className={`w-full border rounded px-3 py-2 ${
-                errors.time ? "border-red-500" : ""
-              }`}
-              value={time}
-              onChange={(e) => {
-                setTime(e.target.value);
-                if (errors.time) {
-                  setErrors({ ...errors, time: "" });
-                }
-              }}
-              disabled={loading}
-            />
-            {errors.time && (
-              <p className="text-red-500 text-sm mt-1">{errors.time}</p>
-            )}
-          </div>
+            value={date}
+            onChange={(e) => {
+              setDate(e.target.value);
+              if (errors.date) {
+                setErrors({ ...errors, date: "" });
+              }
+            }}
+            disabled={loading}
+          />
+          {errors.date && (
+            <p className="text-red-500 text-sm mt-1">{errors.date}</p>
+          )}
         </div>
+
+        <div>
+          <label className="text-sm text-gray-600 block mb-2">Giờ</label>
+          <input
+            type="time"
+            className={`w-full border rounded px-3 py-2 ${errors.time ? "border-red-500" : ""
+              }`}
+            value={time}
+            onChange={(e) => {
+              setTime(e.target.value);
+              if (errors.time) {
+                setErrors({ ...errors, time: "" });
+              }
+            }}
+            disabled={loading}
+          />
+          {errors.time && (
+            <p className="text-red-500 text-sm mt-1">{errors.time}</p>
+          )}
+        </div>
+      </div>
 
       <div className="mt-4">
         <label className="text-sm text-gray-600 block mb-2">
@@ -215,11 +228,9 @@ const CheckOutRequestForm: React.FC<CheckoutModalProps> = ({
           {isBeforeSeventeen ? <span className="text-red-500">*</span> : null}
         </label>
         <textarea
-          className={`w-full border rounded p-3 min-h-[90px] resize-none ${
-            !isBeforeSeventeen ? "opacity-50 pointer-events-none" : ""
-          } ${
-            errors.reason ? "border-red-500" : ""
-          }`}
+          className={`w-full border rounded p-3 min-h-[90px] resize-none ${!isBeforeSeventeen ? "opacity-50 pointer-events-none" : ""
+            } ${errors.reason ? "border-red-500" : ""
+            }`}
           placeholder={
             !isBeforeSeventeen
               ? "Không cần nhập lý do"
@@ -233,11 +244,11 @@ const CheckOutRequestForm: React.FC<CheckoutModalProps> = ({
             }
           }}
           disabled={!isBeforeSeventeen || loading}
-          />
-          {errors.reason && (
-            <p className="text-red-500 text-sm mt-1">{errors.reason}</p>
-          )}
-        </div>
+        />
+        {errors.reason && (
+          <p className="text-red-500 text-sm mt-1">{errors.reason}</p>
+        )}
+      </div>
 
       <div className="mt-4">
         <label className="text-sm text-gray-600 block mb-2">
@@ -255,15 +266,13 @@ const CheckOutRequestForm: React.FC<CheckoutModalProps> = ({
           onDrop={(e) => {
             if (isBeforeSeventeen) handleDrop(e);
           }}
-          className={`border-2 ${
-            dragOver && isBeforeSeventeen
-              ? "border-blue-400 bg-blue-50"
-              : "border-dashed border-gray-300 bg-white"
-          } rounded p-6 text-center ${
-            !isBeforeSeventeen
+          className={`border-2 ${dragOver && isBeforeSeventeen
+            ? "border-blue-400 bg-blue-50"
+            : "border-dashed border-gray-300 bg-white"
+            } rounded p-6 text-center ${!isBeforeSeventeen
               ? "opacity-50 pointer-events-none"
               : "cursor-pointer"
-          }`}
+            }`}
           onClick={() => {
             if (isBeforeSeventeen) fileInputRef.current?.click();
           }}
@@ -286,24 +295,24 @@ const CheckOutRequestForm: React.FC<CheckoutModalProps> = ({
         </div>
         {file && (
           <ul className="mt-3">
-              <li
-                key={file.name}
-                className="flex items-center justify-between bg-gray-50 border rounded px-3 py-2 text-sm mb-2"
-              >
-                <div>
-                  <div className="font-medium">{file.name}</div>
-                  <div className="text-xs text-gray-500">
-                    {(file.size / 1024).toFixed(0)} KB
-                  </div>
+            <li
+              key={file.name}
+              className="flex items-center justify-between bg-gray-50 border rounded px-3 py-2 text-sm mb-2"
+            >
+              <div>
+                <div className="font-medium">{file.name}</div>
+                <div className="text-xs text-gray-500">
+                  {(file.size / 1024).toFixed(0)} KB
                 </div>
-                <button
-                  type="button"
-                  onClick={() => setFile(null)}
-                  className="text-red-500 text-sm"
-                >
-                  Xóa
-                </button>
-              </li>
+              </div>
+              <button
+                type="button"
+                onClick={() => setFile(null)}
+                className="text-red-500 text-sm"
+              >
+                Xóa
+              </button>
+            </li>
           </ul>
         )}
       </div>
