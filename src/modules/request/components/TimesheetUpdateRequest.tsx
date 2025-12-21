@@ -109,14 +109,15 @@ const UpdateTimesheetModal = ({ open, onClose, onSubmit }: UpdateTimesheetModalP
     
     setLoading(true);
     try {
-      // Call mock API
       const timeSheetData:CreateTimesheetUpdateRequestDTO = {
         title: `Yêu cầu cập nhật timesheet - ${workDate?.toISOString().split('T')[0]} ${checkInTime}-${checkOutTime}`,
         userReason: reason,
-        employeeId: user?.userId|| '', 
+        employeeId: user?.userId|| 'u1a2b3c4-e5f6-7890-abcd-ef1234567890', 
         targetDate: workDate ? workDate.toISOString().split('T')[0] : '',
         desiredCheckInTime: `${workDate?.toISOString().split('T')[0]}T${checkInTime}:00`,
+        currentCheckInTime: `${workDate?.toISOString().split('T')[0]}T${checkInTime}:00`,
         desiredCheckOutTime: `${workDate?.toISOString().split('T')[0]}T${checkOutTime}:00`,
+        currentCheckOutTime: `${workDate?.toISOString().split('T')[0]}T${checkOutTime}:00`,
       }
       const response = await requestApi.createTimesheetUpdateRequest(timeSheetData);
       if (response.success) {

@@ -255,7 +255,7 @@ export interface CreateTimesheetUpdateRequestDTO {
   employeeId: string;
   targetDate: string;
   desiredCheckInTime?: string;
+  currentCheckInTime?: string;
   desiredCheckOutTime?: string;
-  desiredMorningStatus?: string;
-  desiredAfternoonStatus?: string;
+  currentCheckOutTime: string;
 }

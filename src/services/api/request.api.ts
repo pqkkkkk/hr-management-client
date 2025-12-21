@@ -673,8 +673,8 @@ export class MockRequestApi implements RequestApi {
           targetDate: data.targetDate,
           desiredCheckInTime: data.desiredCheckInTime,
           desiredCheckOutTime: data.desiredCheckOutTime,
-          desiredMorningStatus: data.desiredMorningStatus,
-          desiredAfternoonStatus: data.desiredAfternoonStatus,
+          currentCheckOutTime: data.currentCheckOutTime,
+          currentCheckInTime: data.currentCheckInTime,
         };
 
 
