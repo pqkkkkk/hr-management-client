@@ -248,3 +248,14 @@ export interface TimesheetResponse {
   timesheets: TimesheetDailyEntry[];
   summary: TimesheetSummary;
 }
+
+export interface CreateTimesheetUpdateRequestDTO {
+  title: string;
+  userReason: string;
+  employeeId: string;
+  targetDate: string;
+  desiredCheckInTime?: string;
+  desiredCheckOutTime?: string;
+  desiredMorningStatus?: string;
+  desiredAfternoonStatus?: string;
+}

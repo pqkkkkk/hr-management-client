@@ -11,7 +11,8 @@ import {
   ShiftType,
   TimesheetResponse,
   CreateCheckOutRequestDTO,
-  CreateCheckInRequestDTO
+  CreateCheckInRequestDTO,
+  CreateTimesheetUpdateRequestDTO,
 } from "modules/request/types/request.types";
 import apiClient from "./api.client";
 
@@ -46,6 +47,10 @@ export interface RequestApi {
     employeeId: string,
     yearMonth: string
   ): Promise<ApiResponse<TimesheetResponse>>;
+  
+  createTimesheetUpdateRequest(
+    data: CreateTimesheetUpdateRequestDTO
+  ): Promise<ApiResponse<any>>;
 }
 
 export class MockRequestApi implements RequestApi {
@@ -655,6 +660,33 @@ export class MockRequestApi implements RequestApi {
       }, 500);
     });
   }
+
+  async createTimesheetUpdateRequest(
+    data: CreateTimesheetUpdateRequestDTO
+  ): Promise<ApiResponse<any>> {
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        const newRequest: CreateTimesheetUpdateRequestDTO = {
+          title: data.title,
+          userReason: data.userReason,
+          employeeId: data.employeeId,
+          targetDate: data.targetDate,
+          desiredCheckInTime: data.desiredCheckInTime,
+          desiredCheckOutTime: data.desiredCheckOutTime,
+          desiredMorningStatus: data.desiredMorningStatus,
+          desiredAfternoonStatus: data.desiredAfternoonStatus,
+        };
+
+
+        resolve({
+          data: newRequest,
+          success: true,
+          statusCode: 201,
+          message: "Timesheet update request created successfully",
+        });
+      }, 800);
+    });
+  }
 }
 
 // REST API Implementation
@@ -727,6 +759,12 @@ export class RestRequestApi implements RequestApi {
 
   async getRemainingLeaveDays(): Promise<ApiResponse<RemainingLeaveDays>> {
     throw new Error("Method not available in backend API.");
+  }
+
+  async createTimesheetUpdateRequest(
+    data: CreateTimesheetUpdateRequestDTO
+  ): Promise<ApiResponse<any>> {
+    return apiClient.post(`/requests/timesheet`, data);
   }
 }
 

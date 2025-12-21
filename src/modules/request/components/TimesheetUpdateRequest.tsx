@@ -1,5 +1,9 @@
 import React, { useState } from "react";
 import { AlertCircle, X, Paperclip } from "lucide-react";
+import { toast } from "react-toastify";
+import { useAuth } from "contexts/AuthContext";
+import { CreateTimesheetUpdateRequestDTO } from "../types/request.types";
+import { useApi } from "contexts/ApiContext";
 
 interface UpdateTimesheetModalProps {
     open: boolean;
@@ -15,123 +19,133 @@ interface FormData {
   file: File | null;
 }
 
-interface FormErrors {
-  date?: string;
-  checkInTime?: string;
-  checkOutTime?: string;
-  reason?: string;
-}
-
 const UpdateTimesheetModal = ({ open, onClose, onSubmit }: UpdateTimesheetModalProps) => {
-  const [formData, setFormData] = useState<FormData>({
-    date: "",
-    checkInTime: "08:15",
-    checkOutTime: "17:15",
-    reason: "",
-    file: null,
-  });
-
-  const [errors, setErrors] = useState<FormErrors>({});
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [workDate, setWorkDate] = useState<Date | null>(null);
+  const [checkInTime, setCheckInTime] = useState("08:15");
+  const [checkOutTime, setCheckOutTime] = useState("17:15");
+  const [reason, setReason] = useState('');
+  const [file, setFile] = useState<File | null>(null);
+  const [errors, setErrors] = useState<{[key: string]: string}>({});
+  const [loading, setLoading] = useState(false);
+  const { user } = useAuth();
+  const { requestApi } = useApi();
 
   if (!open) return null;
 
-  const validateForm = (): boolean => {
-    const newErrors: FormErrors = {};
+  const validateForm = () => {
+    const newErrors: {[key: string]: string} = {};
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-
-    // Validate date
-    if (!formData.date) {
-      newErrors.date = "Vui lòng chọn ngày cần cập nhật";
+    
+    if (!workDate) {
+      newErrors.workDate = 'Vui lòng chọn ngày';
     } else {
-      const selectedDate = new Date(formData.date);
-      if (selectedDate > today) {
-        newErrors.date = "Không thể cập nhật cho ngày trong tương lai";
+      const selectedDate = new Date(workDate);
+      selectedDate.setHours(0, 0, 0, 0);
+      if (selectedDate < today) {
+        newErrors.workDate = 'Ngày không được trong quá khứ';
       }
     }
 
-    if (!formData.checkInTime) {
+    if (!checkInTime) {
       newErrors.checkInTime = "Vui lòng nhập giờ check-in";
     }
 
-    if (!formData.checkOutTime) {
+    if (!checkOutTime) {
       newErrors.checkOutTime = "Vui lòng nhập giờ check-out";
-    } else if (formData.checkInTime && formData.checkOutTime <= formData.checkInTime) {
+    } else if (checkInTime && checkOutTime <= checkInTime) {
       newErrors.checkOutTime = "Giờ check-out phải sau giờ check-in";
     }
-
-    if (!formData.reason.trim()) {
-      newErrors.reason = "Vui lòng nhập lý do cập nhật";
-    } else if (formData.reason.trim().length < 10) {
-      newErrors.reason = "Lý do phải có ít nhất 10 ký tự";
-    } else if (formData.reason.trim().length > 500) {
-      newErrors.reason = "Lý do không được vượt quá 500 ký tự";
+    
+    if (!reason.trim()) {
+      newErrors.reason = 'Vui lòng nhập lý do';
+    } else if (reason.length < 10) {
+      newErrors.reason = 'Lý do phải có ít nhất 10 ký tự';
+    } else if (reason.length > 500) {
+      newErrors.reason = 'Lý do không được vượt quá 500 ký tự';
     }
-
+    
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleInputChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-  ) => {
-    const { name, value } = e.target;
+  const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setWorkDate(value ? new Date(value) : null);
+    if (errors.workDate) {
+      setErrors((prev) => ({ ...prev, workDate: '' }));
+    }
+  };
 
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
+  const handleCheckInChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setCheckInTime(e.target.value);
+    if (errors.checkInTime) {
+      setErrors((prev) => ({ ...prev, checkInTime: '' }));
+    }
+  };
 
-    // Clear error for this field
-    if (errors[name as keyof FormErrors]) {
-      setErrors((prev) => ({
-        ...prev,
-        [name]: undefined,
-      }));
+  const handleCheckOutChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setCheckOutTime(e.target.value);
+    if (errors.checkOutTime) {
+      setErrors((prev) => ({ ...prev, checkOutTime: '' }));
+    }
+  };
+
+  const handleReasonChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setReason(e.target.value);
+    if (errors.reason) {
+      setErrors((prev) => ({ ...prev, reason: '' }));
     }
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0] || null;
-    setFormData((prev) => ({
-      ...prev,
-      file,
-    }));
+    const selectedFile = e.target.files?.[0] || null;
+    setFile(selectedFile);
   };
 
-  const handleSubmit = () => {
-    if (!validateForm()) {
-      return;
-    }
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!validateForm()) return;
+    
+    setLoading(true);
+    try {
+      // Call mock API
+      const timeSheetData:CreateTimesheetUpdateRequestDTO = {
+        title: `Yêu cầu cập nhật timesheet - ${workDate?.toISOString().split('T')[0]} ${checkInTime}-${checkOutTime}`,
+        userReason: reason,
+        employeeId: user?.userId|| '', 
+        targetDate: workDate ? workDate.toISOString().split('T')[0] : '',
+        desiredCheckInTime: `${workDate?.toISOString().split('T')[0]}T${checkInTime}:00`,
+        desiredCheckOutTime: `${workDate?.toISOString().split('T')[0]}T${checkOutTime}:00`,
+      }
+      const response = await requestApi.createTimesheetUpdateRequest(timeSheetData);
+      if (response.success) {
+        toast.success('Gửi yêu cầu thành công!');
+        onSubmit?.();
+      } else {
+        toast.error('Có lỗi xảy ra');
+      }
 
-    setIsSubmitting(true);
-
-    // Simulate API call
-    setTimeout(() => {
-      setIsSubmitting(false);
-      onSubmit?.();
-      
-      // Reset form
-      setFormData({
-        date: "",
-        checkInTime: "08:15",
-        checkOutTime: "17:15",
-        reason: "",
-        file: null,
-      });
+      setWorkDate(null);
+      setCheckInTime("08:15");
+      setCheckOutTime("17:15");
+      setReason('');
+      setFile(null);
       setErrors({});
-    }, 1000);
+    } catch (error) {
+      toast.error('Có lỗi xảy ra');
+      console.error(error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleCancel = () => {
-    setFormData({
-      date: "",
-      checkInTime: "08:15",
-      checkOutTime: "17:15",
-      reason: "",
-      file: null,
-    });
+    setWorkDate(null);
+    setCheckInTime("08:15");
+    setCheckOutTime("17:15");
+    setReason('');
+    setFile(null);
     setErrors({});
     onClose?.();
   };
@@ -152,7 +166,7 @@ const UpdateTimesheetModal = ({ open, onClose, onSubmit }: UpdateTimesheetModalP
           <button
             onClick={handleCancel}
             className="rounded-full p-1 hover:bg-gray-100"
-            disabled={isSubmitting}
+            disabled={loading}
           >
             <X className="h-5 w-5" />
           </button>
@@ -167,19 +181,19 @@ const UpdateTimesheetModal = ({ open, onClose, onSubmit }: UpdateTimesheetModalP
             <input
               type="date"
               name="date"
-              value={formData.date}
-              onChange={handleInputChange}
+              value={workDate ? workDate.toISOString().split('T')[0] : ''}
+              onChange={handleDateChange}
               className={`w-full rounded-lg border px-4 py-2 focus:outline-none focus:ring-1 ${
-                errors.date
+                errors.workDate
                   ? "border-red-500 focus:ring-red-500"
                   : "focus:ring-black"
               }`}
-              disabled={isSubmitting}
+              disabled={loading}
             />
-            {errors.date && (
+            {errors.workDate && (
               <div className="mt-1 flex items-center gap-1 text-xs text-red-600">
                 <AlertCircle className="h-3 w-3" />
-                <span>{errors.date}</span>
+                <span>{errors.workDate}</span>
               </div>
             )}
           </div>
@@ -192,14 +206,14 @@ const UpdateTimesheetModal = ({ open, onClose, onSubmit }: UpdateTimesheetModalP
               <input
                 type="time"
                 name="checkInTime"
-                value={formData.checkInTime}
-                onChange={handleInputChange}
+                value={checkInTime}
+                onChange={handleCheckInChange}
                 className={`w-full rounded-lg border px-4 py-2 focus:outline-none focus:ring-1 ${
                   errors.checkInTime
                     ? "border-red-500 focus:ring-red-500"
                     : "focus:ring-black"
                 }`}
-                disabled={isSubmitting}
+                disabled={loading}
               />
               {errors.checkInTime && (
                 <div className="mt-1 flex items-center gap-1 text-xs text-red-600">
@@ -216,14 +230,14 @@ const UpdateTimesheetModal = ({ open, onClose, onSubmit }: UpdateTimesheetModalP
               <input
                 type="time"
                 name="checkOutTime"
-                value={formData.checkOutTime}
-                onChange={handleInputChange}
+                value={checkOutTime}
+                onChange={handleCheckOutChange}
                 className={`w-full rounded-lg border px-4 py-2 focus:outline-none focus:ring-1 ${
                   errors.checkOutTime
                     ? "border-red-500 focus:ring-red-500"
                     : "focus:ring-black"
                 }`}
-                disabled={isSubmitting}
+                disabled={loading}
               />
               {errors.checkOutTime && (
                 <div className="mt-1 flex items-center gap-1 text-xs text-red-600">
@@ -241,15 +255,15 @@ const UpdateTimesheetModal = ({ open, onClose, onSubmit }: UpdateTimesheetModalP
             <textarea
               rows={4}
               name="reason"
-              value={formData.reason}
-              onChange={handleInputChange}
+              value={reason}
+              onChange={handleReasonChange}
               placeholder="Vui lòng nhập lý do cập nhật (tối thiểu 10 ký tự)"
               className={`w-full resize-none rounded-lg border px-4 py-2 focus:outline-none focus:ring-1 ${
                 errors.reason
                   ? "border-red-500 focus:ring-red-500"
                   : "focus:ring-black"
               }`}
-              disabled={isSubmitting}
+              disabled={loading}
             />
             <div className="mt-1 flex items-center justify-between">
               <div>
@@ -262,12 +276,12 @@ const UpdateTimesheetModal = ({ open, onClose, onSubmit }: UpdateTimesheetModalP
               </div>
               <span
                 className={`text-xs ${
-                  formData.reason.length > 500
+                  reason.length > 500
                     ? "text-red-600"
                     : "text-gray-500"
                 }`}
               >
-                {formData.reason.length}/500
+                {reason.length}/500
               </span>
             </div>
           </div>
@@ -281,12 +295,12 @@ const UpdateTimesheetModal = ({ open, onClose, onSubmit }: UpdateTimesheetModalP
                               rounded-lg border px-4 py-2 text-sm
                               hover:bg-gray-50">
               <Paperclip className="h-4 w-4" />
-              <span>{formData.file ? formData.file.name : "Tải tệp lên"}</span>
+              <span>{file ? file.name : "Tải tệp lên"}</span>
               <input
                 type="file"
                 onChange={handleFileChange}
                 className="hidden"
-                disabled={isSubmitting}
+                disabled={loading}
               />
             </label>
           </div>
@@ -296,22 +310,22 @@ const UpdateTimesheetModal = ({ open, onClose, onSubmit }: UpdateTimesheetModalP
           <button
             onClick={handleCancel}
             className="rounded-lg border px-5 py-2 text-sm hover:bg-gray-50"
-            disabled={isSubmitting}
+            disabled={loading}
           >
             Hủy
           </button>
           <button
-            onClick={handleSubmit}
+            onClick={(e) => handleSubmit(e)}
             className="rounded-lg bg-black px-5 py-2 text-sm text-white hover:bg-gray-800 disabled:opacity-50 flex items-center justify-center gap-2"
-            disabled={isSubmitting}
+            disabled={loading}
           >
-            {isSubmitting && (
+            {loading && (
               <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
               </svg>
             )}
-            {isSubmitting ? "Đang gửi..." : "Gửi yêu cầu"}
+            {loading ? "Đang gửi..." : "Gửi yêu cầu"}
           </button>
         </div>
       </div>
