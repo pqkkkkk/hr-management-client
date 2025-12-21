@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useRef } from "react";
-import { mockRequestApi } from "services/api/request.api";
+import { useApi } from "contexts/ApiContext";
+import { useAuth } from "contexts/AuthContext";
 import { formatDate } from "shared/utils/date-utils";
 import ErrorState from "../components/ErrorState";
 import EmptyState from "../components/EmptyState";
@@ -210,7 +211,7 @@ const TimesheetHeader: React.FC<TimesheetHeaderProps> = ({ summary }) => {
       title: "Tổng số công",
       value: summary ? (
         <span className="text-green-600 font-semibold">
-          {summary.totalWorkCredit}
+          {summary.totalWorkCredit.toFixed(3)}
         </span>
       ) : (
         "-"
@@ -228,7 +229,14 @@ const TimesheetHeader: React.FC<TimesheetHeaderProps> = ({ summary }) => {
   );
 };
 // Timesheet filters component
-const TimesheetFilters: React.FC = () => {
+interface TimesheetFiltersProps {
+  yearmonth: string;
+  setYearmonth: (m: string) => void;
+}
+const TimesheetFilters: React.FC<TimesheetFiltersProps> = ({
+  yearmonth,
+  setYearmonth,
+}) => {
   const formatDateLocal = (d: Date) => {
     const y = d.getFullYear();
     const m = String(d.getMonth() + 1).padStart(2, "0");
@@ -248,7 +256,7 @@ const TimesheetFilters: React.FC = () => {
     today.getMonth() + 1
   ).padStart(2, "0")}`;
 
-  const [month, setMonth] = useState<string>(defaultMonth);
+  // month, setMonth are now props
   const [startDate, setStartDate] = useState<string>(
     () => getMonthRange(defaultMonth).start
   );
@@ -261,10 +269,10 @@ const TimesheetFilters: React.FC = () => {
   const popupRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
-    const { start, end } = getMonthRange(month);
+    const { start, end } = getMonthRange(yearmonth);
     setStartDate(start);
     setEndDate(end);
-  }, [month]);
+  }, [yearmonth]);
 
   useEffect(() => {
     function onDocMouseDown(e: MouseEvent) {
@@ -292,8 +300,8 @@ const TimesheetFilters: React.FC = () => {
     };
   }, [rangeOpen]);
 
-  const monthStart = getMonthRange(month).start;
-  const monthEnd = getMonthRange(month).end;
+  const monthStart = getMonthRange(yearmonth).start;
+  const monthEnd = getMonthRange(yearmonth).end;
 
   const clampDate = (d: string, min: string, max: string) => {
     if (d < min) return min;
@@ -323,13 +331,13 @@ const TimesheetFilters: React.FC = () => {
             <div className="flex items-center gap-2 bg-white border border-gray-200 rounded px-3 py-2 w-48">
               <Calendar className="w-4 h-4 text-gray-400" />
               <div className="flex-1 text-sm text-gray-700">
-                {formatMonthLabel(month)}
+                {formatMonthLabel(yearmonth)}
               </div>
               <div className="relative">
                 <input
                   type="month"
-                  value={month}
-                  onChange={(e) => setMonth(e.target.value)}
+                  value={yearmonth}
+                  onChange={(e) => setYearmonth(e.target.value)}
                   className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                 />
                 <ChevronDown className="w-4 h-4 text-gray-400" />
@@ -411,8 +419,14 @@ const TimesheetFilters: React.FC = () => {
   );
 };
 
-// Main component
 const TimesheetViewPage: React.FC = () => {
+  const { requestApi } = useApi();
+  const { user } = useAuth();
+  const today = new Date();
+  const defaultMonth = `${today.getFullYear()}-${String(
+    today.getMonth() + 1
+  ).padStart(2, "0")}`;
+  const [yearmonth, setYearmonth] = useState<string>(defaultMonth);
   const [data, setData] = useState<TimesheetEntry[]>([]);
   const [summary, setSummary] = useState<TimesheetSummary | null>(null);
   const [loading, setLoading] = useState(true);
@@ -423,8 +437,8 @@ const TimesheetViewPage: React.FC = () => {
       setLoading(true);
       setError(false);
       try {
-        const ym = new Date().toISOString().slice(0, 7); // YYYY-MM
-        const res = await mockRequestApi.getTimesheet("NV001", ym);
+        const ym = yearmonth;
+        const res = await requestApi.getTimesheet(user?.userId, ym);
         if (res && res.success && res.data) {
           const mapped: TimesheetEntry[] = res.data.timesheets.map((t) => {
             const dateLabel = (() => {
@@ -493,13 +507,14 @@ const TimesheetViewPage: React.FC = () => {
         setLoading(false);
       }
     };
-
     fetch();
-  }, []);
+  }, [yearmonth]);
 
   return (
     <div className="p-6">
       <h1 className="text-2xl font-bold mb-4">Bảng Chấm Công</h1>
+      <TimesheetHeader summary={summary} />
+      <TimesheetFilters yearmonth={yearmonth} setYearmonth={setYearmonth} />
       {loading ? (
         <div className="px-6 py-20 text-center">
           <div className="flex justify-center">
@@ -530,8 +545,6 @@ const TimesheetViewPage: React.FC = () => {
         <EmptyState />
       ) : (
         <>
-          <TimesheetHeader summary={summary} />
-          <TimesheetFilters />
           <TimesheetTable data={data} />
         </>
       )}
