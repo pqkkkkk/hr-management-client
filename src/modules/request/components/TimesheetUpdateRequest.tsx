@@ -61,7 +61,6 @@ const UpdateTimesheetModal = ({ open, onClose, onSubmit }: UpdateTimesheetModalP
       newErrors.checkOutTime = "Giờ check-out phải sau giờ check-in";
     }
 
-    // Validate reason
     if (!formData.reason.trim()) {
       newErrors.reason = "Vui lòng nhập lý do cập nhật";
     } else if (formData.reason.trim().length < 10) {
