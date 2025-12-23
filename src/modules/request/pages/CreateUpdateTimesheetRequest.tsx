@@ -2,19 +2,25 @@ import React, { useEffect, useRef, useState } from "react";
 import { formatDateForInput, formatTimeForInput } from "shared/utils/date-utils";
 import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
+import { useApi } from "contexts/ApiContext";
+import { CreateTimesheetUpdateRequestDTO } from "../types/request.types";
+import { useAuth } from "contexts/AuthContext";
 
 interface UpdateTimesheetModalProps {
   isModalMode?: boolean;
   open?: boolean;
   onClose?: () => void;
+  onSubmit?: () => void;
 }
 
-const UpdateTimesheetRequestForm: React.FC<UpdateTimesheetModalProps> = ({ isModalMode = false, open = true, onClose }) => {
+const UpdateTimesheetRequestForm: React.FC<UpdateTimesheetModalProps> = ({ isModalMode = false, open = true, onClose, onSubmit }) => {
   const navigate = useNavigate();
+  const { requestApi } = useApi();
+  const { user } = useAuth();
 
-  const [date, setDate] = useState<string>("");
-  const [timeIn, setTimeIn] = useState<string>("");
-  const [timeOut, setTimeOut] = useState<string>("");
+  const [targetDate, setTargetDate] = useState<Date | null>(null);
+  const [checkInTime, setCheckInTime] = useState<string>("");
+  const [checkOutTime, setCheckOutTime] = useState<string>("");
   const [reason, setReason] = useState<string>("");
   const [file, setFile] = useState<File | null>(null);
   const [dragOver, setDragOver] = useState(false);
@@ -24,11 +30,11 @@ const UpdateTimesheetRequestForm: React.FC<UpdateTimesheetModalProps> = ({ isMod
 
   useEffect(() => {
     const now = new Date();
-    setDate(formatDateForInput(now));
-    setTimeIn(formatTimeForInput(now));
+    setTargetDate(now);
+    setCheckInTime(formatTimeForInput(now));
     const d = new Date(now.getTime());
     d.setHours(d.getHours() + 9);
-    setTimeOut(formatTimeForInput(d));
+    setCheckOutTime(formatTimeForInput(d));
   }, []);
 
   // If rendered as modal but not open, do not render anything
@@ -49,27 +55,27 @@ const UpdateTimesheetRequestForm: React.FC<UpdateTimesheetModalProps> = ({ isMod
   };
 
   const handleCancel = () => {
-    setTimeIn("");
-    setTimeOut("");
+    setCheckInTime("");
+    setCheckOutTime("");
     setReason("");
     setFile(null);
     setErrors({});
     if (isModalMode) onClose?.();
   };
 
-  const validate = (): boolean => {
+  const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
 
-    if (!date) {
+    if (!targetDate) {
       newErrors.date = "Vui lòng chọn ngày";
     }
-    if (!timeIn) {
+    if (!checkInTime) {
       newErrors.timeIn = "Vui lòng chọn giờ vào";
     }
-    if (!timeOut) {
+    if (!checkOutTime) {
       newErrors.timeOut = "Vui lòng chọn giờ ra";
     }
-    if (timeIn && timeOut && timeIn >= timeOut) {
+    if (checkInTime && checkOutTime && checkInTime >= checkOutTime) {
       newErrors.timeOut = "Giờ ra phải sau giờ vào";
     }
     if (!reason.trim()) {
@@ -81,23 +87,38 @@ const UpdateTimesheetRequestForm: React.FC<UpdateTimesheetModalProps> = ({ isMod
   };
 
   const handleSubmit = async (e?: React.FormEvent) => {
-    e?.preventDefault();
-
-    if (!validate()) {
-      const errorMessage = Object.values(errors).join("\n");
-      toast.error(errorMessage);
-      return;
-    }
+    e.preventDefault();
+    if (!validateForm()) return;
 
     setSubmitting(true);
-
     try {
-      toast.error(
-        "Chức năng cập nhật chấm công hiện chưa được hỗ trợ trên hệ thống. Vui lòng liên hệ HR."
-      );
-    } catch (error: any) {
-      console.error("Failed to create timesheet request:", error);
-      toast.error(error?.message || "Có lỗi xảy ra khi tạo yêu cầu");
+      const timeSheetData: CreateTimesheetUpdateRequestDTO = {
+        title: `Yêu cầu cập nhật timesheet - ${targetDate?.toISOString().split('T')[0]} ${checkInTime}-${checkOutTime}`,
+        userReason: reason,
+        employeeId: user?.userId || 'u1a2b3c4-e5f6-7890-abcd-ef1234567890',
+        targetDate: targetDate?.toISOString().split('T')[0],
+        desiredCheckInTime: `${targetDate?.toISOString().split('T')[0]}T${checkInTime}:00`,
+        currentCheckInTime: `${targetDate?.toISOString().split('T')[0]}T${checkInTime}:00`,
+        desiredCheckOutTime: `${targetDate?.toISOString().split('T')[0]}T${checkOutTime}:00`,
+        currentCheckOutTime: `${targetDate?.toISOString().split('T')[0]}T${checkOutTime}:00`,
+      }
+      const response = await requestApi.createTimesheetUpdateRequest(timeSheetData);
+      if (response.success) {
+        toast.success('Gửi yêu cầu thành công!');
+        onSubmit?.();
+      } else {
+        toast.error('Có lỗi xảy ra');
+      }
+
+      setTargetDate(null);
+      setCheckInTime('');
+      setCheckOutTime('');
+      setReason('');
+      setFile(null);
+      setErrors({});
+    } catch (error) {
+      toast.error('Có lỗi xảy ra');
+      console.error(error);
     } finally {
       setSubmitting(false);
     }
@@ -117,8 +138,8 @@ const UpdateTimesheetRequestForm: React.FC<UpdateTimesheetModalProps> = ({ isMod
           <input
             type="date"
             className="w-full border rounded px-3 py-2"
-            value={date}
-            onChange={(e) => setDate(e.target.value)}
+            value={targetDate?.toISOString().split('T')[0]}
+            onChange={(e) => setTargetDate(new Date(e.target.value))}
           />
         </div>
       </div>
@@ -141,14 +162,14 @@ const UpdateTimesheetRequestForm: React.FC<UpdateTimesheetModalProps> = ({ isMod
           <input
             type="time"
             className="w-full border rounded px-3 py-2"
-            value={timeIn}
-            onChange={(e) => setTimeIn(e.target.value)}
+            value={checkInTime}
+            onChange={(e) => setCheckInTime(e.target.value)}
           />
           <input
             type="time"
             className="w-full border rounded px-3 py-2"
-            value={timeOut}
-            onChange={(e) => setTimeOut(e.target.value)}
+            value={checkOutTime}
+            onChange={(e) => setCheckOutTime(e.target.value)}
           />
         </div>
         <div className="text-xs text-gray-400 mt-1">Thứ tự: Giờ vào (trái) · Giờ ra (phải)</div>
