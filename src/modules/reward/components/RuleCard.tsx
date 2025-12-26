@@ -1,0 +1,73 @@
+import {CheckboxItemProps} from '../types/checkbox.type';
+const RuleCard: React.FC = () => {
+  return (
+    <>
+      {/* Quy tắc quy đổi */}
+      <div className="bg-white rounded-2xl p-6 shadow-sm">
+        <h2 className="font-semibold mb-4">QUY TẮC QUY ĐỔI</h2>
+
+        <label className="text-sm font-medium">
+          Tỷ lệ quy đổi (VND sang Điểm)
+        </label>
+
+        <div className="flex items-center gap-2 mt-2">
+          <input className="w-full border rounded-xl px-3 py-2" defaultValue="100,000 VND" />
+          <span>→</span>
+          <input className="w-full border rounded-xl px-3 py-2" defaultValue="10 pts" />
+        </div>
+
+        <p className="text-xs text-gray-500 mt-2">
+          ⓘ 100,000 VND doanh số = 10 điểm thưởng
+        </p>
+
+        <div className="mt-4">
+          <label className="text-sm font-medium">
+            Điểm tối thiểu để đổi quà
+          </label>
+          <input
+            className="mt-1 w-full border rounded-xl px-3 py-2"
+            defaultValue={500}
+          />
+        </div>
+      </div>
+
+      {/* Quy tắc phân bổ */}
+      <div className="bg-white rounded-2xl p-6 shadow-sm">
+        <h2 className="font-semibold mb-4">QUY TẮC PHÂN BỔ</h2>
+
+        <div className="space-y-3">
+          <CheckboxItem
+            label="Cộng dồn tự động"
+            description="Hệ thống tự động tính và cộng điểm vào cuối chu kỳ."
+            defaultChecked
+          />
+          <CheckboxItem
+            label="Cho phép tặng điểm"
+            description="Nhân viên có thể tặng điểm thưởng cho nhau."
+          />
+          <CheckboxItem
+            label="Thông báo email"
+            description="Gửi email khi có thay đổi điểm số."
+          />
+        </div>
+      </div>
+    </>
+  );
+};
+
+
+const CheckboxItem: React.FC<CheckboxItemProps> = ({
+  label,
+  description,
+  defaultChecked = false,
+}) => (
+  <label className="flex gap-2 items-start">
+    <input type="checkbox" defaultChecked={defaultChecked} />
+    <div>
+      <p className="font-medium text-sm">{label}</p>
+      <p className="text-xs text-gray-500">{description}</p>
+    </div>
+  </label>
+);
+
+export default RuleCard;

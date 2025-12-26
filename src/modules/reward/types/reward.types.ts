@@ -66,3 +66,11 @@ export interface GiftedPointFilter {
   pageSize?: number;
   sortDirection?: "ASC" | "DESC";
 }
+
+
+export interface RewardItem {
+  id: number;
+  name: string;
+  points: number;
+  quantity: number;
+}
