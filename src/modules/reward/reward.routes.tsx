@@ -3,6 +3,7 @@ import {
   TransactionHistoryPage,
   GiftPage,
   GiftedPointTransactionPage,
+  RewardProgramDetailPage,
 } from "./pages";
 
 const RewardRoutes = (
@@ -13,6 +14,7 @@ const RewardRoutes = (
       path="gifted-transactions"
       element={<GiftedPointTransactionPage />}
     />
+    <Route path="programs/:id" element={<RewardProgramDetailPage />} />
   </Route>
 );
 

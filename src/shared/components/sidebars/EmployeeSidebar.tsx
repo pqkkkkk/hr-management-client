@@ -4,10 +4,9 @@ import { LayoutDashboard, FileText, User, Activity, Gift } from 'lucide-react';
 
 const EmployeeSidebar: React.FC = () => {
   const navLinkClass = ({ isActive }: { isActive: boolean }) =>
-    `flex items-center space-x-3 px-6 py-3 text-sm transition-colors duration-200 ${
-      isActive
-        ? 'bg-blue-50 text-blue-600 font-medium border-r-4 border-blue-600'
-        : 'text-gray-700 hover:bg-gray-100'
+    `flex items-center space-x-3 px-6 py-3 text-sm transition-colors duration-200 ${isActive
+      ? 'bg-blue-50 text-blue-600 font-medium border-r-4 border-blue-600'
+      : 'text-gray-700 hover:bg-gray-100'
     }`;
 
   const sectionTitleClass = "px-6 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider mt-6";
@@ -85,19 +84,19 @@ const EmployeeSidebar: React.FC = () => {
             <h3 className={sectionTitleClass}>Điểm thưởng</h3>
             <ul className="mt-2 space-y-1">
               <li>
-                <NavLink to="/rewards" className={navLinkClass}>
+                <NavLink to="/rewards/programs/1" end className={navLinkClass}>
                   <Gift className="w-5 h-5" />
-                  <span>Tổng quan điểm</span>
+                  <span>Đợt khen thưởng hiện tại</span>
                 </NavLink>
               </li>
               <li>
-                <NavLink to="/rewards/transactions" className={navLinkClass}>
+                <NavLink to="/rewards/transactions" end className={navLinkClass}>
                   <Gift className="w-5 h-5" />
                   <span>Lịch sử giao dịch</span>
                 </NavLink>
               </li>
               <li>
-                <NavLink to="/rewards/redeem" className={navLinkClass}>
+                <NavLink to="/rewards/exchange" className={navLinkClass}>
                   <Gift className="w-5 h-5" />
                   <span>Đổi quà</span>
                 </NavLink>
