@@ -1,7 +1,7 @@
 import { User } from "shared/types";
 
 export const users: User[] = [
-    {
+  {
     userId: "NV001",
     fullName: "Nguyễn Văn A",
     email: "nva@gmail.com",
@@ -19,8 +19,8 @@ export const users: User[] = [
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
     departmentId: "DPT03",
-    },
-    {
+  },
+  {
     userId: "NV002",
     fullName: "Trần Thị B",
     email: "ttb@gmail.com",
@@ -38,8 +38,8 @@ export const users: User[] = [
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
     departmentId: "DPT01",
-    },
-    {
+  },
+  {
     userId: "NV003",
     fullName: "Lê Văn C",
     email: "lvc@gmail.com",
@@ -57,8 +57,8 @@ export const users: User[] = [
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
     departmentId: "DPT02",
-    },
-    {
+  },
+  {
     userId: "NV004",
     fullName: "Phạm Thị D",
     email: "ptd@gmail.com",
@@ -76,8 +76,8 @@ export const users: User[] = [
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
     departmentId: "DPT04",
-    },
-    {
+  },
+  {
     userId: "NV005",
     fullName: "Hoàng Văn E",
     email: "hve@gmail.com",
@@ -95,8 +95,8 @@ export const users: User[] = [
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
     departmentId: "DPT03",
-    },
-    {
+  },
+  {
     userId: "NV006",
     fullName: "Nguyễn Văn G",
     email: "nvg@gmail.com",
@@ -114,8 +114,8 @@ export const users: User[] = [
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
     departmentId: "DPT02",
-    },
-    {
+  },
+  {
     userId: "NV007",
     fullName: "Nguyễn Văn A",
     email: "nva@gmail.com",
@@ -133,8 +133,8 @@ export const users: User[] = [
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
     departmentId: "DPT03",
-    },
-    {
+  },
+  {
     userId: "NV008",
     fullName: "Trần Thị B",
     email: "ttb@gmail.com",
@@ -152,8 +152,8 @@ export const users: User[] = [
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
     departmentId: "DPT01",
-    },
-    {
+  },
+  {
     userId: "NV009",
     fullName: "Lê Văn C",
     email: "lvc@gmail.com",
@@ -171,8 +171,8 @@ export const users: User[] = [
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
     departmentId: "DPT02",
-    },
-    {
+  },
+  {
     userId: "NV0010",
     fullName: "Phạm Thị D",
     email: "ptd@gmail.com",
@@ -190,8 +190,8 @@ export const users: User[] = [
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
     departmentId: "DPT04",
-    },
-    {
+  },
+  {
     userId: "NV0011",
     fullName: "Hoàng Văn E",
     email: "hve@gmail.com",
@@ -209,8 +209,8 @@ export const users: User[] = [
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
     departmentId: "DPT03",
-    },
-    {
+  },
+  {
     userId: "NV0012",
     fullName: "Nguyễn Văn A",
     email: "nva@gmail.com",
@@ -228,8 +228,8 @@ export const users: User[] = [
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
     departmentId: "DPT03",
-    },
-    {
+  },
+  {
     userId: "NV0013",
     fullName: "Trần Thị B",
     email: "ttb@gmail.com",
@@ -247,8 +247,8 @@ export const users: User[] = [
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
     departmentId: "DPT01",
-    },
-    {
+  },
+  {
     userId: "NV0014",
     fullName: "Lê Văn C",
     email: "lvc@gmail.com",
@@ -266,8 +266,8 @@ export const users: User[] = [
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
     departmentId: "DPT02",
-    },
-    {
+  },
+  {
     userId: "NV0015",
     fullName: "Phạm Thị D",
     email: "ptd@gmail.com",
@@ -285,8 +285,8 @@ export const users: User[] = [
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
     departmentId: "DPT04",
-    },
-    {
+  },
+  {
     userId: "NV0016",
     fullName: "Hoàng Văn E",
     email: "hve@gmail.com",
@@ -304,8 +304,8 @@ export const users: User[] = [
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
     departmentId: "DPT03",
-    },
-    {
+  },
+  {
     userId: "NV0017",
     fullName: "Hoàng Văn E",
     email: "hve@gmail.com",
@@ -323,8 +323,8 @@ export const users: User[] = [
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
     departmentId: "DPT03",
-    },
-    {
+  },
+  {
     userId: "NV0018",
     fullName: "Nguyễn Văn A",
     email: "nva@gmail.com",
@@ -342,8 +342,8 @@ export const users: User[] = [
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
     departmentId: "DPT03",
-    },
-    {
+  },
+  {
     userId: "NV0019",
     fullName: "Trần Thị B",
     email: "ttb@gmail.com",
@@ -361,8 +361,8 @@ export const users: User[] = [
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
     departmentId: "DPT01",
-    },
-    {
+  },
+  {
     userId: "NV0020",
     fullName: "Lê Văn C",
     email: "lvc@gmail.com",
@@ -380,8 +380,8 @@ export const users: User[] = [
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
     departmentId: "DPT02",
-    },
-    {
+  },
+  {
     userId: "NV0021",
     fullName: "Phạm Thị D",
     email: "ptd@gmail.com",
@@ -399,8 +399,8 @@ export const users: User[] = [
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
     departmentId: "DPT04",
-    },
-    {
+  },
+  {
     userId: "NV0022",
     fullName: "Hoàng Văn E",
     email: "hve@gmail.com",
@@ -418,7 +418,7 @@ export const users: User[] = [
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
     departmentId: "DPT03",
-    },
+  },
 ];
 
 export const mockEmployee: User = {
@@ -462,3 +462,23 @@ export const mockManager: User = {
   departmentName: "Engineering",
 };
 
+export const mockAdmin: User = {
+  userId: "u7a8b9c0-e1f2-3456-0123-567890123456",
+  fullName: "Bui Van Giang",
+  email: "buivangiang@company.com",
+  role: "ADMIN",
+  status: "ACTIVE",
+  gender: "Nam",
+  position: "FINANCE_ANALYST",
+  joinDate: "2020-01-10",
+  identityCardNumber: "001234567896",
+  phoneNumber: "0907890123",
+  dateOfBirth: "1982-04-22",
+  address: "159 Pasteur Street, District 1, Ho Chi Minh City",
+  bankAccount: "7890123456789",
+  bankName: "MBBank",
+  createdAt: "2025-11-23T10:08:49.231471",
+  updatedAt: "2025-11-23T10:08:49.231471",
+  departmentId: "d5e6f7a8-c9d0-1234-ef01-345678901234",
+  departmentName: "Finance"
+};

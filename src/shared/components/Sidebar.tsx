@@ -2,7 +2,7 @@ import React from 'react';
 import { useAuth } from 'contexts/AuthContext';
 import EmployeeSidebar from './sidebars/EmployeeSidebar';
 import ManagerSidebar from './sidebars/ManagerSidebar';
-import HRSidebar from './sidebars/HRSidebar';
+import AdminSidebar from './sidebars/AdminSidebar';
 
 const Sidebar: React.FC = () => {
   const { user } = useAuth();
@@ -15,7 +15,7 @@ const Sidebar: React.FC = () => {
       return <ManagerSidebar />;
     case 'HR':
     case 'ADMIN':
-      return <HRSidebar />;
+      return <AdminSidebar />;
     default:
       return <EmployeeSidebar />; // Fallback
   }
