@@ -68,9 +68,43 @@ export interface GiftedPointFilter {
 }
 
 
-export interface RewardItem {
+export interface RewardItem2 {
   id: number;
   name: string;
   points: number;
   quantity: number;
+}
+export interface ProgrameReward {
+  rewardProgramId: string;
+  name: string;
+  description: string;
+  startDate: string;
+  endDate: string;
+  status: "ACTIVE" | "INACTIVE" | "PENDING";
+  defaultGivingBudget: number;
+  bannerUrl: string;
+}
+
+export interface RewardProgramFilter {
+  status?: "ACTIVE" | "INACTIVE" | "PENDING";
+  currentPage?: number;
+  pageSize?: number;
+  sortBy?: string;
+  sortDirection?: "ASC" | "DESC";
+}
+
+export interface RewardItem {
+  rewardItemId: string;
+  programId: string;
+  name: string;
+  requiredPoints: number;
+  quantity: number;
+  imageUrl: string;
+}
+
+export interface RewardItemFilter {
+  currentPage?: number;
+  pageSize?: number;
+  sortBy?: string;
+  sortDirection?: "ASC" | "DESC";
 }

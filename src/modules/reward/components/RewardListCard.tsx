@@ -1,6 +1,6 @@
 
-import {RewardItem} from "../types/reward.types";
-const rewards: RewardItem[] = [
+import {RewardItem2} from "../types/reward.types";
+const rewards: RewardItem2[] = [
   { id: 1, name: "Voucher Gojek 100k", points: 1000, quantity: 50 },
   { id: 2, name: "Áo Polo Công ty", points: 2500, quantity: 100 },
 ];
