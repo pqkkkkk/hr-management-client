@@ -3,6 +3,7 @@ import InfoCard from "../components/InfoCard";
 import RewardList from "../components/RewardList";
 
 export default function RewardProgramDetailPage() {
+
   return (
     <div className="space-y-8 p-6">
       <RewardHeader />
