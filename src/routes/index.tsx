@@ -7,7 +7,7 @@ import UnauthorizedPage from "shared/components/UnauthorizedPage";
 import Layout from "shared/components/Layout";
 import { ProfileRoutes } from "modules/profile/pages/profile.routes";
 import RequestRoutes from "modules/request/request.routes";
-import RewardDetailPage from "modules/reward/pages/RewardDetailPage";
+import RewardRoutes from "modules/reward/reward.routes";
 // Placeholder components for routes that will be implemented later
 const PlaceholderPage: React.FC<{ title: string }> = ({ title }) => (
   <div className="bg-white rounded-lg shadow p-6">
@@ -15,7 +15,6 @@ const PlaceholderPage: React.FC<{ title: string }> = ({ title }) => (
     <p className="text-gray-600">Trang này đang được phát triển...</p>
   </div>
 );
-
 
 // Activity placeholder pages
 const ActivityListPage = () => <PlaceholderPage title="Tất cả hoạt động" />;
@@ -26,13 +25,13 @@ const ActivitySummaryPage = () => (
 );
 
 // Reward placeholder pages
-const PointsOverviewPage = () => <PlaceholderPage title="Tổng quan điểm" />;
-const TransactionHistoryPage = () => (
-  <PlaceholderPage title="Lịch sử giao dịch" />
-);
-const RedeemPointsPage = () => <PlaceholderPage title="Đổi quà" />;
-const GiftPointsPage = () => <PlaceholderPage title="Tặng điểm" />;
-const TeamPointsReportPage = () => <PlaceholderPage title="Báo cáo team" />;
+// const PointsOverviewPage = () => <PlaceholderPage title="Tổng quan điểm" />;
+// const TransactionHistoryPage = () => (
+//   <PlaceholderPage title="Lịch sử giao dịch" />
+// );
+// const RedeemPointsPage = () => <PlaceholderPage title="Đổi quà" />;
+// const GiftPointsPage = () => <PlaceholderPage title="Tặng điểm" />;
+// const TeamPointsReportPage = () => <PlaceholderPage title="Báo cáo team" />;
 
 const NotFoundPage = () => (
   <div className="min-h-screen flex items-center justify-center bg-gray-100 px-4">
@@ -47,7 +46,6 @@ const AppRoutes: React.FC = () => {
   return (
     <Routes>
       {/* Public routes */}
-      <Route path="/test" element={<RewardDetailPage />} />
       <Route path="/login" element={<LoginPage />} />
       <Route path="/unauthorized" element={<UnauthorizedPage />} />
 
@@ -85,7 +83,7 @@ const AppRoutes: React.FC = () => {
         </Route>
 
         {/* Reward routes */}
-        <Route path="rewards">
+        {/* <Route path="rewards">
           <Route index element={<PointsOverviewPage />} />
           <Route path="transactions" element={<TransactionHistoryPage />} />
           <Route path="redeem" element={<RedeemPointsPage />} />
@@ -105,7 +103,8 @@ const AppRoutes: React.FC = () => {
               </ProtectedRoute>
             }
           />
-        </Route>
+        </Route> */}
+        {RewardRoutes}
       </Route>
 
       <Route path="*" element={<NotFoundPage />} />

@@ -84,33 +84,21 @@ const ManagerSidebar: React.FC = () => {
             <h3 className={sectionTitleClass}>Điểm thưởng</h3>
             <ul className="mt-2 space-y-1">
               <li>
-                <NavLink to="/rewards" end className={navLinkClass}>
+                <NavLink to="/rewards/programs/1" end className={navLinkClass}>
                   <Gift className="w-5 h-5" />
-                  <span>Tổng quan điểm</span>
+                  <span>Đợt khen thưởng hiện tại</span>
                 </NavLink>
               </li>
               <li>
-                <NavLink to="/rewards/transactions" end className={navLinkClass}>
+                <NavLink to="/rewards/gifted-transactions" end className={navLinkClass}>
                   <Gift className="w-5 h-5" />
-                  <span>Lịch sử giao dịch</span>
-                </NavLink>
-              </li>
-              <li>
-                <NavLink to="/rewards/redeem" end className={navLinkClass}>
-                  <Gift className="w-5 h-5" />
-                  <span>Đổi quà</span>
+                  <span>Lịch sử tặng điểm</span>
                 </NavLink>
               </li>
               <li>
                 <NavLink to="/rewards/gift" end className={navLinkClass}>
                   <Gift className="w-5 h-5" />
                   <span>Tặng điểm cho team</span>
-                </NavLink>
-              </li>
-              <li>
-                <NavLink to="/rewards/team-report" end className={navLinkClass}>
-                  <BarChart3 className="w-5 h-5" />
-                  <span>Báo cáo team</span>
                 </NavLink>
               </li>
             </ul>

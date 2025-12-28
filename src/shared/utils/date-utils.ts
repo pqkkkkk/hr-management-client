@@ -67,3 +67,93 @@ export const formatTimeForInput = (d: Date): string => {
   const mm = String(d.getMinutes()).padStart(2, "0");
   return `${hh}:${mm}`;
 };
+
+export type DateTimeDisplay = {
+  date: string;
+  time: string;
+};
+
+export const formatDateTime = (
+  d?: Date | string,
+  options?: {
+    locale?: string;
+    timeZone?: string;
+  }
+): DateTimeDisplay => {
+  if (!d) return { date: "-", time: "-" };
+
+  const locale = options?.locale ?? "vi-VN";
+  const timeZone = options?.timeZone;
+
+  const dateObj = typeof d === "string" ? new Date(d) : d;
+  if (Number.isNaN(dateObj.getTime())) return { date: "-", time: "-" };
+
+  const date = new Intl.DateTimeFormat(locale, {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    ...(timeZone ? { timeZone } : {}),
+  }).format(dateObj);
+
+  const time = new Intl.DateTimeFormat(locale, {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+    ...(timeZone ? { timeZone } : {}),
+  }).format(dateObj);
+
+  return { date, time };
+};
+
+/**
+ * Return YYYY-MM using UTC calendar fields.
+ */
+export const formatMonthKeyUtc = (d: Date): string => {
+  const y = d.getUTCFullYear();
+  const m = String(d.getUTCMonth() + 1).padStart(2, "0");
+  return `${y}-${m}`;
+};
+
+/**
+ * Human-friendly month label for UI.
+ */
+export const formatMonthLabel = (monthKey: string, nowMonthKey: string) => {
+  if (monthKey === nowMonthKey) return "Tháng này";
+  const [y, m] = monthKey.split("-");
+  return `Tháng ${m}/${y}`;
+};
+
+/**
+ * Build last N month keys (YYYY-MM) counting backwards from the given date.
+ */
+export const buildRecentMonthKeysUtc = (baseDate: Date, months: number) => {
+  const out: string[] = [];
+  const d = new Date(baseDate);
+  for (let i = 0; i < months; i++) {
+    out.push(formatMonthKeyUtc(d));
+    d.setUTCMonth(d.getUTCMonth() - 1);
+  }
+  return out;
+};
+
+/**
+ * For a monthKey YYYY-MM, return the next-month reset date label (DD/MM/YYYY) in UTC.
+ */
+export const getNextMonthResetLabelUtc = (
+  monthKey: string,
+  options?: { locale?: string }
+) => {
+  const locale = options?.locale ?? "vi-VN";
+  const [y, m] = monthKey.split("-").map((x) => Number(x));
+  const reset = new Date(Date.UTC(y, m, 1, 0, 0, 0));
+  return formatDateTime(reset, { locale, timeZone: "UTC" }).date;
+};
+
+/**
+ * Convert an ISO string to YYYY-MM using UTC calendar fields.
+ */
+export const formatMonthKeyFromIsoUtc = (iso: string): string => {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "";
+  return formatMonthKeyUtc(d);
+};
