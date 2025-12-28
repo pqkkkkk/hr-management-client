@@ -1,11 +1,9 @@
 import RewardHeader from "../components/RewardHeader";
 import InfoCard from "../components/InfoCard";
 import RewardList from "../components/RewardList";
-import RedeemConfirmDialog from "../components/Dialog";
-import { useState } from "react";
 
-export default function RewardDetailPage() {
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
+export default function RewardProgramDetailPage() {
+
   return (
     <div className="space-y-8 p-6">
       <RewardHeader />
