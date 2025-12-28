@@ -1,6 +1,6 @@
 import { SignInRequest, SignInResponse, User, ApiResponse, RefreshTokenRequest, RefreshTokenResponse } from 'shared/types';
 import apiClient from './api.client';
-import { mockEmployee, mockManager } from 'shared/data/profile.data';
+import { mockAdmin, mockEmployee, mockManager } from 'shared/data/profile.data';
 
 export interface AuthApi {
   signIn(req: SignInRequest): Promise<ApiResponse<SignInResponse>>;
@@ -27,6 +27,9 @@ export class MockAuthApi implements AuthApi {
         break;
       case 'MANAGER':
         user = mockManager;
+        break;
+      case 'ADMIN':
+        user = mockAdmin;
         break;
       default:
         throw new Error('Role not supported in mock API');

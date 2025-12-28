@@ -2,12 +2,11 @@ import React from 'react';
 import { NavLink } from 'react-router-dom';
 import { LayoutDashboard, FileText, User, Users, Activity, Gift, BarChart3, Settings, Building2 } from 'lucide-react';
 
-const HRSidebar: React.FC = () => {
+const AdminSidebar: React.FC = () => {
   const navLinkClass = ({ isActive }: { isActive: boolean }) =>
-    `flex items-center space-x-3 px-6 py-3 text-sm transition-colors duration-200 ${
-      isActive
-        ? 'bg-blue-50 text-blue-600 font-medium border-r-4 border-blue-600'
-        : 'text-gray-700 hover:bg-gray-100'
+    `flex items-center space-x-3 px-6 py-3 text-sm transition-colors duration-200 ${isActive
+      ? 'bg-blue-50 text-blue-600 font-medium border-r-4 border-blue-600'
+      : 'text-gray-700 hover:bg-gray-100'
     }`;
 
   const sectionTitleClass = "px-6 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider mt-6";
@@ -84,27 +83,21 @@ const HRSidebar: React.FC = () => {
             <h3 className={sectionTitleClass}>Quản lý hoạt động</h3>
             <ul className="mt-2 space-y-1">
               <li>
-                <NavLink to="/activities" className={navLinkClass}>
+                <NavLink to="/activities/manage" end className={navLinkClass}>
                   <Activity className="w-5 h-5" />
-                  <span>Tất cả hoạt động</span>
+                  <span>Quản lý hoạt động</span>
                 </NavLink>
               </li>
               <li>
-                <NavLink to="/activities/create" className={navLinkClass}>
+                <NavLink to="/activities/create" end className={navLinkClass}>
                   <Activity className="w-5 h-5" />
                   <span>Tạo hoạt động mới</span>
                 </NavLink>
               </li>
               <li>
-                <NavLink to="/activities/certificates" className={navLinkClass}>
+                <NavLink to="/activities/pending-logs" className={navLinkClass}>
                   <Activity className="w-5 h-5" />
-                  <span>Quản lý chứng nhận</span>
-                </NavLink>
-              </li>
-              <li>
-                <NavLink to="/activities/summary" className={navLinkClass}>
-                  <BarChart3 className="w-5 h-5" />
-                  <span>Báo cáo tổng hợp</span>
+                  <span>Quản lý kết quả hoạt động</span>
                 </NavLink>
               </li>
             </ul>
@@ -171,4 +164,4 @@ const HRSidebar: React.FC = () => {
   );
 };
 
-export default HRSidebar;
+export default AdminSidebar;

@@ -59,21 +59,9 @@ const ManagerSidebar: React.FC = () => {
             <h3 className={sectionTitleClass}>Hoạt động</h3>
             <ul className="mt-2 space-y-1">
               <li>
-                <NavLink to="/activities" end className={navLinkClass}>
+                <NavLink to="/activities/overview" end className={navLinkClass}>
                   <Activity className="w-5 h-5" />
-                  <span>Tất cả hoạt động</span>
-                </NavLink>
-              </li>
-              <li>
-                <NavLink to="/activities/certificates" end className={navLinkClass}>
-                  <Activity className="w-5 h-5" />
-                  <span>Chứng nhận</span>
-                </NavLink>
-              </li>
-              <li>
-                <NavLink to="/activities/summary" end className={navLinkClass}>
-                  <BarChart3 className="w-5 h-5" />
-                  <span>Tổng kết hoạt động</span>
+                  <span>Xem tổng kết hoạt động</span>
                 </NavLink>
               </li>
             </ul>
