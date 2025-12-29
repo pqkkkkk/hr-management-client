@@ -9,6 +9,7 @@ import {
   TransactionType,
 } from "modules/reward/types/reward.types";
 import apiClient from "./api.client";
+import { RewardProgramFormData,RewardProgramResponse } from "modules/reward/types/rewardForm";
 import {
   formatMonthKeyFromIsoUtc,
   formatMonthKeyUtc,
@@ -36,6 +37,8 @@ export class MockRewardApi implements RewardApi {
     { id: "e-4", name: "Phạm Minh Đăng", email: "dang.pham@company.com" },
     { id: "e-5", name: "Hoàng Thị Em", email: "em.hoang@company.com" },
   ];
+
+  private rewardPrograms: Array<RewardProgramFormData> = [];
 
   private mockTransactions: PointTransaction[] = [
     {
@@ -398,6 +401,60 @@ export class MockRewardApi implements RewardApi {
       }, 400);
     });
   }
+
+  async createRewardProgram(request: RewardProgramFormData): Promise<RewardProgramResponse> {
+    return new Promise((resolve, reject) => {
+      setTimeout(() => {
+        if (!request.name || request.name.trim() === '') {
+          reject(new Error('Tên đợt khen thưởng không được để trống'));
+          return;
+        }
+
+        if (!request.startDate || !request.endDate) {
+          reject(new Error('Ngày bắt đầu và kết thúc không được để trống'));
+          return;
+        }
+
+        if (new Date(request.startDate) >= new Date(request.endDate)) {
+          reject(new Error('Ngày kết thúc phải sau ngày bắt đầu'));
+          return;
+        }
+
+        if (request.items.length === 0) {
+          reject(new Error('Phải có ít nhất một phần thưởng'));
+          return;
+        }
+
+        if (request.policies.length === 0) {
+          reject(new Error('Phải có ít nhất một quy tắc'));
+          return;
+        }
+
+        // Store the reward program
+        this.rewardPrograms.push({
+          ...request,
+          name: request.name.trim(),
+          description: request.description.trim(),
+        });
+
+        console.log('✅ Mock: Reward program created successfully!');
+        console.log('📦 Saved program:', {
+          name: request.name,
+          startDate: request.startDate,
+          endDate: request.endDate,
+          itemCount: request.items.length,
+          policyCount: request.policies.length,
+          defaultGivingBudget: request.defaultGivingBudget,
+        });
+        console.log('📊 Total programs:', this.rewardPrograms.length);
+
+        resolve({
+          ...request,
+          success: true,
+        });
+      }, 800);
+    });
+  }
 }
 
 export class RestRewardApi implements RewardApi {
@@ -417,6 +474,10 @@ export class RestRewardApi implements RewardApi {
     filter?: GiftedPointFilter
   ): Promise<ApiResponse<Page<GiftedPointEmployeeStat>>> {
     return apiClient.get(`/rewards/gifted`, { params: filter });
+  }
+
+  async createRewardProgram(request: RewardProgramFormData): Promise<RewardProgramResponse> {
+    return apiClient.post(`/rewards/programs`, request);
   }
 }
 
