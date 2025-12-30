@@ -1,4 +1,5 @@
-const GeneralInfoCard: React.FC = () => {
+import {GeneralInfoCardProps} from '../types/rewardForm';
+const GeneralInfoCard: React.FC<GeneralInfoCardProps> = ({ data, onChange }) => {
   return (
     <div className="bg-white rounded-2xl p-6 shadow-sm">
       <div className="flex items-center gap-2 mb-4">
@@ -16,17 +17,29 @@ const GeneralInfoCard: React.FC = () => {
           <input
             className="mt-1 w-full border rounded-xl px-4 py-2"
             placeholder="VD: Khen thưởng Quý 4 - 2023"
+            value={data.name}
+            onChange={(e) => onChange('name', e.target.value)}
           />
         </div>
 
         <div>
           <label className="text-sm font-medium">Ngày bắt đầu *</label>
-          <input type="date" className="mt-1 w-full border rounded-xl px-4 py-2" />
+          <input 
+            type="date" 
+            className="mt-1 w-full border rounded-xl px-4 py-2"
+            value={data.startDate.split('T')[0]}
+            onChange={(e) => onChange('startDate', new Date(e.target.value).toISOString())}
+          />
         </div>
 
         <div>
           <label className="text-sm font-medium">Ngày kết thúc *</label>
-          <input type="date" className="mt-1 w-full border rounded-xl px-4 py-2" />
+          <input 
+            type="date" 
+            className="mt-1 w-full border rounded-xl px-4 py-2"
+            value={data.endDate.split('T')[0]}
+            onChange={(e) => onChange('endDate', new Date(e.target.value).toISOString())}
+          />
         </div>
 
         <div className="col-span-2">
@@ -35,6 +48,18 @@ const GeneralInfoCard: React.FC = () => {
             rows={3}
             className="mt-1 w-full border rounded-xl px-4 py-2"
             placeholder="Mô tả mục đích, ý nghĩa của đợt khen thưởng..."
+            value={data.description}
+            onChange={(e) => onChange('description', e.target.value)}
+          />
+        </div>
+
+        <div className="col-span-2">
+          <label className="text-sm font-medium">URL Banner (Optional)</label>
+          <input
+            className="mt-1 w-full border rounded-xl px-4 py-2"
+            placeholder="https://example.com/banner.jpg"
+            value={data.bannerUrl}
+            onChange={(e) => onChange('bannerUrl', e.target.value)}
           />
         </div>
       </div>
