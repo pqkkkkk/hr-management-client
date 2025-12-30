@@ -14,6 +14,7 @@ import {
   CreateCheckInRequestDTO,
   CreateTimesheetUpdateRequestDTO,
 } from "modules/request/types/request.types";
+import { mockRequests } from "shared/data/request.data";
 import { springApiClient } from "./api.client";
 
 export interface RequestApi {
@@ -54,107 +55,50 @@ export interface RequestApi {
 }
 
 export class MockRequestApi implements RequestApi {
-  getTeamRequests(filter?: RequestFilter): Promise<ApiResponse<Page<Request>>> {
-    throw new Error("Method not implemented.");
+  async getTeamRequests(filter?: RequestFilter): Promise<ApiResponse<Page<Request>>> {
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        // Return a subset or sorted list as "Team Requests"
+        // Following the pattern of getMyActivities in MockActivityApi
+        const teamRequests = mockRequests; // Or mockRequests.slice(0, 5) if we want a subset
+
+        const page: Page<Request> = {
+          content: teamRequests,
+          totalElements: teamRequests.length,
+          totalPages: 1,
+          size: filter?.pageSize || 10,
+          number: filter?.currentPage || 1,
+          first: true,
+          last: true,
+          numberOfElements: teamRequests.length,
+          empty: teamRequests.length === 0,
+          pageable: {
+            pageNumber: filter?.currentPage || 1,
+            pageSize: filter?.pageSize || 10,
+            offset: 0,
+            paged: true,
+            unpaged: false,
+            sort: { sorted: false, unsorted: true, empty: true },
+          },
+          sort: { sorted: false, unsorted: true, empty: true },
+        };
+
+        resolve({
+          data: page,
+          success: true,
+          statusCode: 200,
+          message: "Team requests retrieved successfully",
+        });
+      }, 500);
+    });
   }
-  private mockRequests: Request[] = [
-    {
-      requestId: "REQ001",
-      requestType: RequestType.LEAVE,
-      status: RequestStatus.APPROVED,
-      title: "Nghỉ phép gia đình",
-      userReason: "Kỳ nghỉ gia đình",
-      attachmentUrl: "https://example.com/attachment1.pdf",
-      employeeId: "NV001",
-      employeeFullName: "Nguyễn Văn A",
-      approverId: "NV002",
-      approverName: "Trần Thị B",
-      processedAt: "2023-10-27T10:30:00Z",
-      createdAt: "2023-10-26T08:00:00Z",
-      updatedAt: "2023-10-27T10:30:00Z",
-      additionalLeaveInfo: {
-        leaveType: LeaveType.ANNUAL,
-        totalDays: 3,
-        leaveDates: [
-          { date: "2023-11-01", shift: ShiftType.FULL_DAY },
-          { date: "2023-11-02", shift: ShiftType.FULL_DAY },
-          { date: "2023-11-03", shift: ShiftType.FULL_DAY },
-        ],
-      },
-    },
-    {
-      requestId: "REQ002",
-      requestType: RequestType.LEAVE,
-      status: RequestStatus.PENDING,
-      title: "Nghỉ khám bệnh",
-      userReason: "Hẹn khám bác sĩ",
-      attachmentUrl: "https://example.com/attachment2.pdf",
-      employeeId: "NV001",
-      employeeFullName: "Nguyễn Văn A",
-      createdAt: "2023-10-24T09:00:00Z",
-      updatedAt: "2023-10-24T09:00:00Z",
-      additionalLeaveInfo: {
-        leaveType: LeaveType.SICK,
-        totalDays: 1,
-        leaveDates: [{ date: "2023-10-30", shift: ShiftType.FULL_DAY }],
-      },
-    },
-    {
-      requestId: "REQ003",
-      requestType: RequestType.LEAVE,
-      status: RequestStatus.REJECTED,
-      title: "Nghỉ việc cá nhân",
-      userReason: "Việc cá nhân",
-      rejectReason: "Yêu cầu được gửi quá gần ngày nghỉ.",
-      attachmentUrl: "https://example.com/attachment3.pdf",
-      employeeId: "NV001",
-      employeeFullName: "Nguyễn Văn A",
-      approverId: "NV002",
-      approverName: "Trần Thị B",
-      processedAt: "2023-10-21T14:00:00Z",
-      createdAt: "2023-10-20T10:00:00Z",
-      updatedAt: "2023-10-21T14:00:00Z",
-      additionalLeaveInfo: {
-        leaveType: LeaveType.UNPAID,
-        totalDays: 2,
-        leaveDates: [
-          { date: "2023-10-25", shift: ShiftType.FULL_DAY },
-          { date: "2023-10-26", shift: ShiftType.FULL_DAY },
-        ],
-      },
-    },
-    {
-      requestId: "REQ004",
-      requestType: RequestType.WFH,
-      status: RequestStatus.APPROVED,
-      title: "Làm việc từ xa",
-      userReason: "Làm việc từ nhà để hoàn thành dự án",
-      attachmentUrl: "https://example.com/attachment4.pdf",
-      employeeId: "NV001",
-      employeeFullName: "Nguyễn Văn A",
-      approverId: "NV002",
-      approverName: "Trần Thị B",
-      processedAt: "2023-10-18T11:00:00Z",
-      createdAt: "2023-10-17T08:00:00Z",
-      updatedAt: "2023-10-18T11:00:00Z",
-      additionalWfhInfo: {
-        wfhCommitment: true,
-        workLocation: "Nhà riêng, quận 7, TP.HCM",
-        totalDays: 2,
-        wfhDates: [
-          { date: "2023-10-23", shift: ShiftType.FULL_DAY },
-          { date: "2023-10-24", shift: ShiftType.FULL_DAY },
-        ],
-      },
-    },
-  ];
 
   async getMyRequests(
     filter?: RequestFilter
   ): Promise<ApiResponse<Page<Request>>> {
     return new Promise((resolve) => {
       setTimeout(() => {
-        let filteredRequests = [...this.mockRequests];
+        let filteredRequests = [...mockRequests];
 
         // Apply filters
         if (filter?.type) {
@@ -222,7 +166,7 @@ export class MockRequestApi implements RequestApi {
   async getRequestById(requestId: string): Promise<ApiResponse<Request>> {
     return new Promise((resolve, reject) => {
       setTimeout(() => {
-        const request = this.mockRequests.find(
+        const request = mockRequests.find(
           (req) => req.requestId === requestId
         );
         if (request) {
@@ -254,7 +198,7 @@ export class MockRequestApi implements RequestApi {
         }, 0);
 
         const newRequest: Request = {
-          requestId: `REQ${String(this.mockRequests.length + 1).padStart(
+          requestId: `REQ${String(mockRequests.length + 1).padStart(
             3,
             "0"
           )}`,
@@ -276,7 +220,7 @@ export class MockRequestApi implements RequestApi {
           },
         };
 
-        this.mockRequests.unshift(newRequest);
+        mockRequests.unshift(newRequest);
 
         resolve({
           data: newRequest,
@@ -298,7 +242,7 @@ export class MockRequestApi implements RequestApi {
         }, 0);
 
         const newRequest: Request = {
-          requestId: `REQ${String(this.mockRequests.length + 1).padStart(
+          requestId: `REQ${String(mockRequests.length + 1).padStart(
             3,
             "0"
           )}`,
@@ -318,7 +262,7 @@ export class MockRequestApi implements RequestApi {
           },
         };
 
-        this.mockRequests.unshift(newRequest);
+        mockRequests.unshift(newRequest);
 
         resolve({
           data: newRequest,
@@ -337,7 +281,7 @@ export class MockRequestApi implements RequestApi {
       setTimeout(() => {
         // Check if there's a check-in request for the same date
         const checkOutDate = new Date(data.desiredCheckOutTime).toISOString().split('T')[0];
-        const hasCheckIn = this.mockRequests.some((req) => {
+        const hasCheckIn = mockRequests.some((req) => {
           const reqDate = req.createdAt.split('T')[0];
           return (
             req.requestType === RequestType.CHECK_IN &&
@@ -356,7 +300,7 @@ export class MockRequestApi implements RequestApi {
         }
 
         // Check for duplicate check-out
-        const hasDuplicateCheckOut = this.mockRequests.some((req) => {
+        const hasDuplicateCheckOut = mockRequests.some((req) => {
           const reqDate = req.createdAt.split('T')[0];
           return (
             req.requestType === RequestType.CHECK_OUT &&
@@ -376,7 +320,7 @@ export class MockRequestApi implements RequestApi {
         }
 
         const newRequest: Request = {
-          requestId: `REQ${String(this.mockRequests.length + 1).padStart(
+          requestId: `REQ${String(mockRequests.length + 1).padStart(
             3,
             "0"
           )}`,
@@ -395,7 +339,7 @@ export class MockRequestApi implements RequestApi {
           },
         };
 
-        this.mockRequests.unshift(newRequest);
+        mockRequests.unshift(newRequest);
 
         resolve({
           data: newRequest,
@@ -413,7 +357,7 @@ export class MockRequestApi implements RequestApi {
     return new Promise((resolve) => {
       setTimeout(() => {
         const newRequest: Request = {
-          requestId: `REQ${String(this.mockRequests.length + 1).padStart(
+          requestId: `REQ${String(mockRequests.length + 1).padStart(
             3,
             "0"
           )}`,
@@ -431,7 +375,7 @@ export class MockRequestApi implements RequestApi {
           },
         };
 
-        this.mockRequests.unshift(newRequest);
+        mockRequests.unshift(newRequest);
 
         resolve({
           data: newRequest,
@@ -446,7 +390,7 @@ export class MockRequestApi implements RequestApi {
   async approveRequest(requestId: string, approverId: string): Promise<ApiResponse<Request>> {
     return new Promise((resolve, reject) => {
       setTimeout(() => {
-        const idx = this.mockRequests.findIndex(
+        const idx = mockRequests.findIndex(
           (r) => r.requestId === requestId
         );
         if (idx === -1) {
@@ -457,7 +401,7 @@ export class MockRequestApi implements RequestApi {
           });
           return;
         }
-        const req = this.mockRequests[idx];
+        const req = mockRequests[idx];
         req.status = RequestStatus.APPROVED;
         req.processedAt = new Date().toISOString();
         req.approverId = approverId;
@@ -480,7 +424,7 @@ export class MockRequestApi implements RequestApi {
   ): Promise<ApiResponse<Request>> {
     return new Promise((resolve, reject) => {
       setTimeout(() => {
-        const idx = this.mockRequests.findIndex(
+        const idx = mockRequests.findIndex(
           (r) => r.requestId === requestId
         );
         if (idx === -1) {
@@ -491,7 +435,7 @@ export class MockRequestApi implements RequestApi {
           });
           return;
         }
-        const req = this.mockRequests[idx];
+        const req = mockRequests[idx];
         req.status = RequestStatus.REJECTED;
         req.rejectReason = rejectReason;
         req.processedAt = new Date().toISOString();
@@ -513,7 +457,7 @@ export class MockRequestApi implements RequestApi {
   ): Promise<ApiResponse<Request>> {
     return new Promise((resolve, reject) => {
       setTimeout(() => {
-        const idx = this.mockRequests.findIndex(
+        const idx = mockRequests.findIndex(
           (r) => r.requestId === requestId
         );
         if (idx === -1) {
@@ -524,7 +468,7 @@ export class MockRequestApi implements RequestApi {
           });
           return;
         }
-        const req = this.mockRequests[idx];
+        const req = mockRequests[idx];
         req.processorId = newProcessorId;
         req.processorName = "Người xử lý được ủy quyền";
         req.status = RequestStatus.PROCESSING;
@@ -688,7 +632,6 @@ export class MockRequestApi implements RequestApi {
     });
   }
 }
-
 // REST API Implementation
 export class RestRequestApi implements RequestApi {
   async getTimesheet(employeeId: string, yearMonth: string): Promise<ApiResponse<TimesheetResponse>> {
