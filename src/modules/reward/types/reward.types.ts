@@ -78,3 +78,10 @@ export interface TransactionListResponse {
   hasNextPage: boolean;
   hasPreviousPage: boolean;
 }
+
+export interface RewardItem {
+  id: number;
+  name: string;
+  points: number;
+  quantity: number;
+}

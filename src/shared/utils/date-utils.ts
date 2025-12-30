@@ -157,3 +157,15 @@ export const formatMonthKeyFromIsoUtc = (iso: string): string => {
   if (Number.isNaN(d.getTime())) return "";
   return formatMonthKeyUtc(d);
 };
+
+/**
+ * Format duration in minutes to human-readable string (e.g., "1h 30m" or "45 phút")
+ */
+export const formatDuration = (minutes: number): string => {
+  const hrs = Math.floor(minutes / 60);
+  const mins = minutes % 60;
+  if (hrs > 0) {
+    return `${hrs}h ${mins}m`;
+  }
+  return `${mins} phút`;
+};
