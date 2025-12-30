@@ -16,7 +16,9 @@ import ErrorState from "../components/ErrorState";
 import {
   GiftedPointEmployeeStat,
   GiftedPointFilter,
+  PointTransaction,
 } from "modules/reward/types/reward.types";
+import { useGiftedPointStats } from "../hooks/useGiftedPointStats";
 
 const BudgetSummaryCard: React.FC<{
   remaining: number;
@@ -134,11 +136,8 @@ const EmployeeRow: React.FC<{ row: GiftedPointEmployeeStat }> = ({ row }) => {
           <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center text-sm font-semibold text-gray-700">
             {initials(row.employeeName)}
           </div>
-          <div>
-            <div className="text-sm font-semibold text-gray-900">
-              {row.employeeName}
-            </div>
-            <div className="text-xs text-gray-500">{row.employeeEmail}</div>
+          <div className="text-sm font-semibold text-gray-900">
+            {row.employeeName}
           </div>
         </div>
       </td>
@@ -181,7 +180,7 @@ const GiftedPointTransactionPage: React.FC = () => {
 
   const now = useMemo(() => new Date(), []);
   const nowMonth = useMemo(() => formatMonthKeyUtc(now), [now]);
-  const months = useMemo(() => buildRecentMonthKeysUtc(now, 12), [now]);
+  const months = useMemo(() => buildRecentMonthKeysUtc(now, 13), [now]);
 
   const PAGE_SIZE = 6;
   const BUDGET_TOTAL = 20000;
@@ -194,37 +193,62 @@ const GiftedPointTransactionPage: React.FC = () => {
     sortDirection: "DESC",
   });
 
+  // Fetch GIFT transactions from API
   const fetchGiftedStats = useMemo(
     () => rewardApi.getGiftedPointStats.bind(rewardApi),
     [rewardApi]
   );
 
   const {
-    data: rows,
+    data: transactions,
     page: pageData,
     isFetching: loading,
     error,
-  } = useFetchList<GiftedPointFilter, GiftedPointEmployeeStat>(
+  } = useFetchList<GiftedPointFilter, PointTransaction>(
     fetchGiftedStats,
     query
   );
 
+  // Process transactions into stats using custom hook
+  const {
+    stats: rows,
+    totalElements,
+    totalPages,
+  } = useGiftedPointStats({
+    transactions: transactions || [],
+    keyword: query.keyword,
+    currentPage: query.currentPage,
+    pageSize: query.pageSize,
+    sortDirection: query.sortDirection,
+  });
+
+  // Fetch all transactions for budget summary
   const summaryQuery = useMemo<GiftedPointFilter>(
     () => ({
       month: query.month,
       currentPage: 1,
-      pageSize: 1000,
+      pageSize: 10000,
     }),
     [query.month]
   );
 
-  const { data: allStats } = useFetchList<
+  const { data: allTransactions } = useFetchList<
     GiftedPointFilter,
-    GiftedPointEmployeeStat
+    PointTransaction
   >(fetchGiftedStats, summaryQuery);
 
+  // Process all transactions for budget calculation
+  const { stats: allStats } = useGiftedPointStats({
+    transactions: allTransactions || [],
+    keyword: "",
+    currentPage: 1,
+    pageSize: 10000,
+    sortDirection: "DESC",
+  });
+
+  // Calculate budget from all stats
   const usedBudget = useMemo(() => {
-    return (allStats || []).reduce((sum, s) => sum + (s.totalPoints || 0), 0);
+    return allStats.reduce((sum, s) => sum + (s.totalPoints || 0), 0);
   }, [allStats]);
 
   const remainingBudget = useMemo(() => {
@@ -295,7 +319,7 @@ const GiftedPointTransactionPage: React.FC = () => {
             <EmployeesTable rows={rows} />
             <Pagination
               page={query.currentPage || 1}
-              total={pageData?.totalElements || 0}
+              total={totalElements}
               limit={query.pageSize || PAGE_SIZE}
               setPage={handlePageChange}
             />

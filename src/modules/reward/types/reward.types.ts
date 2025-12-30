@@ -3,23 +3,26 @@ export interface Reward {}
 
 // Enums
 export enum TransactionType {
-  RECEIVE_POINTS = "RECEIVE_POINTS",
-  REDEEM_POINTS = "REDEEM_POINTS",
+  GIFT = "GIFT",
+  POLICY_REWARD = "POLICY_REWARD",
+  EXCHANGE = "EXCHANGE",
 }
 
 export const TransactionTypeOptions = [
-  { value: TransactionType.RECEIVE_POINTS, label: "Nhận điểm" },
-  { value: TransactionType.REDEEM_POINTS, label: "Đổi điểm" },
+  { value: TransactionType.GIFT, label: "Nhận điểm" },
+  { value: TransactionType.POLICY_REWARD, label: "Thưởng chính sách" },
+  { value: TransactionType.EXCHANGE, label: "Đổi quà" },
 ];
 
 export interface TransactionFilter {
-  type?: TransactionType;
-  startDate?: string;
-  endDate?: string;
-  currentPage?: number;
-  pageSize?: number;
+  TransactionType?: TransactionType;
+  FromDate?: string;
+  ToDate?: string;
+  PageNumber?: number;
+  PageSize?: number;
+  EmployeeId?: string;
   sortBy?: string;
-  sortDirection?: "ASC" | "DESC";
+  sortDirection?: string;
 }
 
 export interface RewardItemTransaction {
@@ -31,9 +34,9 @@ export interface RewardItemTransaction {
 
 export interface PointTransaction {
   pointTransactionId: string;
-  type: number;
+  type: TransactionType;
   amount: number;
-  sourceWalletId: string;
+  sourceWalletId: string | null;
   destinationWalletId: string;
   createdAt: string;
   items: RewardItemTransaction[];
@@ -53,7 +56,6 @@ export interface GiftPointsResponse {
 export interface GiftedPointEmployeeStat {
   employeeId: string;
   employeeName: string;
-  employeeEmail: string;
   totalPoints: number;
   giftCount: number;
 }
@@ -67,6 +69,15 @@ export interface GiftedPointFilter {
   sortDirection?: "ASC" | "DESC";
 }
 
+export interface TransactionListResponse {
+  items: PointTransaction[];
+  totalItems: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
+  hasNextPage: boolean;
+  hasPreviousPage: boolean;
+}
 
 export interface RewardItem2 {
   id: number;

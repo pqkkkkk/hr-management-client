@@ -10,6 +10,7 @@ import {
   ProgrameReward,
   RewardProgramFilter,
   RewardItem, RewardItemFilter,
+  TransactionListResponse,
 } from "modules/reward/types/reward.types";
 import apiClient from "./api.client";
 import {
@@ -51,7 +52,7 @@ export class MockRewardApi implements RewardApi {
   private mockTransactions: PointTransaction[] = [
     {
       pointTransactionId: "g-12001",
-      type: 1,
+      type: TransactionType.GIFT,
       amount: 500,
       sourceWalletId: "wallet1",
       destinationWalletId: "wallet-employee-e-1",
@@ -60,7 +61,7 @@ export class MockRewardApi implements RewardApi {
     },
     {
       pointTransactionId: "g-12002",
-      type: 1,
+      type: TransactionType.GIFT,
       amount: 300,
       sourceWalletId: "wallet1",
       destinationWalletId: "wallet-employee-e-2",
@@ -69,7 +70,7 @@ export class MockRewardApi implements RewardApi {
     },
     {
       pointTransactionId: "g-12003",
-      type: 1,
+      type: TransactionType.GIFT,
       amount: 200,
       sourceWalletId: "wallet1",
       destinationWalletId: "wallet-employee-e-3",
@@ -78,7 +79,7 @@ export class MockRewardApi implements RewardApi {
     },
     {
       pointTransactionId: "g-12004",
-      type: 1,
+      type: TransactionType.GIFT,
       amount: 150,
       sourceWalletId: "wallet1",
       destinationWalletId: "wallet-employee-e-4",
@@ -87,7 +88,7 @@ export class MockRewardApi implements RewardApi {
     },
     {
       pointTransactionId: "8923",
-      type: 0,
+      type: TransactionType.POLICY_REWARD,
       amount: 500,
       sourceWalletId: "wallet1",
       destinationWalletId: "wallet2",
@@ -96,7 +97,7 @@ export class MockRewardApi implements RewardApi {
     },
     {
       pointTransactionId: "8810",
-      type: 1,
+      type: TransactionType.EXCHANGE,
       amount: 200,
       sourceWalletId: "wallet1",
       destinationWalletId: "wallet-store",
@@ -112,7 +113,7 @@ export class MockRewardApi implements RewardApi {
     },
     {
       pointTransactionId: "8755",
-      type: 0,
+      type: TransactionType.POLICY_REWARD,
       amount: 1000,
       sourceWalletId: "wallet1",
       destinationWalletId: "wallet2",
@@ -121,7 +122,7 @@ export class MockRewardApi implements RewardApi {
     },
     {
       pointTransactionId: "8100",
-      type: 0,
+      type: TransactionType.POLICY_REWARD,
       amount: 50,
       sourceWalletId: "wallet1",
       destinationWalletId: "wallet2",
@@ -130,7 +131,7 @@ export class MockRewardApi implements RewardApi {
     },
     {
       pointTransactionId: "8099",
-      type: 1,
+      type: TransactionType.EXCHANGE,
       amount: 50,
       sourceWalletId: "wallet1",
       destinationWalletId: "wallet-store",
@@ -146,7 +147,7 @@ export class MockRewardApi implements RewardApi {
     },
     {
       pointTransactionId: "8098",
-      type: 0,
+      type: TransactionType.POLICY_REWARD,
       amount: 150,
       sourceWalletId: "wallet1",
       destinationWalletId: "wallet2",
@@ -155,7 +156,7 @@ export class MockRewardApi implements RewardApi {
     },
     {
       pointTransactionId: "8097",
-      type: 0,
+      type: TransactionType.POLICY_REWARD,
       amount: 75,
       sourceWalletId: "wallet1",
       destinationWalletId: "wallet2",
@@ -164,7 +165,7 @@ export class MockRewardApi implements RewardApi {
     },
     {
       pointTransactionId: "8096",
-      type: 1,
+      type: TransactionType.EXCHANGE,
       amount: 120,
       sourceWalletId: "wallet1",
       destinationWalletId: "wallet-store",
@@ -210,7 +211,7 @@ export class MockRewardApi implements RewardApi {
         (payload.employeeIds || []).forEach((employeeId, idx) => {
           this.mockTransactions.unshift({
             pointTransactionId: `${baseTxId}-${idx + 1}`,
-            type: 1,
+            type: TransactionType.GIFT,
             amount: perEmployeePoints,
             sourceWalletId: "wallet1",
             destinationWalletId: `wallet-employee-${employeeId}`,
@@ -233,89 +234,36 @@ export class MockRewardApi implements RewardApi {
 
   async getGiftedPointStats(
     filter?: GiftedPointFilter
-  ): Promise<ApiResponse<Page<GiftedPointEmployeeStat>>> {
+  ): Promise<ApiResponse<Page<PointTransaction>>> {
     return new Promise((resolve) => {
       setTimeout(() => {
         const now = new Date();
         const defaultMonth = formatMonthKeyUtc(now);
         const month = filter?.month || defaultMonth;
 
-        const keyword = (filter?.keyword || "").trim().toLowerCase();
-
+        // Filter GIFT transactions by month
         const giftedTx = this.mockTransactions.filter((t) => {
-          if (t.type !== 1) return false;
+          if (t.type !== TransactionType.GIFT) return false;
           if (!t.destinationWalletId?.startsWith("wallet-employee-"))
             return false;
           return formatMonthKeyFromIsoUtc(t.createdAt) === month;
         });
 
-        const map = new Map<
-          string,
-          { totalPoints: number; giftCount: number }
-        >();
-
-        for (const tx of giftedTx) {
-          const employeeId = tx.destinationWalletId.replace(
-            "wallet-employee-",
-            ""
-          );
-          const prev = map.get(employeeId) || { totalPoints: 0, giftCount: 0 };
-          map.set(employeeId, {
-            totalPoints: prev.totalPoints + (tx.amount || 0),
-            giftCount: prev.giftCount + 1,
-          });
-        }
-
-        let stats: GiftedPointEmployeeStat[] = Array.from(map.entries()).map(
-          ([employeeId, v]) => {
-            const emp = this.employees.find((e) => e.id === employeeId);
-            return {
-              employeeId,
-              employeeName: emp?.name || `Nhân viên ${employeeId}`,
-              employeeEmail: emp?.email || "-",
-              totalPoints: v.totalPoints,
-              giftCount: v.giftCount,
-            };
-          }
-        );
-
-        if (keyword) {
-          stats = stats.filter((s) =>
-            `${s.employeeName} ${s.employeeEmail}`
-              .toLowerCase()
-              .includes(keyword)
-          );
-        }
-
-        const sortDirection = filter?.sortDirection || "DESC";
-        stats.sort((a, b) => {
-          const diff = a.totalPoints - b.totalPoints;
-          return sortDirection === "ASC" ? diff : -diff;
-        });
-
-        const currentPage = filter?.currentPage || 1;
-        const pageSize = filter?.pageSize || 10;
-        const startIndex = (currentPage - 1) * pageSize;
-        const endIndex = startIndex + pageSize;
-        const paginated = stats.slice(startIndex, endIndex);
-
-        const totalElements = stats.length;
-        const totalPages = Math.ceil(totalElements / pageSize) || 1;
-
-        const page: Page<GiftedPointEmployeeStat> = {
-          content: paginated,
-          totalElements,
-          totalPages,
-          size: pageSize,
-          number: currentPage,
-          first: currentPage === 1,
-          last: currentPage >= totalPages,
-          numberOfElements: paginated.length,
-          empty: paginated.length === 0,
+        // Return transactions in Page format
+        const page: Page<PointTransaction> = {
+          content: giftedTx,
+          totalElements: giftedTx.length,
+          totalPages: 1,
+          size: giftedTx.length,
+          number: 1,
+          first: true,
+          last: true,
+          numberOfElements: giftedTx.length,
+          empty: giftedTx.length === 0,
           pageable: {
-            pageNumber: currentPage,
-            pageSize,
-            offset: startIndex,
+            pageNumber: 1,
+            pageSize: giftedTx.length,
+            offset: 0,
             paged: true,
             unpaged: false,
             sort: { sorted: false, unsorted: true, empty: true },
@@ -327,7 +275,7 @@ export class MockRewardApi implements RewardApi {
           data: page,
           success: true,
           statusCode: 200,
-          message: "Mock gifted point stats fetched successfully",
+          message: "Mock gift transactions fetched successfully",
         });
       }, 400);
     });
@@ -340,38 +288,31 @@ export class MockRewardApi implements RewardApi {
       setTimeout(() => {
         let filtered = [...this.mockTransactions];
 
-        // Filter by date range (YYYY-MM-DD)
-        if (filter?.startDate && filter?.endDate) {
+        // Filter by date range (datetime format)
+        if (filter?.FromDate && filter?.ToDate) {
           filtered = filtered.filter((t) => {
-            const d = this.toDateInputValue(t.createdAt);
-            return d >= filter.startDate! && d <= filter.endDate!;
+            const txDate = new Date(t.createdAt);
+            const fromDate = new Date(filter.FromDate!);
+            const toDate = new Date(filter.ToDate!);
+            return txDate >= fromDate && txDate <= toDate;
           });
         }
 
         // Filter by type
-        if (filter?.type) {
-          const numericType =
-            filter.type === TransactionType.RECEIVE_POINTS
-              ? 0
-              : filter.type === TransactionType.REDEEM_POINTS
-              ? 1
-              : undefined;
-          if (numericType !== undefined) {
-            filtered = filtered.filter((t) => t.type === numericType);
-          }
+        if (filter?.TransactionType) {
+          filtered = filtered.filter((t) => t.type === filter.TransactionType);
         }
 
-        // Sort by createdAt
-        const sortDirection = filter?.sortDirection || "DESC";
+        // Sort by createdAt (DESC by default)
         filtered.sort((a, b) => {
           const ta = new Date(a.createdAt).getTime();
           const tb = new Date(b.createdAt).getTime();
-          return sortDirection === "ASC" ? ta - tb : tb - ta;
+          return tb - ta; // DESC
         });
 
-        // Pagination (1-based currentPage like request.api.ts)
-        const currentPage = filter?.currentPage || 1;
-        const pageSize = filter?.pageSize || 10;
+        // Pagination
+        const currentPage = filter?.PageNumber || 1;
+        const pageSize = filter?.PageSize || 10;
         const startIndex = (currentPage - 1) * pageSize;
         const endIndex = startIndex + pageSize;
         const paginated = filtered.slice(startIndex, endIndex);
@@ -514,7 +455,38 @@ export class RestRewardApi implements RewardApi {
   async getPointTransactions(
     filter?: TransactionFilter
   ): Promise<ApiResponse<Page<PointTransaction>>> {
-    return apiClient.get(`/rewards/transactions`, { params: filter });
+    const response = await apiClient.get<ApiResponse<TransactionListResponse>>(
+      `/rewards/transactions`,
+      { params: filter }
+    );
+
+    // Map backend response format to Page<T> format
+    const backendData = response.data;
+    const page: Page<PointTransaction> = {
+      content: backendData.items || [],
+      totalElements: backendData.totalItems || 0,
+      totalPages: backendData.totalPages || 1,
+      size: backendData.pageSize || 10,
+      number: backendData.page || 1,
+      first: !backendData.hasPreviousPage,
+      last: !backendData.hasNextPage,
+      numberOfElements: backendData.items?.length || 0,
+      empty: (backendData.items?.length || 0) === 0,
+      pageable: {
+        pageNumber: backendData.page || 1,
+        pageSize: backendData.pageSize || 10,
+        offset: ((backendData.page || 1) - 1) * (backendData.pageSize || 10),
+        paged: true,
+        unpaged: false,
+        sort: { sorted: false, unsorted: true, empty: true },
+      },
+      sort: { sorted: false, unsorted: true, empty: true },
+    };
+
+    return {
+      ...response,
+      data: page,
+    };
   }
 
   async giftPoints(
@@ -525,8 +497,65 @@ export class RestRewardApi implements RewardApi {
 
   async getGiftedPointStats(
     filter?: GiftedPointFilter
-  ): Promise<ApiResponse<Page<GiftedPointEmployeeStat>>> {
-    return apiClient.get(`/rewards/gifted`, { params: filter });
+  ): Promise<ApiResponse<Page<PointTransaction>>> {
+    // chuyển đổi month YYYY-MM sang fromDate, toDate để khớp với param api
+    const month = filter?.month;
+    let fromDate: string | undefined;
+    let toDate: string | undefined;
+
+    if (month) {
+      const [year, monthNum] = month.split("-");
+      fromDate = `${year}-${monthNum}-01T00:00:00.000Z`;
+      const lastDay = new Date(parseInt(year), parseInt(monthNum), 0).getDate();
+      toDate = `${year}-${monthNum}-${String(lastDay).padStart(
+        2,
+        "0"
+      )}T23:59:59.999Z`;
+    }
+
+    // tạo param filter chỉ lấy các giao dịch loại GIFT, set pageSize lớn để lấy đủ dữ liệu
+    const transactionFilter: TransactionFilter = {
+      TransactionType: TransactionType.GIFT,
+      FromDate: fromDate,
+      ToDate: toDate,
+      PageNumber: 1,
+      PageSize: 10000,
+      sortBy: "createdAt",
+      sortDirection: "desc",
+    };
+
+    const response = await apiClient.get<ApiResponse<TransactionListResponse>>(
+      `/rewards/transactions`,
+      { params: transactionFilter }
+    );
+
+    // Map backend response format to Page<T> format
+    const backendData = response.data;
+    const page: Page<PointTransaction> = {
+      content: backendData.items || [],
+      totalElements: backendData.totalItems || 0,
+      totalPages: backendData.totalPages || 1,
+      size: backendData.pageSize || 10,
+      number: backendData.page || 1,
+      first: !backendData.hasPreviousPage,
+      last: !backendData.hasNextPage,
+      numberOfElements: backendData.items?.length || 0,
+      empty: (backendData.items?.length || 0) === 0,
+      pageable: {
+        pageNumber: backendData.page || 1,
+        pageSize: backendData.pageSize || 10,
+        offset: ((backendData.page || 1) - 1) * (backendData.pageSize || 10),
+        paged: true,
+        unpaged: false,
+        sort: { sorted: false, unsorted: true, empty: true },
+      },
+      sort: { sorted: false, unsorted: true, empty: true },
+    };
+
+    return {
+      ...response,
+      data: page,
+    };
   }
 
   async getRewardPrograms(

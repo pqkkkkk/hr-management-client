@@ -21,6 +21,11 @@ import {
   RewardApi,
   RestRewardApi,
 } from "services/api/reward.api";
+import {
+  ActivityApi,
+  MockActivityApi,
+  RestActivityApi,
+} from "services/api/activity.api";
 
 interface ApiContextType {
   profileApi: ProfileApi;
@@ -28,6 +33,7 @@ interface ApiContextType {
   requestApi: RequestApi;
   fileApi: FileApi;
   rewardApi: RewardApi;
+  activityApi: ActivityApi;
 }
 
 interface ApiProviderProps {
@@ -45,6 +51,7 @@ const createApiServices = (apiType: ApiType): ApiContextType => {
         requestApi: new MockRequestApi(),
         fileApi: new MockFileApi(),
         rewardApi: new MockRewardApi(),
+        activityApi: new MockActivityApi(),
       };
     case "REST":
       return {
@@ -53,6 +60,7 @@ const createApiServices = (apiType: ApiType): ApiContextType => {
         requestApi: new RestRequestApi(),
         fileApi: new RestFileApi(),
         rewardApi: new RestRewardApi(),
+        activityApi: new RestActivityApi(),
       };
     default:
       throw new Error(`Unsupported API type: ${apiType}`);
@@ -81,3 +89,4 @@ export const useApi = () => {
 
   return context;
 };
+
