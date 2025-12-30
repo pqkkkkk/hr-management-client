@@ -1,6 +1,7 @@
 
 import { useState } from "react";
 import {RewardListCardProps} from "../types/rewardForm";
+
 const RewardListCard: React.FC<RewardListCardProps> = ({ items, onItemsChange }) => {
   const [newItem, setNewItem] = useState({
     name: "",
