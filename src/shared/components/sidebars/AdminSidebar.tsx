@@ -108,39 +108,15 @@ const AdminSidebar: React.FC = () => {
             <h3 className={sectionTitleClass}>Quản lý thưởng</h3>
             <ul className="mt-2 space-y-1">
               <li>
-                <NavLink to="/rewards" className={navLinkClass}>
+                <NavLink to="/rewards/programs/create" className={navLinkClass}>
                   <Gift className="w-5 h-5" />
-                  <span>Tổng quan điểm</span>
-                </NavLink>
-              </li>
-              <li>
-                <NavLink to="/rewards/campaigns" className={navLinkClass}>
-                  <Gift className="w-5 h-5" />
-                  <span>Chiến dịch thưởng</span>
+                  <span>Tạo chương trình thưởng</span>
                 </NavLink>
               </li>
               <li>
                 <NavLink to="/rewards/transactions" className={navLinkClass}>
                   <Gift className="w-5 h-5" />
                   <span>Lịch sử giao dịch</span>
-                </NavLink>
-              </li>
-              <li>
-                <NavLink to="/rewards/redeem" className={navLinkClass}>
-                  <Gift className="w-5 h-5" />
-                  <span>Đổi quà</span>
-                </NavLink>
-              </li>
-              <li>
-                <NavLink to="/rewards/gift" className={navLinkClass}>
-                  <Gift className="w-5 h-5" />
-                  <span>Tặng điểm</span>
-                </NavLink>
-              </li>
-              <li>
-                <NavLink to="/rewards/team-report" className={navLinkClass}>
-                  <BarChart3 className="w-5 h-5" />
-                  <span>Báo cáo công ty</span>
                 </NavLink>
               </li>
             </ul>

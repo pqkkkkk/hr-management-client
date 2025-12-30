@@ -1,271 +1,68 @@
 import { ApiResponse, Page } from "shared/types";
 import {
   GiftPointsRequest,
-  GiftPointsResponse,
-  GiftedPointEmployeeStat,
-  GiftedPointFilter,
   TransactionFilter,
   PointTransaction,
   TransactionType,
-  ProgrameReward,
+  RewardProgram,
   RewardProgramFilter,
-  RewardItem, RewardItemFilter,
+  RewardItem,
+  RewardProgramDetail,
+  UserWallet,
   TransactionListResponse,
+  ExchangeRewardRequest,
 } from "modules/reward/types/reward.types";
 import apiClient from "./api.client";
-import { RewardProgramFormData,RewardProgramResponse } from "modules/reward/types/rewardForm";
+import { RewardProgramFormData, RewardProgramResponse } from "modules/reward/types/rewardForm";
 import {
-  formatMonthKeyFromIsoUtc,
-  formatMonthKeyUtc,
-} from "shared/utils/date-utils";
+  mockRewardPrograms,
+  mockRewardItems,
+  mockRewardPolicies,
+  mockTransactions,
+  mockUserWallets,
+} from "shared/data/reward.data";
+
+// ========== API INTERFACE ==========
 
 export interface RewardApi {
-  getPointTransactions(
-    filter?: TransactionFilter
-  ): Promise<ApiResponse<Page<PointTransaction>>>;
+  // Transactions
+  getPointTransactions(filter?: TransactionFilter): Promise<ApiResponse<Page<PointTransaction>>>;
+  giftPoints(payload: GiftPointsRequest): Promise<ApiResponse<Array<PointTransaction>>>;
+  getMyGiftTransactions(filter?: TransactionFilter): Promise<ApiResponse<Page<PointTransaction>>>;
 
-  giftPoints(
-    payload: GiftPointsRequest
-  ): Promise<ApiResponse<GiftPointsResponse>>;
+  // Programs
+  getRewardPrograms(filter?: RewardProgramFilter): Promise<ApiResponse<Page<RewardProgram>>>;
+  getRewardProgramById(id: string): Promise<ApiResponse<RewardProgramDetail>>;
+  getActiveRewardProgram(): Promise<ApiResponse<RewardProgramDetail>>;
+  createRewardProgram(request: RewardProgramFormData): Promise<RewardProgramResponse>;
 
-  getGiftedPointStats(
-    filter?: GiftedPointFilter
-  ): Promise<ApiResponse<Page<GiftedPointEmployeeStat>>>;
+  // Wallet
+  getWallet(userId: string, programId: string): Promise<ApiResponse<UserWallet>>;
 
-  getRewardPrograms(
-    filter?: RewardProgramFilter
-  ): Promise<ApiResponse<Page<ProgrameReward>>>;
-
-  getRewardProgramById(
-    id: string
-  ): Promise<ApiResponse<RewardItem[]>>;
+  // Exchange
+  exchangeReward(request: ExchangeRewardRequest): Promise<ApiResponse<PointTransaction>>;
 }
 
+// ========== MOCK API IMPLEMENTATION ==========
+
 export class MockRewardApi implements RewardApi {
-  private employees: Array<{ id: string; name: string; email: string }> = [
-    { id: "e-1", name: "Nguyễn Văn An", email: "an.nguyen@company.com" },
-    { id: "e-2", name: "Trần Thị Bình", email: "binh.tran@company.com" },
-    { id: "e-3", name: "Lê Hoàng Cường", email: "cuong.le@company.com" },
-    { id: "e-4", name: "Phạm Minh Đăng", email: "dang.pham@company.com" },
-    { id: "e-5", name: "Hoàng Thị Em", email: "em.hoang@company.com" },
-  ];
-
-  private rewardPrograms: Array<RewardProgramFormData> = [];
-
-  private mockTransactions: PointTransaction[] = [
-    {
-      pointTransactionId: "g-12001",
-      type: TransactionType.GIFT,
-      amount: 500,
-      sourceWalletId: "wallet1",
-      destinationWalletId: "wallet-employee-e-1",
-      createdAt: "2025-12-20T08:30:00.000Z",
-      items: [],
-    },
-    {
-      pointTransactionId: "g-12002",
-      type: TransactionType.GIFT,
-      amount: 300,
-      sourceWalletId: "wallet1",
-      destinationWalletId: "wallet-employee-e-2",
-      createdAt: "2025-12-18T10:15:00.000Z",
-      items: [],
-    },
-    {
-      pointTransactionId: "g-12003",
-      type: TransactionType.GIFT,
-      amount: 200,
-      sourceWalletId: "wallet1",
-      destinationWalletId: "wallet-employee-e-3",
-      createdAt: "2025-12-15T14:45:00.000Z",
-      items: [],
-    },
-    {
-      pointTransactionId: "g-12004",
-      type: TransactionType.GIFT,
-      amount: 150,
-      sourceWalletId: "wallet1",
-      destinationWalletId: "wallet-employee-e-4",
-      createdAt: "2025-12-12T09:00:00.000Z",
-      items: [],
-    },
-    {
-      pointTransactionId: "8923",
-      type: TransactionType.POLICY_REWARD,
-      amount: 500,
-      sourceWalletId: "wallet1",
-      destinationWalletId: "wallet2",
-      createdAt: "2025-12-22T09:10:05.120Z",
-      items: [],
-    },
-    {
-      pointTransactionId: "8810",
-      type: TransactionType.EXCHANGE,
-      amount: 200,
-      sourceWalletId: "wallet1",
-      destinationWalletId: "wallet-store",
-      createdAt: "2025-12-18T14:49:18.943Z",
-      items: [
-        {
-          rewardItemId: "activity-1",
-          rewardItemName: "Hoạt động",
-          quantity: 1,
-          totalPoints: 200,
-        },
-      ],
-    },
-    {
-      pointTransactionId: "8755",
-      type: TransactionType.POLICY_REWARD,
-      amount: 1000,
-      sourceWalletId: "wallet1",
-      destinationWalletId: "wallet2",
-      createdAt: "2025-12-24T14:49:18.943Z",
-      items: [],
-    },
-    {
-      pointTransactionId: "8100",
-      type: TransactionType.POLICY_REWARD,
-      amount: 50,
-      sourceWalletId: "wallet1",
-      destinationWalletId: "wallet2",
-      createdAt: "2025-12-04T16:05:10.500Z",
-      items: [],
-    },
-    {
-      pointTransactionId: "8099",
-      type: TransactionType.EXCHANGE,
-      amount: 50,
-      sourceWalletId: "wallet1",
-      destinationWalletId: "wallet-store",
-      createdAt: "2025-12-02T11:20:00.777Z",
-      items: [
-        {
-          rewardItemId: "store-1",
-          rewardItemName: "Cửa hàng",
-          quantity: 1,
-          totalPoints: 50,
-        },
-      ],
-    },
-    {
-      pointTransactionId: "8098",
-      type: TransactionType.POLICY_REWARD,
-      amount: 150,
-      sourceWalletId: "wallet1",
-      destinationWalletId: "wallet2",
-      createdAt: "2025-11-29T10:12:30.250Z",
-      items: [],
-    },
-    {
-      pointTransactionId: "8097",
-      type: TransactionType.POLICY_REWARD,
-      amount: 75,
-      sourceWalletId: "wallet1",
-      destinationWalletId: "wallet2",
-      createdAt: "2025-11-26T18:03:59.001Z",
-      items: [],
-    },
-    {
-      pointTransactionId: "8096",
-      type: TransactionType.EXCHANGE,
-      amount: 120,
-      sourceWalletId: "wallet1",
-      destinationWalletId: "wallet-store",
-      createdAt: "2025-11-25T13:00:00.999Z",
-      items: [
-        {
-          rewardItemId: "activity-2",
-          rewardItemName: "Hoạt động",
-          quantity: 1,
-          totalPoints: 120,
-        },
-      ],
-    },
-  ];
-
-  private toDateInputValue(iso: string) {
-    try {
-      const d = new Date(iso);
-      const y = d.getFullYear();
-      const m = String(d.getMonth() + 1).padStart(2, "0");
-      const day = String(d.getDate()).padStart(2, "0");
-      return `${y}-${m}-${day}`;
-    } catch {
-      return iso;
-    }
-  }
-
-  async giftPoints(
-    payload: GiftPointsRequest
-  ): Promise<ApiResponse<GiftPointsResponse>> {
+  // GET /api/v1/rewards/transactions
+  async getPointTransactions(filter?: TransactionFilter): Promise<ApiResponse<Page<PointTransaction>>> {
     return new Promise((resolve) => {
       setTimeout(() => {
-        const employeeCount = payload.employeeIds?.length ?? 0;
-        const points = Number(payload.points);
-        const perEmployeePoints =
-          Number.isFinite(points) && points > 0 ? Math.floor(points) : 0;
-        const totalPointsDeducted = perEmployeePoints * employeeCount;
-
-        const baseTxId = String(Date.now());
-        const nowIso = new Date().toISOString();
-
-        // Create one transaction per employee so gifted-history can group stats.
-        (payload.employeeIds || []).forEach((employeeId, idx) => {
-          this.mockTransactions.unshift({
-            pointTransactionId: `${baseTxId}-${idx + 1}`,
-            type: TransactionType.GIFT,
-            amount: perEmployeePoints,
-            sourceWalletId: "wallet1",
-            destinationWalletId: `wallet-employee-${employeeId}`,
-            createdAt: nowIso,
-            items: [],
-          });
-        });
-
-        const txId = `${baseTxId}-1`;
-
-        resolve({
-          data: { transactionId: txId, totalPointsDeducted },
-          success: true,
-          statusCode: 200,
-          message: "Mock gift points success",
-        });
-      }, 900);
-    });
-  }
-
-  async getGiftedPointStats(
-    filter?: GiftedPointFilter
-  ): Promise<ApiResponse<Page<PointTransaction>>> {
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        const now = new Date();
-        const defaultMonth = formatMonthKeyUtc(now);
-        const month = filter?.month || defaultMonth;
-
-        // Filter GIFT transactions by month
-        const giftedTx = this.mockTransactions.filter((t) => {
-          if (t.type !== TransactionType.GIFT) return false;
-          if (!t.destinationWalletId?.startsWith("wallet-employee-"))
-            return false;
-          return formatMonthKeyFromIsoUtc(t.createdAt) === month;
-        });
-
-        // Return transactions in Page format
         const page: Page<PointTransaction> = {
-          content: giftedTx,
-          totalElements: giftedTx.length,
+          content: mockTransactions,
+          totalElements: mockTransactions.length,
           totalPages: 1,
-          size: giftedTx.length,
-          number: 1,
+          size: filter?.PageSize || 10,
+          number: filter?.PageNumber || 1,
           first: true,
           last: true,
-          numberOfElements: giftedTx.length,
-          empty: giftedTx.length === 0,
+          numberOfElements: mockTransactions.length,
+          empty: mockTransactions.length === 0,
           pageable: {
-            pageNumber: 1,
-            pageSize: giftedTx.length,
+            pageNumber: filter?.PageNumber || 1,
+            pageSize: filter?.PageSize || 10,
             offset: 0,
             paged: true,
             unpaged: false,
@@ -278,64 +75,53 @@ export class MockRewardApi implements RewardApi {
           data: page,
           success: true,
           statusCode: 200,
-          message: "Mock gift transactions fetched successfully",
+          message: "Transactions retrieved successfully",
         });
-      }, 400);
+      }, 500);
     });
   }
 
-  async getPointTransactions(
-    filter?: TransactionFilter
-  ): Promise<ApiResponse<Page<PointTransaction>>> {
+  // POST /api/v1/rewards/transactions/gift
+  async giftPoints(payload: GiftPointsRequest): Promise<ApiResponse<Array<PointTransaction>>> {
     return new Promise((resolve) => {
       setTimeout(() => {
-        let filtered = [...this.mockTransactions];
-
-        // Filter by date range (datetime format)
-        if (filter?.FromDate && filter?.ToDate) {
-          filtered = filtered.filter((t) => {
-            const txDate = new Date(t.createdAt);
-            const fromDate = new Date(filter.FromDate!);
-            const toDate = new Date(filter.ToDate!);
-            return txDate >= fromDate && txDate <= toDate;
-          });
-        }
-
-        // Filter by type
-        if (filter?.TransactionType) {
-          filtered = filtered.filter((t) => t.type === filter.TransactionType);
-        }
-
-        // Sort by createdAt (DESC by default)
-        filtered.sort((a, b) => {
-          const ta = new Date(a.createdAt).getTime();
-          const tb = new Date(b.createdAt).getTime();
-          return tb - ta; // DESC
+        resolve({
+          data: mockTransactions,
+          success: true,
+          statusCode: 200,
+          message: "Gift points successful",
         });
+      }, 500);
+    });
+  }
 
-        // Pagination
-        const currentPage = filter?.PageNumber || 1;
+  // GET GIFT transactions sent by current user (mocked - filters by TransactionType.GIFT)
+  async getMyGiftTransactions(filter?: TransactionFilter): Promise<ApiResponse<Page<PointTransaction>>> {
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        // Filter only GIFT transactions
+        const giftTransactions = mockTransactions.filter(t => t.type === TransactionType.GIFT);
+
+        // Apply pagination
+        const pageNumber = filter?.PageNumber || 1;
         const pageSize = filter?.PageSize || 10;
-        const startIndex = (currentPage - 1) * pageSize;
+        const startIndex = (pageNumber - 1) * pageSize;
         const endIndex = startIndex + pageSize;
-        const paginated = filtered.slice(startIndex, endIndex);
-
-        const totalElements = filtered.length;
-        const totalPages = Math.ceil(totalElements / pageSize) || 1;
+        const paginated = giftTransactions.slice(startIndex, endIndex);
 
         const page: Page<PointTransaction> = {
           content: paginated,
-          totalElements,
-          totalPages,
+          totalElements: giftTransactions.length,
+          totalPages: Math.ceil(giftTransactions.length / pageSize) || 1,
           size: pageSize,
-          number: currentPage,
-          first: currentPage === 1,
-          last: currentPage >= totalPages,
+          number: pageNumber,
+          first: pageNumber === 1,
+          last: endIndex >= giftTransactions.length,
           numberOfElements: paginated.length,
           empty: paginated.length === 0,
           pageable: {
-            pageNumber: currentPage,
-            pageSize,
+            pageNumber: pageNumber,
+            pageSize: pageSize,
             offset: startIndex,
             paged: true,
             unpaged: false,
@@ -348,89 +134,30 @@ export class MockRewardApi implements RewardApi {
           data: page,
           success: true,
           statusCode: 200,
-          message: "Mock point transactions fetched successfully",
+          message: "Gift transactions retrieved successfully",
         });
-      }, 400);
+      }, 500);
     });
   }
 
-  async getRewardPrograms(
-    filter?: RewardProgramFilter
-  ): Promise<ApiResponse<Page<ProgrameReward>>> {
+  // GET /api/v1/rewards/programs
+  async getRewardPrograms(filter?: RewardProgramFilter): Promise<ApiResponse<Page<RewardProgram>>> {
     return new Promise((resolve) => {
       setTimeout(() => {
-        const mockPrograms: ProgrameReward[] = [
-          {
-            rewardProgramId: "rp-1",
-            name: "Chương trình tháng 12",
-            description: "Chương trình thưởng cuối năm",
-            startDate: "2025-12-01T00:00:00.000Z",
-            endDate: "2025-12-31T23:59:59.999Z",
-            status: "ACTIVE",
-            defaultGivingBudget: 10000,
-            bannerUrl: "https://example.com/banner1.jpg",
-          },
-          {
-            rewardProgramId: "rp-2",
-            name: "Chương trình quý 1/2026",
-            description: "Chương trình khởi đầu năm mới",
-            startDate: "2026-01-01T00:00:00.000Z",
-            endDate: "2026-03-31T23:59:59.999Z",
-            status: "PENDING",
-            defaultGivingBudget: 15000,
-            bannerUrl: "https://example.com/banner2.jpg",
-          },
-          {
-            rewardProgramId: "rp-3",
-            name: "Chương trình tháng 11",
-            description: "Chương trình tháng 11",
-            startDate: "2025-11-01T00:00:00.000Z",
-            endDate: "2025-11-30T23:59:59.999Z",
-            status: "INACTIVE",
-            defaultGivingBudget: 8000,
-            bannerUrl: "https://example.com/banner3.jpg",
-          },
-        ];
-
-        let filtered = [...mockPrograms];
-
-        // Filter by status
-        if (filter?.status) {
-          filtered = filtered.filter((p) => p.status === filter.status);
-        }
-
-        // Sort by startDate
-        const sortDirection = filter?.sortDirection || "DESC";
-        filtered.sort((a, b) => {
-          const ta = new Date(a.startDate).getTime();
-          const tb = new Date(b.startDate).getTime();
-          return sortDirection === "ASC" ? ta - tb : tb - ta;
-        });
-
-        // Pagination
-        const currentPage = filter?.currentPage || 1;
-        const pageSize = filter?.pageSize || 10;
-        const startIndex = (currentPage - 1) * pageSize;
-        const endIndex = startIndex + pageSize;
-        const paginated = filtered.slice(startIndex, endIndex);
-
-        const totalElements = filtered.length;
-        const totalPages = Math.ceil(totalElements / pageSize) || 1;
-
-        const page: Page<ProgrameReward> = {
-          content: paginated,
-          totalElements,
-          totalPages,
-          size: pageSize,
-          number: currentPage,
-          first: currentPage === 1,
-          last: currentPage >= totalPages,
-          numberOfElements: paginated.length,
-          empty: paginated.length === 0,
+        const page: Page<RewardProgram> = {
+          content: mockRewardPrograms,
+          totalElements: mockRewardPrograms.length,
+          totalPages: 1,
+          size: filter?.pageSize || 10,
+          number: filter?.currentPage || 1,
+          first: true,
+          last: true,
+          numberOfElements: mockRewardPrograms.length,
+          empty: mockRewardPrograms.length === 0,
           pageable: {
-            pageNumber: currentPage,
-            pageSize,
-            offset: startIndex,
+            pageNumber: filter?.currentPage || 1,
+            pageSize: filter?.pageSize || 10,
+            offset: 0,
             paged: true,
             unpaged: false,
             sort: { sorted: false, unsorted: true, empty: true },
@@ -442,195 +169,180 @@ export class MockRewardApi implements RewardApi {
           data: page,
           success: true,
           statusCode: 200,
-          message: "Mock reward programs fetched successfully",
+          message: "Reward programs retrieved successfully",
         });
-      }, 400);
+      }, 500);
     });
   }
 
-  async createRewardProgram(request: RewardProgramFormData): Promise<RewardProgramResponse> {
-    return new Promise((resolve, reject) => {
+  // GET /api/v1/rewards/programs/:id
+  async getRewardProgramById(id: string): Promise<ApiResponse<RewardProgramDetail>> {
+    return new Promise((resolve) => {
       setTimeout(() => {
-        if (!request.name || request.name.trim() === '') {
-          reject(new Error('Tên đợt khen thưởng không được để trống'));
-          return;
-        }
+        const program = mockRewardPrograms.find(p => p.rewardProgramId === id) || mockRewardPrograms[0];
+        const programDetail: RewardProgramDetail = {
+          ...program,
+          items: mockRewardItems,
+          policies: mockRewardPolicies,
+        };
 
-        if (!request.startDate || !request.endDate) {
-          reject(new Error('Ngày bắt đầu và kết thúc không được để trống'));
-          return;
-        }
-
-        if (new Date(request.startDate) >= new Date(request.endDate)) {
-          reject(new Error('Ngày kết thúc phải sau ngày bắt đầu'));
-          return;
-        }
-
-        if (request.items.length === 0) {
-          reject(new Error('Phải có ít nhất một phần thưởng'));
-          return;
-        }
-
-        if (request.policies.length === 0) {
-          reject(new Error('Phải có ít nhất một quy tắc'));
-          return;
-        }
-
-        // Store the reward program
-        this.rewardPrograms.push({
-          ...request,
-          name: request.name.trim(),
-          description: request.description.trim(),
+        resolve({
+          data: programDetail,
+          success: true,
+          statusCode: 200,
+          message: "Reward program retrieved successfully",
         });
+      }, 300);
+    });
+  }
 
-        console.log('✅ Mock: Reward program created successfully!');
-        console.log('📦 Saved program:', {
-          name: request.name,
-          startDate: request.startDate,
-          endDate: request.endDate,
-          itemCount: request.items.length,
-          policyCount: request.policies.length,
-          defaultGivingBudget: request.defaultGivingBudget,
+  // GET active reward program (mock - returns first ACTIVE program)
+  async getActiveRewardProgram(): Promise<ApiResponse<RewardProgramDetail>> {
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        const activeProgram = mockRewardPrograms.find(p => p.status === "ACTIVE") || mockRewardPrograms[0];
+
+        const programDetail: RewardProgramDetail = {
+          ...activeProgram,
+          items: mockRewardItems,
+          policies: mockRewardPolicies,
+        };
+
+        resolve({
+          data: programDetail,
+          success: true,
+          statusCode: 200,
+          message: "Active reward program retrieved successfully",
         });
-        console.log('📊 Total programs:', this.rewardPrograms.length);
+      }, 300);
+    });
+  }
 
+  // POST /api/v1/rewards/programs
+  async createRewardProgram(request: RewardProgramFormData): Promise<RewardProgramResponse> {
+    return new Promise((resolve) => {
+      setTimeout(() => {
         resolve({
           ...request,
           success: true,
         });
-      }, 800);
+      }, 500);
+    });
+  }
+
+  // GET /api/v1/rewards/wallets/user/:userId/program/:programId
+  async exchangeReward(request: ExchangeRewardRequest): Promise<ApiResponse<PointTransaction>> {
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        // Calculate total points
+        const totalPoints = request.items.reduce((sum, item) => {
+          // In real implementation, we'd look up the item's requiredPoints
+          return sum + (item.quantity * 100); // Mock: 100 points per item
+        }, 0);
+
+        const response: PointTransaction = {
+          pointTransactionId: `TXN${Date.now()}`,
+          type: TransactionType.EXCHANGE,
+          amount: totalPoints,
+          sourceWalletId: `wallet-${request.userId}`,
+          destinationWalletId: '',
+          createdAt: new Date().toISOString(),
+          items: request.items.map(item => ({
+            rewardItemId: item.rewardItemId,
+            rewardItemName: 'Mock Item',
+            quantity: item.quantity,
+            totalPoints: item.quantity * 100,
+          })),
+        };
+
+        resolve({
+          data: response,
+          success: true,
+          statusCode: 201,
+          message: "Exchange successful",
+        });
+      }, 500);
+    });
+  }
+
+  async getWallet(userId: string, programId: string): Promise<ApiResponse<UserWallet>> {
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        const wallet = mockUserWallets.find(w => w.userId === userId && w.programId === programId);
+        resolve({
+          data: wallet,
+          success: true,
+          statusCode: 200,
+          message: "Wallet retrieved successfully",
+        });
+      }, 300);
     });
   }
 }
 
-  async getRewardProgramById(
-    id: string
-  ): Promise<ApiResponse<RewardItem[]>> {
-    return apiClient.get(`/rewards/programs/${id}`);
-  }
-}
+// ========== REST API IMPLEMENTATION ==========
+
 export class RestRewardApi implements RewardApi {
-  async getPointTransactions(
-    filter?: TransactionFilter
-  ): Promise<ApiResponse<Page<PointTransaction>>> {
-    const response = await apiClient.get<ApiResponse<TransactionListResponse>>(
+  async getPointTransactions(filter?: TransactionFilter): Promise<ApiResponse<Page<PointTransaction>>> {
+    const response = await apiClient.get<ApiResponse<Page<PointTransaction>>>(
       `/rewards/transactions`,
       { params: filter }
     );
 
-    // Map backend response format to Page<T> format
-    const backendData = response.data;
-    const page: Page<PointTransaction> = {
-      content: backendData.items || [],
-      totalElements: backendData.totalItems || 0,
-      totalPages: backendData.totalPages || 1,
-      size: backendData.pageSize || 10,
-      number: backendData.page || 1,
-      first: !backendData.hasPreviousPage,
-      last: !backendData.hasNextPage,
-      numberOfElements: backendData.items?.length || 0,
-      empty: (backendData.items?.length || 0) === 0,
-      pageable: {
-        pageNumber: backendData.page || 1,
-        pageSize: backendData.pageSize || 10,
-        offset: ((backendData.page || 1) - 1) * (backendData.pageSize || 10),
-        paged: true,
-        unpaged: false,
-        sort: { sorted: false, unsorted: true, empty: true },
-      },
-      sort: { sorted: false, unsorted: true, empty: true },
-    };
+    return response;
 
-    return {
-      ...response,
-      data: page,
-    };
+
   }
 
-  async giftPoints(
-    payload: GiftPointsRequest
-  ): Promise<ApiResponse<GiftPointsResponse>> {
-    return apiClient.post(`/rewards/gift`, payload);
+  async giftPoints(payload: GiftPointsRequest): Promise<ApiResponse<Array<PointTransaction>>> {
+    return apiClient.post(`/rewards/transactions/gift`, payload);
   }
 
-  async getGiftedPointStats(
-    filter?: GiftedPointFilter
-  ): Promise<ApiResponse<Page<PointTransaction>>> {
-    // chuyển đổi month YYYY-MM sang fromDate, toDate để khớp với param api
-    const month = filter?.month;
-    let fromDate: string | undefined;
-    let toDate: string | undefined;
-
-    if (month) {
-      const [year, monthNum] = month.split("-");
-      fromDate = `${year}-${monthNum}-01T00:00:00.000Z`;
-      const lastDay = new Date(parseInt(year), parseInt(monthNum), 0).getDate();
-      toDate = `${year}-${monthNum}-${String(lastDay).padStart(
-        2,
-        "0"
-      )}T23:59:59.999Z`;
-    }
-
-    // tạo param filter chỉ lấy các giao dịch loại GIFT, set pageSize lớn để lấy đủ dữ liệu
-    const transactionFilter: TransactionFilter = {
+  // GET GIFT transactions sent by current user
+  async getMyGiftTransactions(filter?: TransactionFilter): Promise<ApiResponse<Page<PointTransaction>>> {
+    // Use transaction filter with GIFT type
+    const giftFilter: TransactionFilter = {
+      ...filter,
       TransactionType: TransactionType.GIFT,
-      FromDate: fromDate,
-      ToDate: toDate,
-      PageNumber: 1,
-      PageSize: 10000,
-      sortBy: "createdAt",
-      sortDirection: "desc",
     };
 
-    const response = await apiClient.get<ApiResponse<TransactionListResponse>>(
+    const response = await apiClient.get<ApiResponse<Page<PointTransaction>>>(
       `/rewards/transactions`,
-      { params: transactionFilter }
+      { params: giftFilter }
     );
 
-    // Map backend response format to Page<T> format
-    const backendData = response.data;
-    const page: Page<PointTransaction> = {
-      content: backendData.items || [],
-      totalElements: backendData.totalItems || 0,
-      totalPages: backendData.totalPages || 1,
-      size: backendData.pageSize || 10,
-      number: backendData.page || 1,
-      first: !backendData.hasPreviousPage,
-      last: !backendData.hasNextPage,
-      numberOfElements: backendData.items?.length || 0,
-      empty: (backendData.items?.length || 0) === 0,
-      pageable: {
-        pageNumber: backendData.page || 1,
-        pageSize: backendData.pageSize || 10,
-        offset: ((backendData.page || 1) - 1) * (backendData.pageSize || 10),
-        paged: true,
-        unpaged: false,
-        sort: { sorted: false, unsorted: true, empty: true },
-      },
-      sort: { sorted: false, unsorted: true, empty: true },
-    };
-
-    return {
-      ...response,
-      data: page,
-    };
+    return response;
   }
 
-  async getRewardPrograms(
-    filter?: RewardProgramFilter
-  ): Promise<ApiResponse<Page<ProgrameReward>>> {
+  async getRewardPrograms(filter?: RewardProgramFilter): Promise<ApiResponse<Page<RewardProgram>>> {
     return apiClient.get(`/rewards/programs`, { params: filter });
   }
-  async getRewardProgramById(
-    id: string
-  ): Promise<ApiResponse<RewardItem[]>> {
+
+  async getRewardProgramById(id: string): Promise<ApiResponse<RewardProgramDetail>> {
     return apiClient.get(`/rewards/programs/${id}`);
+  }
+
+  async getActiveRewardProgram(): Promise<ApiResponse<RewardProgramDetail>> {
+    // Get programs with ACTIVE status - assumes backend returns single active program
+    const response = await apiClient.get<ApiResponse<Page<RewardProgramDetail>>>(`/rewards/programs`, {
+      params: { status: "ACTIVE" }
+    });
+    const programs = response.data.content || [];
+    return {
+      ...response,
+      data: programs[0],
+    };
   }
 
   async createRewardProgram(request: RewardProgramFormData): Promise<RewardProgramResponse> {
     return apiClient.post(`/rewards/programs`, request);
   }
-}
 
-export const mockRewardApi = new MockRewardApi();
-export const restRewardApi = new RestRewardApi();
+  async getWallet(userId: string, programId: string): Promise<ApiResponse<UserWallet>> {
+    return apiClient.get(`/rewards/wallets/user/${userId}/program/${programId}`);
+  }
+
+  async exchangeReward(request: ExchangeRewardRequest): Promise<ApiResponse<PointTransaction>> {
+    return apiClient.post(`/rewards/transactions/exchange`, request);
+  }
+}

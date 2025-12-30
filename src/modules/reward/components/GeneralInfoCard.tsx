@@ -1,4 +1,6 @@
-import {GeneralInfoCardProps} from '../types/rewardForm';
+import { GeneralInfoCardProps } from '../types/rewardForm';
+import ImageUploader from './ImageUploader';
+
 const GeneralInfoCard: React.FC<GeneralInfoCardProps> = ({ data, onChange }) => {
   return (
     <div className="bg-white rounded-2xl p-6 shadow-sm">
@@ -24,8 +26,8 @@ const GeneralInfoCard: React.FC<GeneralInfoCardProps> = ({ data, onChange }) => 
 
         <div>
           <label className="text-sm font-medium">Ngày bắt đầu *</label>
-          <input 
-            type="date" 
+          <input
+            type="date"
             className="mt-1 w-full border rounded-xl px-4 py-2"
             value={data.startDate.split('T')[0]}
             onChange={(e) => onChange('startDate', new Date(e.target.value).toISOString())}
@@ -34,8 +36,8 @@ const GeneralInfoCard: React.FC<GeneralInfoCardProps> = ({ data, onChange }) => 
 
         <div>
           <label className="text-sm font-medium">Ngày kết thúc *</label>
-          <input 
-            type="date" 
+          <input
+            type="date"
             className="mt-1 w-full border rounded-xl px-4 py-2"
             value={data.endDate.split('T')[0]}
             onChange={(e) => onChange('endDate', new Date(e.target.value).toISOString())}
@@ -54,12 +56,12 @@ const GeneralInfoCard: React.FC<GeneralInfoCardProps> = ({ data, onChange }) => 
         </div>
 
         <div className="col-span-2">
-          <label className="text-sm font-medium">URL Banner (Optional)</label>
-          <input
-            className="mt-1 w-full border rounded-xl px-4 py-2"
-            placeholder="https://example.com/banner.jpg"
+          <ImageUploader
+            label="Banner (Optional)"
             value={data.bannerUrl}
-            onChange={(e) => onChange('bannerUrl', e.target.value)}
+            onChange={(url) => onChange('bannerUrl', url)}
+            placeholder="Kéo thả hoặc click để tải banner"
+            previewHeight="h-32"
           />
         </div>
       </div>

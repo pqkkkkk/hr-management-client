@@ -1,13 +1,11 @@
-export interface InforReward{
-    id: string;
-    title: string;
-    description: string;
-    imageUrl: string;
-    price: number;
-}
-export interface DialogConfirmProps{
+import { RewardItem } from "./reward.types";
+
+export interface DialogConfirmProps {
   open: boolean;
   onClose: () => void;
-  reward?: InforReward;
-  handleSubmit?: (quantity: number) => void;
-};
+  reward: RewardItem | null;        // Thông tin phần thưởng được chọn
+  currentBalance: number;           // Số dư điểm hiện tại
+  maxQuantity: number;              // Số lượng tối đa có thể đổi (stock)
+  onSubmit: (quantity: number) => Promise<void>;  // Callback xử lý đổi quà
+  isSubmitting?: boolean;           // Loading state
+}

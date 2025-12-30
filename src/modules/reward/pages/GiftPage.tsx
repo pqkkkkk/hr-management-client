@@ -1,54 +1,74 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { ChevronDown, Coins, X } from "lucide-react";
-import { mockRewardApi } from "services/api/reward.api";
-import { useFetchList } from "shared/hooks/use-fetch-list";
 import { toast } from "react-toastify";
-import {
-  PointTransaction,
-  TransactionFilter,
-} from "modules/reward/types/reward.types";
-import { TransactionType } from "modules/reward/types/reward.types";
+import { UserWallet, RewardProgram } from "modules/reward/types/reward.types";
 import { initials } from "shared/utils/initial-utils";
 import { useApi } from "contexts/ApiContext";
+import { useAuth } from "contexts/AuthContext";
+import { User } from "shared/types";
 
 type EmployeeOption = {
   id: string;
   name: string;
 };
 
-const EMPLOYEES: EmployeeOption[] = [
-  { id: "e-1", name: "Nguyễn Văn A" },
-  { id: "e-2", name: "Trần Thị B" },
-  { id: "e-3", name: "Lê Văn C" },
-  { id: "e-4", name: "Phạm Thị D" },
-];
-
 const GiftPage: React.FC = () => {
-  const { rewardApi } = useApi();
+  const { rewardApi, profileApi } = useApi();
+  const { user } = useAuth();
   const nf = useMemo(() => new Intl.NumberFormat("vi-VN"), []);
 
-  const fetchPointTransactions = useMemo(
-    () => rewardApi.getPointTransactions.bind(rewardApi),
-    [rewardApi]
-  );
+  // State for API data
+  const [employees, setEmployees] = useState<EmployeeOption[]>([]);
+  const [wallet, setWallet] = useState<UserWallet | null>(null);
+  const [activeProgram, setActiveProgram] = useState<RewardProgram | null>(null);
+  const [isLoadingData, setIsLoadingData] = useState(true);
 
-  const summaryQuery = useMemo<TransactionFilter>(
-    () => ({ PageNumber: 1, PageSize: 1000 }),
-    []
-  );
+  // Fetch employees and wallet data
+  useEffect(() => {
+    const fetchData = async () => {
+      if (!user?.userId) return;
 
-  const { data: allTransactions, refetch: refetchTransactions } = useFetchList<
-    TransactionFilter,
-    PointTransaction
-  >(fetchPointTransactions, summaryQuery);
+      setIsLoadingData(true);
+      try {
+        // Fetch employees from profile API
+        const profileResponse = await profileApi.getProfiles({ pageSize: 100, currentPage: 1 });
+        if (profileResponse.success && profileResponse.data?.content) {
+          const employeeList = profileResponse.data.content
+            .filter((u: User) => u.userId !== user.userId) // Exclude current user
+            .map((u: User) => ({
+              id: u.userId,
+              name: u.fullName,
+            }));
+          setEmployees(employeeList);
+        }
 
-  const availablePoints = useMemo(() => {
-    return (allTransactions || []).reduce((sum, tx) => {
-      const signed =
-        tx.type === TransactionType.EXCHANGE ? -tx.amount : tx.amount;
-      return sum + signed;
-    }, 0);
-  }, [allTransactions]);
+        // Fetch active program
+        const programResponse = await rewardApi.getActiveRewardProgram();
+        if (programResponse.success && programResponse.data) {
+          setActiveProgram(programResponse.data);
+
+          // Fetch wallet with giving budget
+          const walletResponse = await rewardApi.getWallet(
+            user.userId,
+            programResponse.data.rewardProgramId
+          );
+          if (walletResponse.success) {
+            setWallet(walletResponse.data);
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching data:", error);
+        toast.error("Không thể tải dữ liệu");
+      } finally {
+        setIsLoadingData(false);
+      }
+    };
+
+    fetchData();
+  }, [profileApi, rewardApi, user?.userId]);
+
+  // Available points is now giving budget from wallet
+  const availablePoints = wallet?.givingBudget || 0;
 
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [selectValue, setSelectValue] = useState<string>("");
@@ -66,18 +86,18 @@ const GiftPage: React.FC = () => {
   const pointsError = useMemo(() => {
     if (points.trim().length === 0) return "Vui lòng nhập số điểm";
     if (pointsValue <= 0) return "Số điểm phải lớn hơn 0";
-    if (pointsValue > availablePoints) return "Số dư không đủ";
+    if (pointsValue > availablePoints) return "Ngân sách không đủ";
     return null;
   }, [availablePoints, points, pointsValue]);
 
   const selectedEmployees = useMemo(
-    () => EMPLOYEES.filter((e) => selectedIds.includes(e.id)),
-    [selectedIds]
+    () => employees.filter((e) => selectedIds.includes(e.id)),
+    [employees, selectedIds]
   );
 
   const canAddEmployees = useMemo(
-    () => EMPLOYEES.some((e) => !selectedIds.includes(e.id)),
-    [selectedIds]
+    () => employees.some((e) => !selectedIds.includes(e.id)),
+    [employees, selectedIds]
   );
 
   const addEmployee = (id: string) => {
@@ -115,15 +135,27 @@ const GiftPage: React.FC = () => {
       return;
     }
 
+    if (!activeProgram) {
+      toast.error("Không tìm thấy chương trình khen thưởng đang hoạt động");
+      return;
+    }
+
     setPointsTouched(true);
     if (pointsError) return;
 
     try {
       setIsSubmitting(true);
-      const res = await rewardApi.giftPoints({
-        employeeIds: selectedIds,
+
+      // Build recipients array with same points for each selected employee
+      const recipients = selectedIds.map(userId => ({
+        userId,
         points: pointsValue,
-        reason: reason.trim() || undefined,
+      }));
+
+      const res = await rewardApi.giftPoints({
+        programId: activeProgram.rewardProgramId,
+        recipients,
+        senderUserId: user?.userId || "",
       });
 
       if (!res.success) {
@@ -132,14 +164,33 @@ const GiftPage: React.FC = () => {
       }
 
       toast.success("Tặng điểm thành công!");
-      refetchTransactions();
+
+      // Refresh wallet to update available budget
+      if (user?.userId && activeProgram) {
+        const walletResponse = await rewardApi.getWallet(
+          user.userId,
+          activeProgram.rewardProgramId
+        );
+        if (walletResponse.success) {
+          setWallet(walletResponse.data);
+        }
+      }
+
       onCancel();
-    } catch (err) {
+    } catch (err: any) {
       toast.error(err?.message || "Tặng điểm thất bại");
     } finally {
       setIsSubmitting(false);
     }
   };
+
+  if (isLoadingData) {
+    return (
+      <div className="min-h-screen bg-gray-50 p-6 flex items-center justify-center">
+        <div className="text-gray-500">Đang tải...</div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 p-6 flex items-center justify-center">
@@ -168,11 +219,11 @@ const GiftPage: React.FC = () => {
                   addEmployee(id);
                   setSelectValue("");
                 }}
-                disabled={!canAddEmployees}
+                disabled={!canAddEmployees || employees.length === 0}
                 className="w-full h-11 px-4 pr-10 border border-gray-200 rounded-lg text-sm text-gray-700 bg-white appearance-none focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="">Chọn nhân viên</option>
-                {EMPLOYEES.filter((e) => !selectedIds.includes(e.id)).map(
+                {employees.filter((e) => !selectedIds.includes(e.id)).map(
                   (e) => (
                     <option key={e.id} value={e.id}>
                       {e.name}
@@ -215,7 +266,7 @@ const GiftPage: React.FC = () => {
           {/* Points */}
           <div>
             <div className="text-sm font-semibold text-gray-800 mb-2">
-              Số điểm thưởng ({nf.format(availablePoints)} điểm hiện có)
+              Số điểm thưởng ({nf.format(availablePoints)} điểm ngân sách)
             </div>
 
             <div className="relative">
@@ -230,11 +281,10 @@ const GiftPage: React.FC = () => {
                 }}
                 onBlur={() => setPointsTouched(true)}
                 placeholder="VD: 100"
-                className={`w-full h-12 px-4 pr-16 border rounded-lg text-sm text-gray-700 bg-gray-50 focus:outline-none focus:ring-2 ${
-                  pointsTouched && pointsError
-                    ? "border-red-300 focus:ring-red-500"
-                    : "border-gray-200 focus:ring-blue-500"
-                }`}
+                className={`w-full h-12 px-4 pr-16 border rounded-lg text-sm text-gray-700 bg-gray-50 focus:outline-none focus:ring-2 ${pointsTouched && pointsError
+                  ? "border-red-300 focus:ring-red-500"
+                  : "border-gray-200 focus:ring-blue-500"
+                  }`}
               />
               <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-1 text-sm text-gray-500">
                 <Coins className="w-4 h-4" />
