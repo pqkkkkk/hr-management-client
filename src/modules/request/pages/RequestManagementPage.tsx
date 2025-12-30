@@ -451,6 +451,22 @@ const RequestManagementPage: React.FC = () => {
     }
   };
 
+  const doDelegate = async (requestId: string, data: CreateDelegationRequest) => {
+    if (!user) return;
+    try {
+      const res = await requestApi.delegateRequest(requestId, data.delegateToId);
+      if (res && res.success) {
+        toast.success("Ủy quyền thành công");
+        await refetch();
+      } else {
+        toast.error(res?.message || "Ủy quyền thất bại");
+      }
+    } catch (err: any) {
+      console.error("Delegate failed", err);
+      toast.error(err?.message || "Ủy quyền thất bại");
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 py-5 px-8">
       <div className="max-w-7xl mx-auto">
@@ -581,6 +597,7 @@ const RequestManagementPage: React.FC = () => {
                           request={r}
                           onApprove={handleApprove}
                           onReject={handleReject}
+                          onDelegate={doDelegate}
                         />
                       ))}
                     </tbody>

@@ -1,8 +1,9 @@
-import React, { useCallback, useMemo } from "react";
+import React, { useCallback, useMemo, useState, useEffect } from "react";
 import {
   PointTransaction,
   TransactionFilter,
   TransactionType,
+  UserWallet,
 } from "modules/reward/types/reward.types";
 import { Calendar, ChevronDown, Coins, Gift, Plus, Award } from "lucide-react";
 import Pagination from "../components/Pagination";
@@ -11,6 +12,7 @@ import ErrorState from "../components/ErrorState";
 import { useQuery } from "shared/hooks/use-query";
 import { useFetchList } from "shared/hooks/use-fetch-list";
 import { useApi } from "contexts/ApiContext";
+import { useAuth } from "contexts/AuthContext";
 import { formatDateTime } from "shared/utils/date-utils";
 
 // Badge component
@@ -93,10 +95,10 @@ const FiltersBar: React.FC<{
                   {value.type === "ALL"
                     ? "Tất cả"
                     : value.type === TransactionType.GIFT
-                    ? "Nhận điểm"
-                    : value.type === TransactionType.POLICY_REWARD
-                    ? "Thưởng chính sách"
-                    : "Đổi quà"}
+                      ? "Nhận điểm"
+                      : value.type === TransactionType.POLICY_REWARD
+                        ? "Thưởng chính sách"
+                        : "Đổi quà"}
                 </div>
                 <div className="relative">
                   <select
@@ -243,6 +245,9 @@ const toDateInputValue = (d: Date) => {
 // Main component
 const TransactionHistoryPage: React.FC = () => {
   const { rewardApi } = useApi();
+  const { user } = useAuth();
+  const [wallet, setWallet] = useState<UserWallet | null>(null);
+
   const today = useMemo(() => new Date(), []);
   const defaultEnd = useMemo(() => toDateInputValue(today), [today]);
   const defaultStart = useMemo(() => {
@@ -252,6 +257,29 @@ const TransactionHistoryPage: React.FC = () => {
   }, [today]);
 
   const PAGE_SIZE = 5;
+
+  // Fetch wallet to get current points
+  useEffect(() => {
+    const fetchWallet = async () => {
+      if (!user?.userId) return;
+      try {
+        // Get active program first, then fetch wallet
+        const programResponse = await rewardApi.getActiveRewardProgram();
+        if (programResponse.success && programResponse.data) {
+          const walletResponse = await rewardApi.getWallet(
+            user.userId,
+            programResponse.data.rewardProgramId
+          );
+          if (walletResponse.success) {
+            setWallet(walletResponse.data);
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching wallet:", error);
+      }
+    };
+    fetchWallet();
+  }, [rewardApi, user?.userId]);
 
   const { query, updateQuery, resetQuery } = useQuery<TransactionFilter>({
     FromDate: `${defaultStart}T00:00:00.000Z`,
@@ -275,21 +303,8 @@ const TransactionHistoryPage: React.FC = () => {
     query
   );
 
-  const summaryQuery = useMemo<TransactionFilter>(
-    () => ({ PageNumber: 1, PageSize: 1000 }),
-    []
-  );
-  const { data: allTransactions } = useFetchList<
-    TransactionFilter,
-    PointTransaction
-  >(fetchPointTransactions, summaryQuery);
-
-  const currentPoints = useMemo(() => {
-    return (allTransactions || []).reduce((sum, tx) => {
-      const signed = isCreditTransaction(tx) ? tx.amount : -tx.amount;
-      return sum + signed;
-    }, 0);
-  }, [allTransactions]);
+  // Use wallet points from API instead of calculating from transactions
+  const currentPoints = wallet?.personalPoint || 0;
 
   const handleFilterChange = useCallback(
     (next: FiltersValue) => {

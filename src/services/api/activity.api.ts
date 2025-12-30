@@ -1,7 +1,7 @@
 // Activity API Service
 
 import { ApiResponse, Page } from "shared/types";
-import apiClient from "./api.client";
+import { dotnetApiClient } from "./api.client";
 import {
     Activity,
     ActivityLog,
@@ -384,70 +384,66 @@ export class MockActivityApi implements ActivityApi {
 
 export class RestActivityApi implements ActivityApi {
     async getActivities(filter?: ActivityFilter): Promise<ApiResponse<Page<Activity>>> {
-        return apiClient.get(`/activities`, { params: filter });
+        return dotnetApiClient.get(`/activities`, { params: filter });
     }
 
     async getMyActivities(filter?: ActivityFilter): Promise<ApiResponse<Page<Activity>>> {
-        return apiClient.get(`/activities/me`, { params: filter });
+        return dotnetApiClient.get(`/activities/me`, { params: filter });
     }
 
     async getActivityById(id: string): Promise<ApiResponse<ActivityDetailResponse>> {
-        return apiClient.get(`/activities/${id}`);
+        return dotnetApiClient.get(`/activities/${id}`);
     }
 
     async createActivity(data: CreateActivityRequest): Promise<ApiResponse<Activity>> {
-        return apiClient.post(`/activities`, data);
+        return dotnetApiClient.post(`/activities`, data);
     }
 
     async updateActivity(id: string, data: UpdateActivityRequest): Promise<ApiResponse<Activity>> {
-        return apiClient.put(`/activities/${id}`, data);
+        return dotnetApiClient.put(`/activities/${id}`, data);
     }
 
     async deleteActivity(id: string): Promise<ApiResponse<void>> {
-        return apiClient.delete(`/activities/${id}`);
+        return dotnetApiClient.delete(`/activities/${id}`);
     }
 
     async registerForActivity(activityId: string): Promise<ApiResponse<void>> {
-        return apiClient.post(`/activities/${activityId}/register`);
+        return dotnetApiClient.post(`/activities/${activityId}/register`);
     }
 
     async unregisterFromActivity(activityId: string): Promise<ApiResponse<void>> {
-        return apiClient.delete(`/activities/${activityId}/unregister`);
+        return dotnetApiClient.delete(`/activities/${activityId}/unregister`);
     }
 
     async updateActivityStatus(id: string, status: ActivityStatus): Promise<ApiResponse<Activity>> {
-        return apiClient.patch(`/activities/${id}/status`, { status });
+        return dotnetApiClient.patch(`/activities/${id}/status`, { status });
     }
 
     async getActivityStatistics(id: string): Promise<ApiResponse<ActivityStatistics>> {
-        return apiClient.get(`/activities/${id}/statistics`);
+        return dotnetApiClient.get(`/activities/${id}/statistics`);
     }
 
     async getActivityLeaderboard(id: string): Promise<ApiResponse<LeaderboardEntry[]>> {
-        return apiClient.get(`/activities/${id}/leaderboard`);
+        return dotnetApiClient.get(`/activities/${id}/leaderboard`);
     }
 
     async getActivityLogs(filter?: ActivityLogFilter): Promise<ApiResponse<Page<ActivityLog>>> {
-        return apiClient.get(`/activity-logs`, { params: filter });
+        return dotnetApiClient.get(`/activity-logs`, { params: filter });
     }
 
     async createActivityLog(data: CreateActivityLogRequest): Promise<ApiResponse<ActivityLog>> {
-        return apiClient.post(`/activity-logs`, data);
+        return dotnetApiClient.post(`/activity-logs`, data);
     }
 
     async approveActivityLog(id: string): Promise<ApiResponse<ActivityLog>> {
-        return apiClient.patch(`/activity-logs/${id}/approve`);
+        return dotnetApiClient.patch(`/activity-logs/${id}/approve`);
     }
 
     async rejectActivityLog(id: string, reason: string): Promise<ApiResponse<ActivityLog>> {
-        return apiClient.patch(`/activity-logs/${id}/reject`, { reason });
+        return dotnetApiClient.patch(`/activity-logs/${id}/reject`, { reason });
     }
 
     async getActivityTemplates(): Promise<ApiResponse<ActivityTemplate[]>> {
-        return apiClient.get(`/activity-templates`);
+        return dotnetApiClient.get(`/activity-templates`);
     }
 }
-
-// Export instances
-export const mockActivityApi = new MockActivityApi();
-export const restActivityApi = new RestActivityApi();

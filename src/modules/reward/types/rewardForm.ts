@@ -1,3 +1,5 @@
+export type PolicyType = 'OVERTIME' | 'NOT_LATE' | 'FULL_ATTENDANCE';
+
 export interface RewardProgramFormData {
   name: string;
   description: string;
@@ -12,7 +14,7 @@ export interface RewardProgramFormData {
     imageUrl: string;
   }>;
   policies: Array<{
-    policyType: string;
+    policyType: PolicyType;
     unitValue: number;
     pointsPerUnit: number;
   }>;
@@ -46,13 +48,13 @@ export interface RewardListCardProps {
 
 export interface RuleCardProps {
   policies: Array<{
-    policyType: string;
+    policyType: PolicyType;
     unitValue: number;
     pointsPerUnit: number;
   }>;
   defaultGivingBudget: number;
   onPoliciesChange: (policies: Array<{
-    policyType: string;
+    policyType: PolicyType;
     unitValue: number;
     pointsPerUnit: number;
   }>) => void;
@@ -73,7 +75,7 @@ export interface RewardProgramResponse {
     imageUrl: string;
   }>;
   policies: Array<{
-    policyType: string;
+    policyType: PolicyType;
     unitValue: number;
     pointsPerUnit: number;
   }>;

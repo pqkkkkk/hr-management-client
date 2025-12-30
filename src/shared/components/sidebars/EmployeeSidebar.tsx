@@ -95,12 +95,6 @@ const EmployeeSidebar: React.FC = () => {
                   <span>Lịch sử giao dịch</span>
                 </NavLink>
               </li>
-              <li>
-                <NavLink to="/rewards/exchange" className={navLinkClass}>
-                  <Gift className="w-5 h-5" />
-                  <span>Đổi quà</span>
-                </NavLink>
-              </li>
             </ul>
           </li>
         </ul>

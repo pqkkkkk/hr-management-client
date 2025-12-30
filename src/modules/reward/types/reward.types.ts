@@ -1,6 +1,3 @@
-// Define types for functions in reward module here
-export interface Reward {}
-
 // Enums
 export enum TransactionType {
   GIFT = "GIFT",
@@ -43,14 +40,33 @@ export interface PointTransaction {
 }
 
 export interface GiftPointsRequest {
-  employeeIds: string[];
-  points: number;
-  reason?: string;
+  programId: string;
+  recipients: Array<{ points: number; userId: string }>;
+  senderUserId: string;
 }
 
-export interface GiftPointsResponse {
-  transactionId: string;
-  totalPointsDeducted: number;
+export interface UserWallet {
+  userWalletId: string;
+  userId: string;
+  programId: string;
+  personalPoint: number;
+  givingBudget: number;
+  program?: RewardProgram;
+}
+
+export interface RewardPolicy {
+  policyId: string;
+  programId: string;
+  policyType: string;
+  calculationPeriod: string;
+  unitValue: number;
+  pointsPerUnit: number;
+  isActive: boolean;
+}
+
+export interface RewardProgramDetail extends RewardProgram {
+  items: RewardItem[];
+  policies: RewardPolicy[];
 }
 
 export interface GiftedPointEmployeeStat {
@@ -79,13 +95,8 @@ export interface TransactionListResponse {
   hasPreviousPage: boolean;
 }
 
-export interface RewardItem2 {
-  id: number;
-  name: string;
-  points: number;
-  quantity: number;
-}
-export interface ProgrameReward {
+
+export interface RewardProgram {
   rewardProgramId: string;
   name: string;
   description: string;
@@ -119,3 +130,16 @@ export interface RewardItemFilter {
   sortBy?: string;
   sortDirection?: "ASC" | "DESC";
 }
+
+// Exchange Reward Types
+export interface ExchangeRewardItem {
+  rewardItemId: string;
+  quantity: number;
+}
+
+export interface ExchangeRewardRequest {
+  items: ExchangeRewardItem[];
+  programId: string;
+  userId: string;
+}
+

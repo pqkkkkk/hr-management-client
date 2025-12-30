@@ -1,6 +1,6 @@
 import { CreateLeaveRequestDTO, RejectLeaveRequestDTO, Request, RequestFilter } from "modules/request/types/request.types";
 import { ApiResponse, Page } from "shared/types/common.types";
-import apiClient from "./api.client";
+import { springApiClient } from "./api.client";
 
 
 export interface LeaveRequestApi {
@@ -15,31 +15,31 @@ export interface LeaveRequestApi {
 
 export class RestLeaveRequestApi implements LeaveRequestApi {
     getMyLeaveRequests(filter?: RequestFilter): Promise<ApiResponse<Page<Request>>> {
-        const response = apiClient.get<ApiResponse<Page<Request>>>("/requests/leave/my-requests", {
+        const response = springApiClient.get<ApiResponse<Page<Request>>>("/requests/leave/my-requests", {
             params: filter,
         });
 
         return response;
     }
     getTeamLeaveRequests(filter?: RequestFilter): Promise<ApiResponse<Page<Request>>> {
-        const response = apiClient.get<ApiResponse<Page<Request>>>("/requests/leave/team-requests", {
+        const response = springApiClient.get<ApiResponse<Page<Request>>>("/requests/leave/team-requests", {
             params: filter,
         });
 
         return response;
     }
     createLeaveRequest(req: CreateLeaveRequestDTO): Promise<ApiResponse<Request>> {
-        const response = apiClient.post<ApiResponse<Request>>("/requests/leave", req);
+        const response = springApiClient.post<ApiResponse<Request>>("/requests/leave", req);
 
         return response;
     }
     rejectLeaveRequest(requestId: string, req: RejectLeaveRequestDTO): Promise<ApiResponse<Request>> {
-        const response = apiClient.patch<ApiResponse<Request>>(`/requests/leave/${requestId}/reject`, req);
+        const response = springApiClient.patch<ApiResponse<Request>>(`/requests/leave/${requestId}/reject`, req);
 
         return response;
     }
     approveLeaveRequest(requestId: string): Promise<ApiResponse<Request>> {
-        const response = apiClient.patch<ApiResponse<Request>>(`/requests/leave/${requestId}/approve`);
+        const response = springApiClient.patch<ApiResponse<Request>>(`/requests/leave/${requestId}/approve`);
 
         return response;
     }

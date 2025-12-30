@@ -1,5 +1,5 @@
 import { ApiResponse } from "shared/types";
-import apiClient from "./api.client";
+import { springApiClient } from "./api.client";
 
 export interface FileApi {
     uploadFile(file: File): Promise<ApiResponse<string>>;
@@ -10,7 +10,7 @@ export class RestFileApi implements FileApi {
         const formData = new FormData();
         formData.append("file", file);
 
-        return apiClient.post<ApiResponse<string>>("/files", formData, {
+        return springApiClient.post<ApiResponse<string>>("/files", formData, {
             headers: {
                 "Content-Type": "multipart/form-data",
             },

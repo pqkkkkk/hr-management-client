@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { CreateDelegationRequest } from "../types/request.types";
+import { useApi } from "contexts/ApiContext";
+import { User } from "shared/types";
 
 interface DelegationFormProps {
   isOpen: boolean;
@@ -12,14 +14,34 @@ const DelegationForm: React.FC<DelegationFormProps> = ({
   onClose,
   onSubmit,
 }) => {
+  const { profileApi } = useApi();
   const [delegateToId, setDelegateToId] = useState("");
+  const [delegates, setDelegates] = useState<User[]>([]);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
       // clear when opened so user starts with empty form
       setDelegateToId("");
+      fetchDelegates();
     }
   }, [isOpen]);
+
+  const fetchDelegates = async () => {
+    setLoading(true);
+    try {
+      // Fetch users with role ADMIN (or MANAGER depending on logic, user said ADMIN)
+      // Assuming getProfiles supports role filtering
+      const res = await profileApi.getProfiles({ role: "ADMIN", pageSize: 100 });
+      if (res && res.success && res.data) {
+        setDelegates(res.data.content);
+      }
+    } catch (error) {
+      console.error("Failed to fetch delegates", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   if (!isOpen) return null;
 
@@ -53,10 +75,16 @@ const DelegationForm: React.FC<DelegationFormProps> = ({
                 value={delegateToId}
                 onChange={(e) => setDelegateToId(e.target.value)}
                 className="w-full border rounded px-3 py-2 text-sm"
+                disabled={loading}
               >
-                <option value="">Chọn người được ủy quyền</option>
-                <option value="M002">Trần Thị B</option>
-                <option value="M003">Lê Văn C</option>
+                <option value="">
+                  {loading ? "Đang tải..." : "Chọn người được ủy quyền"}
+                </option>
+                {delegates.map((user) => (
+                  <option key={user.userId} value={user.userId}>
+                    {user.fullName} ({user.userId})
+                  </option>
+                ))}
               </select>
             </div>
           </div>

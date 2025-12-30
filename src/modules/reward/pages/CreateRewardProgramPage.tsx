@@ -3,12 +3,13 @@ import GeneralInfoCard from "../components/GeneralInfoCard";
 import RuleCard from "../components/RuleCard";
 import RewardListCard from "../components/RewardListCard";
 import StatusCard from "../components/StatusCard";
-import { mockRewardApi, restRewardApi, RestRewardApi } from "services/api/reward.api";
 import { RewardProgramFormData } from "../types/rewardForm";
 import { toast } from "react-toastify";
+import { useApi } from "contexts/ApiContext";
 
 const CreateRewardProgramPage: React.FC = () => {
-  const [formData, setFormData] = useState<RewardProgramFormData>({
+  const { rewardApi } = useApi();
+  const [request, setRequest] = useState<RewardProgramFormData>({
     name: "",
     description: "",
     startDate: new Date().toISOString(),
@@ -19,41 +20,52 @@ const CreateRewardProgramPage: React.FC = () => {
     policies: []
   });
 
-  const handleActivate = async () => {
-    const payload = {
-      name: formData.name || "string",
-      description: formData.description || "string",
-      startDate: formData.startDate,
-      endDate: formData.endDate,
-      defaultGivingBudget: formData.defaultGivingBudget,
-      bannerUrl: formData.bannerUrl || "string",
-      items: formData.items.length > 0 ? formData.items : [
-        {
-          name: "string",
-          requiredPoints: 1,
-          quantity: 2147483647,
-          imageUrl: "string"
-        }
-      ],
-      policies: formData.policies.length > 0 ? formData.policies : [
-        {
-          policyType: "NOT_LATE",
-          unitValue: 2147483647,
-          pointsPerUnit: 2147483647
-        }
-      ]
-    };
-    const response = await restRewardApi.createRewardProgram(payload);
-    if (response) {
-      toast.success("Đợt khen thưởng đã được tạo và kích hoạt thành công!");
-    }else { 
-      toast.error("Có lỗi xảy ra khi tạo đợt khen thưởng. Vui lòng thử lại.");
+  // Validate request before submitting
+  const validateRequest = (): string | null => {
+    if (!request.name || request.name.trim() === "") {
+      return "Tên đợt khen thưởng không được để trống";
     }
-    console.log("Payload to submit:", JSON.stringify(payload, null, 2));
+
+    if (!request.startDate || !request.endDate) {
+      return "Ngày bắt đầu và kết thúc không được để trống";
+    }
+
+    if (new Date(request.startDate) >= new Date(request.endDate)) {
+      return "Ngày kết thúc phải sau ngày bắt đầu";
+    }
+
+    if (request.items.length === 0) {
+      return "Phải có ít nhất một phần thưởng";
+    }
+
+    // Policy is optional - no validation needed
+
+    return null;
+  };
+
+  const handleActivate = async () => {
+    // Validate before submit
+    const validationError = validateRequest();
+    if (validationError) {
+      toast.error(validationError);
+      return;
+    }
+
+    try {
+      const response = await rewardApi.createRewardProgram(request);
+      if (response) {
+        toast.success("Đợt khen thưởng đã được tạo và kích hoạt thành công!");
+      } else {
+        toast.error("Có lỗi xảy ra khi tạo đợt khen thưởng. Vui lòng thử lại.");
+      }
+    } catch (error) {
+      toast.error("Có lỗi xảy ra khi tạo đợt khen thưởng. Vui lòng thử lại.");
+      console.error("Error creating reward program:", error);
+    }
   };
 
   const handleGeneralInfoChange = (field: string, value: string) => {
-    setFormData(prev => ({
+    setRequest(prev => ({
       ...prev,
       [field]: value
     }));
@@ -65,25 +77,25 @@ const CreateRewardProgramPage: React.FC = () => {
     quantity: number;
     imageUrl: string;
   }>) => {
-    setFormData(prev => ({
+    setRequest(prev => ({
       ...prev,
       items
     }));
   };
 
   const handlePoliciesChange = (policies: Array<{
-    policyType: string;
+    policyType: 'OVERTIME' | 'NOT_LATE' | 'FULL_ATTENDANCE';
     unitValue: number;
     pointsPerUnit: number;
   }>) => {
-    setFormData(prev => ({
+    setRequest(prev => ({
       ...prev,
       policies
     }));
   };
 
   const handleBudgetChange = (budget: number) => {
-    setFormData(prev => ({
+    setRequest(prev => ({
       ...prev,
       defaultGivingBudget: budget
     }));
@@ -105,7 +117,7 @@ const CreateRewardProgramPage: React.FC = () => {
         </div>
 
         <div className="flex gap-3">
-          <button 
+          <button
             className="px-4 py-2 rounded-xl bg-indigo-500 text-white hover:bg-indigo-600"
             onClick={handleActivate}
           >
@@ -115,28 +127,28 @@ const CreateRewardProgramPage: React.FC = () => {
       </div>
 
       {/* Content */}
-      <div className="grid grid-cols-12 gap-6">
-        <div className="col-span-8 space-y-6">
-          <GeneralInfoCard 
+      <div className="grid grid-cols-12 gap-6 items-start">
+        <div className="col-span-12 lg:col-span-8 space-y-6">
+          <GeneralInfoCard
             data={{
-              name: formData.name,
-              description: formData.description,
-              startDate: formData.startDate,
-              endDate: formData.endDate,
-              bannerUrl: formData.bannerUrl
+              name: request.name,
+              description: request.description,
+              startDate: request.startDate,
+              endDate: request.endDate,
+              bannerUrl: request.bannerUrl
             }}
             onChange={handleGeneralInfoChange}
           />
-          <RewardListCard 
-            items={formData.items}
+          <RewardListCard
+            items={request.items}
             onItemsChange={handleItemsChange}
           />
         </div>
 
-        <div className="col-span-4 space-y-6">
-          <RuleCard 
-            policies={formData.policies}
-            defaultGivingBudget={formData.defaultGivingBudget}
+        <div className="col-span-12 lg:col-span-4 space-y-6">
+          <RuleCard
+            policies={request.policies}
+            defaultGivingBudget={request.defaultGivingBudget}
             onPoliciesChange={handlePoliciesChange}
             onBudgetChange={handleBudgetChange}
           />

@@ -1,5 +1,5 @@
 import { SignInRequest, SignInResponse, User, ApiResponse, RefreshTokenRequest, RefreshTokenResponse } from 'shared/types';
-import apiClient from './api.client';
+import { springApiClient } from './api.client';
 import { mockAdmin, mockEmployee, mockManager } from 'shared/data/profile.data';
 
 export interface AuthApi {

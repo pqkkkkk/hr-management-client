@@ -6,7 +6,7 @@ import {
   departmentIdToName,
   usersToRows,
 } from "shared/utils/export-utils";
-import apiClient from "./api.client";
+import { springApiClient } from "./api.client";
 import { ExportProfilesRequest, ProfileFilter, UpdateProfileRequestForEmployee, UpdateProfileRequestForHR } from "modules/profile/types/profile.req.types";
 import { users } from "shared/data/profile.data";
 import { ExportProfilesResponse } from "modules/profile/types/profile.resp.types";
@@ -16,14 +16,14 @@ export interface ProfileApi {
   getProfileById(id: string): Promise<ApiResponse<User>>;
   updateProfileForHR(
     userId: string,
-    req : UpdateProfileRequestForHR
+    req: UpdateProfileRequestForHR
   ): Promise<ApiResponse<User>>;
   updateProfileForEmployee(
     userId: string,
-    req : UpdateProfileRequestForEmployee
+    req: UpdateProfileRequestForEmployee
   ): Promise<ApiResponse<User>>;
   deactivateUser(userId: string): Promise<ApiResponse<User>>;
-  exportProfiles?(req : ExportProfilesRequest): Promise<ApiResponse<ExportProfilesResponse>>;
+  exportProfiles?(req: ExportProfilesRequest): Promise<ApiResponse<ExportProfilesResponse>>;
 }
 
 export class MockProfileApi implements ProfileApi {
@@ -101,7 +101,7 @@ export class MockProfileApi implements ProfileApi {
 
   updateProfileForHR(
     userId: string,
-    req : UpdateProfileRequestForHR
+    req: UpdateProfileRequestForHR
   ): Promise<ApiResponse<User>> {
     return new Promise((resolve) => {
       setTimeout(() => {
@@ -203,9 +203,8 @@ export class MockProfileApi implements ProfileApi {
             // Để tương thích với Excel và đảm bảo mỗi trường nằm trong ô riêng của nó
             // tạo tệp UTF-8 TSV (phân tách bằng tab) có BOM khi người dùng yêu cầu "xlsx".
             // Điều này giúp tránh việc thêm các phụ thuộc mới và đảm bảo chương trình bảng tính phân chia các cột một cách chính xác.
-            const filename = `list-users-${ts}.${
-              format === "pdf" ? "pdf" : "xlsx"
-            }`;
+            const filename = `list-users-${ts}.${format === "pdf" ? "pdf" : "xlsx"
+              }`;
 
             let blob: Blob;
             // sử dụng shared headers/mapping/helpers
@@ -248,19 +247,19 @@ export class RestProfileApi implements ProfileApi {
     userId: string,
     req: UpdateProfileRequestForEmployee
   ): Promise<ApiResponse<User>> {
-    const response = apiClient.patch<ApiResponse<User>>(`/users/${userId}/for-employee`, req);
+    const response = springApiClient.patch<ApiResponse<User>>(`/users/${userId}/for-employee`, req);
     return response;
   }
   updateProfileForHR(
     userId: string,
     req: UpdateProfileRequestForHR
   ): Promise<ApiResponse<User>> {
-    const response = apiClient.patch<ApiResponse<User>>(`/users/${userId}/for-hr`, req);
+    const response = springApiClient.patch<ApiResponse<User>>(`/users/${userId}/for-hr`, req);
     return response;
   }
 
   async getProfiles(filter?: ProfileFilter): Promise<ApiResponse<Page<User>>> {
-    const response = await apiClient.get<ApiResponse<Page<User>>>("/users", {
+    const response = await springApiClient.get<ApiResponse<Page<User>>>("/users", {
       params: filter,
     });
 
@@ -268,18 +267,18 @@ export class RestProfileApi implements ProfileApi {
   }
 
   getProfileById(id: string): Promise<ApiResponse<User>> {
-    const response = apiClient.get<ApiResponse<User>>(`/users/${id}`);
+    const response = springApiClient.get<ApiResponse<User>>(`/users/${id}`);
 
     return response;
   }
 
   async deactivateUser(userId: string): Promise<ApiResponse<User>> {
-    const response = await apiClient.put<ApiResponse<User>>(`/users/${userId}/deactivate`);
+    const response = await springApiClient.put<ApiResponse<User>>(`/users/${userId}/deactivate`);
     return response;
   }
 
   exportProfiles(req: ExportProfilesRequest): Promise<ApiResponse<ExportProfilesResponse>> {
-    const response = apiClient.post<ApiResponse<ExportProfilesResponse>>(`/users/export`, req);
+    const response = springApiClient.post<ApiResponse<ExportProfilesResponse>>(`/users/export`, req);
     return response;
   }
 }

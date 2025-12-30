@@ -1,6 +1,7 @@
-import React, { useCallback, useMemo } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { Calendar, ChevronDown, Search } from "lucide-react";
 import { useApi } from "contexts/ApiContext";
+import { useAuth } from "contexts/AuthContext";
 import { useQuery } from "shared/hooks/use-query";
 import { useFetchList } from "shared/hooks/use-fetch-list";
 import {
@@ -8,26 +9,24 @@ import {
   formatMonthKeyUtc,
   formatMonthLabel,
   getNextMonthResetLabelUtc,
+  formatDateTime,
 } from "shared/utils/date-utils";
 import { initials } from "shared/utils/initial-utils";
 import Pagination from "../components/Pagination";
 import EmptyState from "../components/EmptyState";
 import ErrorState from "../components/ErrorState";
 import {
-  GiftedPointEmployeeStat,
-  GiftedPointFilter,
   PointTransaction,
+  TransactionFilter,
+  UserWallet,
 } from "modules/reward/types/reward.types";
-import { useGiftedPointStats } from "../hooks/useGiftedPointStats";
 
+// Simplified BudgetSummaryCard - only shows remaining points per requirement
 const BudgetSummaryCard: React.FC<{
   remaining: number;
-  used: number;
-  total: number;
   resetLabel: string;
-}> = ({ remaining, used, total, resetLabel }) => {
+}> = ({ remaining, resetLabel }) => {
   const nf = useMemo(() => new Intl.NumberFormat("vi-VN"), []);
-  const pct = total > 0 ? Math.min(100, Math.max(0, (used / total) * 100)) : 0;
 
   return (
     <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
@@ -46,24 +45,11 @@ const BudgetSummaryCard: React.FC<{
             <div className="text-sm text-gray-500">pts</div>
           </div>
 
-          <div className="mt-4">
-            <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
-              <div
-                className="h-2 bg-blue-600 rounded-full"
-                style={{ width: `${pct}%` }}
-              />
+          <div className="mt-4 text-xs text-gray-500 flex items-center gap-2">
+            <div className="w-4 h-4 rounded-full border border-gray-200 flex items-center justify-center">
+              <div className="w-1.5 h-1.5 rounded-full bg-gray-400" />
             </div>
-            <div className="mt-2 flex items-center justify-between text-xs text-gray-500">
-              <div>đã dùng: {nf.format(Math.max(0, used))} pts</div>
-              <div>Tổng: {nf.format(Math.max(0, total))} pts</div>
-            </div>
-
-            <div className="mt-2 text-xs text-gray-500 flex items-center gap-2">
-              <div className="w-4 h-4 rounded-full border border-gray-200 flex items-center justify-center">
-                <div className="w-1.5 h-1.5 rounded-full bg-gray-400" />
-              </div>
-              Reset vào {resetLabel}
-            </div>
+            Reset vào {resetLabel}
           </div>
         </div>
 
@@ -117,7 +103,7 @@ const FiltersBar: React.FC<{
           <input
             value={value.keyword}
             onChange={(e) => onChange({ ...value, keyword: e.target.value })}
-            placeholder="Tìm kiếm nhân viên..."
+            placeholder="Tìm kiếm..."
             className="w-full h-10 pl-9 pr-3 border border-gray-200 rounded-lg text-sm text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
         </div>
@@ -126,48 +112,59 @@ const FiltersBar: React.FC<{
   );
 };
 
-const EmployeeRow: React.FC<{ row: GiftedPointEmployeeStat }> = ({ row }) => {
+// Transaction row component - displays a single gift transaction
+const TransactionRow: React.FC<{ tx: PointTransaction }> = ({ tx }) => {
   const nf = useMemo(() => new Intl.NumberFormat("vi-VN"), []);
+  const dateInfo = useMemo(() => formatDateTime(tx.createdAt, { locale: "vi-VN" }), [tx.createdAt]);
+
+  // Extract recipient info from destinationWalletId (mock format: wallet-employee-{id})
+  const recipientId = tx.destinationWalletId?.replace("wallet-employee-", "") || "N/A";
 
   return (
     <tr className="border-b border-gray-100 hover:bg-gray-50">
       <td className="py-4 px-5">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center text-sm font-semibold text-gray-700">
-            {initials(row.employeeName)}
+            {initials(recipientId)}
           </div>
-          <div className="text-sm font-semibold text-gray-900">
-            {row.employeeName}
+          <div>
+            <div className="text-sm font-semibold text-gray-900">
+              {recipientId}
+            </div>
+            <div className="text-xs text-gray-500">
+              #{tx.pointTransactionId}
+            </div>
           </div>
         </div>
       </td>
+      <td className="py-4 px-5">
+        <div className="text-sm text-gray-700">{dateInfo.date}</div>
+        <div className="text-xs text-gray-500">{dateInfo.time}</div>
+      </td>
       <td className="py-4 px-5 text-right">
-        <div className="text-sm font-semibold text-gray-900">
-          {nf.format(row.totalPoints)}
+        <div className="text-sm font-semibold text-green-600">
+          {nf.format(tx.amount)}
         </div>
-        <div className="text-xs text-gray-500">
-          {row.giftCount} lần nhận thưởng
-        </div>
+        <div className="text-xs text-gray-500">điểm</div>
       </td>
     </tr>
   );
 };
 
-const EmployeesTable: React.FC<{ rows: GiftedPointEmployeeStat[] }> = ({
-  rows,
-}) => {
+const TransactionsTable: React.FC<{ rows: PointTransaction[] }> = ({ rows }) => {
   return (
     <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
       <table className="w-full">
         <thead>
           <tr className="bg-gray-50 text-left text-xs text-gray-600 font-semibold uppercase tracking-wide">
-            <th className="py-3 px-5">TÊN NHÂN VIÊN</th>
-            <th className="py-3 px-5 text-right">TỔNG SỐ ĐIỂM ĐÃ NHẬN</th>
+            <th className="py-3 px-5">NGƯỜI NHẬN</th>
+            <th className="py-3 px-5">THỜI GIAN</th>
+            <th className="py-3 px-5 text-right">ĐIỂM ĐÃ TẶNG</th>
           </tr>
         </thead>
         <tbody>
-          {rows.map((r) => (
-            <EmployeeRow key={r.employeeId} row={r} />
+          {rows.map((tx) => (
+            <TransactionRow key={tx.pointTransactionId} tx={tx} />
           ))}
         </tbody>
       </table>
@@ -177,25 +174,64 @@ const EmployeesTable: React.FC<{ rows: GiftedPointEmployeeStat[] }> = ({
 
 const GiftedPointTransactionPage: React.FC = () => {
   const { rewardApi } = useApi();
+  const { user } = useAuth();
+
+  const [wallet, setWallet] = useState<UserWallet | null>(null);
 
   const now = useMemo(() => new Date(), []);
   const nowMonth = useMemo(() => formatMonthKeyUtc(now), [now]);
   const months = useMemo(() => buildRecentMonthKeysUtc(now, 13), [now]);
 
   const PAGE_SIZE = 6;
-  const BUDGET_TOTAL = 20000;
 
-  const { query, updateQuery } = useQuery<GiftedPointFilter>({
+  // Fetch wallet to get remaining giving budget
+  useEffect(() => {
+    const fetchWallet = async () => {
+      if (!user?.userId) return;
+
+      console.log("User", user);
+      try {
+        const programResponse = await rewardApi.getActiveRewardProgram();
+        if (programResponse.success && programResponse.data) {
+          const walletResponse = await rewardApi.getWallet(
+            user.userId,
+            programResponse.data.rewardProgramId
+          );
+          if (walletResponse.success) {
+            console.log("Wallet:", walletResponse.data);
+            setWallet(walletResponse.data);
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching wallet:", error);
+      }
+    };
+    fetchWallet();
+  }, [rewardApi, user?.userId]);
+
+  // Remaining budget from wallet API
+  const remainingBudget = wallet?.givingBudget || 0;
+
+  // Build date filter from month
+  const buildDateFilter = useCallback((month: string) => {
+    const [year, monthNum] = month.split("-");
+    const fromDate = `${year}-${monthNum}-01T00:00:00.000Z`;
+    const lastDay = new Date(parseInt(year), parseInt(monthNum), 0).getDate();
+    const toDate = `${year}-${monthNum}-${String(lastDay).padStart(2, "0")}T23:59:59.999Z`;
+    return { FromDate: fromDate, ToDate: toDate };
+  }, []);
+
+  const { query, updateQuery } = useQuery<TransactionFilter & { month?: string; keyword?: string }>({
     month: nowMonth,
     keyword: "",
-    currentPage: 1,
-    pageSize: PAGE_SIZE,
-    sortDirection: "DESC",
+    PageNumber: 1,
+    PageSize: PAGE_SIZE,
+    ...buildDateFilter(nowMonth),
   });
 
-  // Fetch GIFT transactions from API
-  const fetchGiftedStats = useMemo(
-    () => rewardApi.getGiftedPointStats.bind(rewardApi),
+  // Fetch GIFT transactions using new API method
+  const fetchGiftTransactions = useMemo(
+    () => rewardApi.getMyGiftTransactions.bind(rewardApi),
     [rewardApi]
   );
 
@@ -204,71 +240,26 @@ const GiftedPointTransactionPage: React.FC = () => {
     page: pageData,
     isFetching: loading,
     error,
-  } = useFetchList<GiftedPointFilter, PointTransaction>(
-    fetchGiftedStats,
+  } = useFetchList<TransactionFilter, PointTransaction>(
+    fetchGiftTransactions,
     query
   );
-
-  // Process transactions into stats using custom hook
-  const {
-    stats: rows,
-    totalElements,
-    totalPages,
-  } = useGiftedPointStats({
-    transactions: transactions || [],
-    keyword: query.keyword,
-    currentPage: query.currentPage,
-    pageSize: query.pageSize,
-    sortDirection: query.sortDirection,
-  });
-
-  // Fetch all transactions for budget summary
-  const summaryQuery = useMemo<GiftedPointFilter>(
-    () => ({
-      month: query.month,
-      currentPage: 1,
-      pageSize: 10000,
-    }),
-    [query.month]
-  );
-
-  const { data: allTransactions } = useFetchList<
-    GiftedPointFilter,
-    PointTransaction
-  >(fetchGiftedStats, summaryQuery);
-
-  // Process all transactions for budget calculation
-  const { stats: allStats } = useGiftedPointStats({
-    transactions: allTransactions || [],
-    keyword: "",
-    currentPage: 1,
-    pageSize: 10000,
-    sortDirection: "DESC",
-  });
-
-  // Calculate budget from all stats
-  const usedBudget = useMemo(() => {
-    return allStats.reduce((sum, s) => sum + (s.totalPoints || 0), 0);
-  }, [allStats]);
-
-  const remainingBudget = useMemo(() => {
-    return Math.max(0, BUDGET_TOTAL - usedBudget);
-  }, [BUDGET_TOTAL, usedBudget]);
 
   const handleFiltersChange = useCallback(
     (next: FiltersValue) => {
       updateQuery({
-        currentPage: 1,
+        PageNumber: 1,
         month: next.month,
         keyword: next.keyword,
+        ...buildDateFilter(next.month),
       });
     },
-    [updateQuery]
+    [updateQuery, buildDateFilter]
   );
 
   const handlePageChange = useCallback(
     (p: number) => {
-      updateQuery({ currentPage: p });
+      updateQuery({ PageNumber: p });
     },
     [updateQuery]
   );
@@ -280,15 +271,13 @@ const GiftedPointTransactionPage: React.FC = () => {
           Thống kê điểm đã tặng cho đội
         </h1>
         <p className="text-gray-500 mt-1">
-          Xem chi tiết phân bổ ngân sách thưởng cho các thành viên trong tháng.
+          Xem chi tiết các giao dịch tặng điểm cho nhân viên trong tháng.
         </p>
       </div>
 
       <div className="space-y-5">
         <BudgetSummaryCard
           remaining={remainingBudget}
-          used={usedBudget}
-          total={BUDGET_TOTAL}
           resetLabel={getNextMonthResetLabelUtc(query.month || nowMonth, {
             locale: "vi-VN",
           })}
@@ -310,17 +299,17 @@ const GiftedPointTransactionPage: React.FC = () => {
           <div className="bg-white rounded-xl border border-gray-200 shadow-sm px-6 py-16 flex items-center justify-center">
             <div className="text-sm text-gray-500">Đang tải...</div>
           </div>
-        ) : rows.length === 0 ? (
+        ) : transactions.length === 0 ? (
           <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
             <EmptyState />
           </div>
         ) : (
           <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-            <EmployeesTable rows={rows} />
+            <TransactionsTable rows={transactions} />
             <Pagination
-              page={query.currentPage || 1}
-              total={totalElements}
-              limit={query.pageSize || PAGE_SIZE}
+              page={query.PageNumber || 1}
+              total={pageData?.totalElements || 0}
+              limit={query.PageSize || PAGE_SIZE}
               setPage={handlePageChange}
             />
           </div>

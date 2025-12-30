@@ -10,7 +10,7 @@ import {
   CreateDelegationRequest,
 } from "../types/request.types";
 import { leaveTypeOptions, shiftTypeOptions } from "../types/request.types";
-import { formatDate } from "shared/utils/date-utils";
+import { formatDate, formatDateTime } from "shared/utils/date-utils";
 import ConfirmationApprove from "../components/ConfirmationApprove";
 import ConfirmationReject from "../components/ConfirmationReject";
 import DelegationForm from "../components/DelegationForm";
@@ -269,6 +269,79 @@ const RequestDetailPage: React.FC = () => {
                             )}
                           </ul>
                         </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Check-In Info */}
+                  {request.additionalCheckInInfo && (
+                    <div>
+                      <div className="text-sm font-semibold text-gray-800">
+                        Chi tiết Check-in
+                      </div>
+                      <div className="mt-2 bg-white border rounded p-4">
+                        <div className="text-sm text-gray-700">
+                          Giờ check-in mong muốn:{" "}
+                          <span className="font-medium">
+                            {(() => {
+                              const { time, date } = formatDateTime(request.additionalCheckInInfo.desiredCheckInTime);
+                              return `${time} ${date}`;
+                            })()}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Check-Out Info */}
+                  {request.additionalCheckOutInfo && (
+                    <div>
+                      <div className="text-sm font-semibold text-gray-800">
+                        Chi tiết Check-out
+                      </div>
+                      <div className="mt-2 bg-white border rounded p-4">
+                        <div className="text-sm text-gray-700">
+                          Giờ check-out mong muốn:{" "}
+                          <span className="font-medium">
+                            {(() => {
+                              const { time, date } = formatDateTime(request.additionalCheckOutInfo.desiredCheckOutTime);
+                              return `${time} ${date}`;
+                            })()}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Timesheet Info */}
+                  {request.additionalTimesheetInfo && (
+                    <div>
+                      <div className="text-sm font-semibold text-gray-800">
+                        Chi tiết cập nhật công
+                      </div>
+                      <div className="mt-2 bg-white border rounded p-4 space-y-2">
+                        <div className="text-sm text-gray-700">
+                          Ngày cần sửa:{" "}
+                          <span className="font-medium">
+                            {formatDate(request.additionalTimesheetInfo.targetDate)}
+                          </span>
+                        </div>
+                        {request.additionalTimesheetInfo.desiredCheckInTime && (
+                          <div className="text-sm text-gray-700">
+                            Giờ vào mong muốn:{" "}
+                            <span className="font-medium">
+                              {formatDateTime(request.additionalTimesheetInfo.desiredCheckInTime).time}
+                            </span>
+                          </div>
+                        )}
+                        {request.additionalTimesheetInfo.desiredCheckOutTime && (
+                          <div className="text-sm text-gray-700">
+                            Giờ ra mong muốn:{" "}
+                            <span className="font-medium">
+                              {formatDateTime(request.additionalTimesheetInfo.desiredCheckOutTime).time}
+                            </span>
+                          </div>
+                        )}
                       </div>
                     </div>
                   )}

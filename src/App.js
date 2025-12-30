@@ -11,7 +11,7 @@ function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
-        <ApiProvider apiType="REST">
+        <ApiProvider apiType={process.env.REACT_APP_API_TYPE || "MOCK"}>
           <NotificationProvider>
             <AppRoutes />
             <ToastContainer />

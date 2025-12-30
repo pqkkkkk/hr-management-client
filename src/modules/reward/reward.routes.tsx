@@ -4,17 +4,32 @@ import {
   GiftPage,
   GiftedPointTransactionPage,
   RewardProgramDetailPage,
+  CreateRewardProgramPage,
 } from "./pages";
+import ProtectedRoute from "shared/components/ProtectedRoute";
 
 const RewardRoutes = (
   <Route path="/rewards">
     <Route path="transactions" element={<TransactionHistoryPage />} />
-    <Route path="gift" element={<GiftPage />} />
+    <Route path="gift" element={
+      <ProtectedRoute allowedRoles={["MANAGER", "ADMIN"]}>
+        <GiftPage />
+      </ProtectedRoute>
+    } />
     <Route
       path="gifted-transactions"
-      element={<GiftedPointTransactionPage />}
+      element={
+        <ProtectedRoute allowedRoles={["MANAGER", "ADMIN"]}>
+          <GiftedPointTransactionPage />
+        </ProtectedRoute>
+      }
     />
     <Route path="programs/:id" element={<RewardProgramDetailPage />} />
+    <Route path="programs/create" element={
+      <ProtectedRoute allowedRoles={["ADMIN"]}>
+        <CreateRewardProgramPage />
+      </ProtectedRoute>
+    } />
   </Route>
 );
 
