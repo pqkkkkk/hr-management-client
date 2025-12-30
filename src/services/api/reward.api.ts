@@ -9,10 +9,8 @@ import {
   RewardItem,
   RewardProgramDetail,
   UserWallet,
-  TransactionListResponse,
   ExchangeRewardRequest,
 } from "modules/reward/types/reward.types";
-import apiClient from "./api.client";
 import { RewardProgramFormData, RewardProgramResponse } from "modules/reward/types/rewardForm";
 import {
   mockRewardPrograms,
@@ -21,6 +19,7 @@ import {
   mockTransactions,
   mockUserWallets,
 } from "shared/data/reward.data";
+import { dotnetApiClient } from "./api.client";
 
 // ========== API INTERFACE ==========
 
@@ -284,7 +283,7 @@ export class MockRewardApi implements RewardApi {
 
 export class RestRewardApi implements RewardApi {
   async getPointTransactions(filter?: TransactionFilter): Promise<ApiResponse<Page<PointTransaction>>> {
-    const response = await apiClient.get<ApiResponse<Page<PointTransaction>>>(
+    const response = await dotnetApiClient.get<ApiResponse<Page<PointTransaction>>>(
       `/rewards/transactions`,
       { params: filter }
     );
@@ -295,7 +294,7 @@ export class RestRewardApi implements RewardApi {
   }
 
   async giftPoints(payload: GiftPointsRequest): Promise<ApiResponse<Array<PointTransaction>>> {
-    return apiClient.post(`/rewards/transactions/gift`, payload);
+    return dotnetApiClient.post(`/rewards/transactions/gift`, payload);
   }
 
   // GET GIFT transactions sent by current user
@@ -306,7 +305,7 @@ export class RestRewardApi implements RewardApi {
       TransactionType: TransactionType.GIFT,
     };
 
-    const response = await apiClient.get<ApiResponse<Page<PointTransaction>>>(
+    const response = await dotnetApiClient.get<ApiResponse<Page<PointTransaction>>>(
       `/rewards/transactions`,
       { params: giftFilter }
     );
@@ -315,16 +314,16 @@ export class RestRewardApi implements RewardApi {
   }
 
   async getRewardPrograms(filter?: RewardProgramFilter): Promise<ApiResponse<Page<RewardProgram>>> {
-    return apiClient.get(`/rewards/programs`, { params: filter });
+    return dotnetApiClient.get(`/rewards/programs`, { params: filter });
   }
 
   async getRewardProgramById(id: string): Promise<ApiResponse<RewardProgramDetail>> {
-    return apiClient.get(`/rewards/programs/${id}`);
+    return dotnetApiClient.get(`/rewards/programs/${id}`);
   }
 
   async getActiveRewardProgram(): Promise<ApiResponse<RewardProgramDetail>> {
     // Get programs with ACTIVE status - assumes backend returns single active program
-    const response = await apiClient.get<ApiResponse<Page<RewardProgramDetail>>>(`/rewards/programs`, {
+    const response = await dotnetApiClient.get<ApiResponse<Page<RewardProgramDetail>>>(`/rewards/programs`, {
       params: { status: "ACTIVE" }
     });
     const programs = response.data.content || [];
@@ -335,14 +334,14 @@ export class RestRewardApi implements RewardApi {
   }
 
   async createRewardProgram(request: RewardProgramFormData): Promise<RewardProgramResponse> {
-    return apiClient.post(`/rewards/programs`, request);
+    return dotnetApiClient.post(`/rewards/programs`, request);
   }
 
   async getWallet(userId: string, programId: string): Promise<ApiResponse<UserWallet>> {
-    return apiClient.get(`/rewards/wallets/user/${userId}/program/${programId}`);
+    return dotnetApiClient.get(`/rewards/wallets/user/${userId}/program/${programId}`);
   }
 
   async exchangeReward(request: ExchangeRewardRequest): Promise<ApiResponse<PointTransaction>> {
-    return apiClient.post(`/rewards/transactions/exchange`, request);
+    return dotnetApiClient.post(`/rewards/transactions/exchange`, request);
   }
 }

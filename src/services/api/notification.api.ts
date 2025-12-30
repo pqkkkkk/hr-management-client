@@ -1,6 +1,6 @@
 import { ApiResponse, Page } from 'shared/types';
 import { Notification, NotificationFilter } from 'shared/types/notification.types';
-import apiClient, { API_BASE_URL } from './api.client';
+import { springApiClient, SPRING_API_BASE_URL } from './api.client';
 
 /**
  * Callbacks cho SSE events
@@ -206,12 +206,12 @@ export class MockNotificationApi implements NotificationApi {
    */
   connectSSE(userId: string, callbacks: SSECallbacks): EventSource {
     console.log('[MockNotificationApi] SSE connection simulated for user:', userId);
-    
+
     // Trigger onOpen callback immediately for mock
     if (callbacks.onOpen) {
       setTimeout(() => callbacks.onOpen!(), 100);
     }
-    
+
     // Simulate receiving a new notification after 10 seconds
     setTimeout(() => {
       const mockNewNotification: Notification = {
@@ -228,7 +228,7 @@ export class MockNotificationApi implements NotificationApi {
 
       // Add to mock data
       this.mockNotifications.unshift(mockNewNotification);
-      
+
       // Trigger callback
       callbacks.onNotification(mockNewNotification);
     }, 10000);
@@ -254,7 +254,7 @@ export class RestNotificationApi implements NotificationApi {
   private eventSource: EventSource | null = null;
 
   async getNotifications(filter?: NotificationFilter): Promise<ApiResponse<Page<Notification>>> {
-    const response = await apiClient.get<ApiResponse<Page<Notification>>>(
+    const response = await springApiClient.get<ApiResponse<Page<Notification>>>(
       '/notifications',
       { params: filter }
     );
@@ -262,14 +262,14 @@ export class RestNotificationApi implements NotificationApi {
   }
 
   async markAsRead(notificationId: string): Promise<ApiResponse<null>> {
-    const response = await apiClient.patch<ApiResponse<null>>(
+    const response = await springApiClient.patch<ApiResponse<null>>(
       `/notifications/read?notificationId=${notificationId}`
     );
     return response;
   }
 
   async markAllAsRead(userId: string): Promise<ApiResponse<null>> {
-    const response = await apiClient.patch<ApiResponse<null>>(
+    const response = await springApiClient.patch<ApiResponse<null>>(
       `/notifications/mark-all-read?userId=${userId}`
     );
     return response;
@@ -285,9 +285,9 @@ export class RestNotificationApi implements NotificationApi {
     }
 
     // Tạo kết nối SSE mới
-    const url = `${API_BASE_URL}/notifications/stream?userId=${userId}`;
+    const url = `${SPRING_API_BASE_URL}/notifications/stream?userId=${userId}`;
     console.log('[RestNotificationApi] Connecting to SSE:', url);
-    
+
     // EventSource constructor không hỗ trợ withCredentials option trong TypeScript
     // Nhưng ta có thể cast để sử dụng
     this.eventSource = new EventSource(url, { withCredentials: false });
@@ -328,7 +328,7 @@ export class RestNotificationApi implements NotificationApi {
       console.error('[RestNotificationApi] ❌ SSE connection ERROR');
       console.error('[RestNotificationApi] readyState on error:', this.eventSource?.readyState);
       console.error('[RestNotificationApi] error event:', error);
-      
+
       // Check if connection was never established
       if (this.eventSource?.readyState === EventSource.CONNECTING) {
         console.error('[RestNotificationApi] Connection stuck in CONNECTING state');
@@ -337,7 +337,7 @@ export class RestNotificationApi implements NotificationApi {
         console.error('[RestNotificationApi] 2. Server not sending initial data');
         console.error('[RestNotificationApi] 3. Wrong Content-Type from server');
       }
-      
+
       if (callbacks.onError) {
         callbacks.onError(error);
       }

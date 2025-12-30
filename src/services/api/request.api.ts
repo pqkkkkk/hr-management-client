@@ -14,7 +14,7 @@ import {
   CreateCheckInRequestDTO,
   CreateTimesheetUpdateRequestDTO,
 } from "modules/request/types/request.types";
-import apiClient from "./api.client";
+import { springApiClient } from "./api.client";
 
 export interface RequestApi {
   getMyRequests(filter?: RequestFilter): Promise<ApiResponse<Page<Request>>>;
@@ -47,7 +47,7 @@ export interface RequestApi {
     employeeId: string,
     yearMonth: string
   ): Promise<ApiResponse<TimesheetResponse>>;
-  
+
   createTimesheetUpdateRequest(
     data: CreateTimesheetUpdateRequestDTO
   ): Promise<ApiResponse<any>>;
@@ -692,7 +692,7 @@ export class MockRequestApi implements RequestApi {
 // REST API Implementation
 export class RestRequestApi implements RequestApi {
   async getTimesheet(employeeId: string, yearMonth: string): Promise<ApiResponse<TimesheetResponse>> {
-    return apiClient.get<ApiResponse<TimesheetResponse>>(
+    return springApiClient.get<ApiResponse<TimesheetResponse>>(
       `/timesheets/employee/${employeeId}/monthly`,
       { params: { yearMonth } }
     );
@@ -701,45 +701,45 @@ export class RestRequestApi implements RequestApi {
   async getMyRequests(
     filter?: RequestFilter
   ): Promise<ApiResponse<Page<Request>>> {
-    return apiClient.get(`/requests/my-requests`, { params: filter });
+    return springApiClient.get(`/requests/my-requests`, { params: filter });
   }
 
   async getTeamRequests(
     filter?: RequestFilter
   ): Promise<ApiResponse<Page<Request>>> {
-    return apiClient.get(`/requests/team-requests`, { params: filter });
+    return springApiClient.get(`/requests/team-requests`, { params: filter });
   }
 
   async getRequestById(requestId: string): Promise<ApiResponse<Request>> {
-    return apiClient.get(`/requests/${requestId}`);
+    return springApiClient.get(`/requests/${requestId}`);
   }
 
   async createLeaveRequest(
     data: CreateLeaveRequestDTO
   ): Promise<ApiResponse<Request>> {
-    return apiClient.post(`/requests/leave`, data);
+    return springApiClient.post(`/requests/leave`, data);
   }
 
   async createWfhRequest(
     data: CreateWfhRequestDTO
   ): Promise<ApiResponse<Request>> {
-    return apiClient.post(`/requests/wfh`, data);
+    return springApiClient.post(`/requests/wfh`, data);
   }
 
   async createCheckOutRequest(
     data: CreateCheckOutRequestDTO
   ): Promise<ApiResponse<Request>> {
-    return apiClient.post(`/requests/check-out`, data);
+    return springApiClient.post(`/requests/check-out`, data);
   }
 
   async createCheckInRequest(
     data: CreateCheckInRequestDTO
   ): Promise<ApiResponse<Request>> {
-    return apiClient.post(`/requests/check-in`, data);
+    return springApiClient.post(`/requests/check-in`, data);
   }
 
   async approveRequest(requestId: string, approverId: string): Promise<ApiResponse<Request>> {
-    return apiClient.patch(`/requests/${requestId}/approve`, { approverId });
+    return springApiClient.patch(`/requests/${requestId}/approve`, { approverId });
   }
 
   async rejectRequest(
@@ -747,14 +747,14 @@ export class RestRequestApi implements RequestApi {
     rejecterId: string,
     rejectReason: string
   ): Promise<ApiResponse<Request>> {
-    return apiClient.patch(`/requests/${requestId}/reject`, { rejecterId, rejectReason });
+    return springApiClient.patch(`/requests/${requestId}/reject`, { rejecterId, rejectReason });
   }
 
   async delegateRequest(
     requestId: string,
     newProcessorId: string
   ): Promise<ApiResponse<Request>> {
-    return apiClient.patch(`/requests/${requestId}/delegate`, { newProcessorId });
+    return springApiClient.patch(`/requests/${requestId}/delegate`, { newProcessorId });
   }
 
   async getRemainingLeaveDays(): Promise<ApiResponse<RemainingLeaveDays>> {
@@ -764,7 +764,7 @@ export class RestRequestApi implements RequestApi {
   async createTimesheetUpdateRequest(
     data: CreateTimesheetUpdateRequestDTO
   ): Promise<ApiResponse<any>> {
-    return apiClient.post(`/requests/timesheet`, data);
+    return springApiClient.post(`/requests/timesheet`, data);
   }
 }
 
