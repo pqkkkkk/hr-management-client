@@ -7,6 +7,9 @@ import {
   TransactionFilter,
   PointTransaction,
   TransactionType,
+  ProgrameReward,
+  RewardProgramFilter,
+  RewardItem, RewardItemFilter,
   TransactionListResponse,
 } from "modules/reward/types/reward.types";
 import apiClient from "./api.client";
@@ -26,7 +29,15 @@ export interface RewardApi {
 
   getGiftedPointStats(
     filter?: GiftedPointFilter
-  ): Promise<ApiResponse<Page<PointTransaction>>>;
+  ): Promise<ApiResponse<Page<GiftedPointEmployeeStat>>>;
+
+  getRewardPrograms(
+    filter?: RewardProgramFilter
+  ): Promise<ApiResponse<Page<ProgrameReward>>>;
+
+  getRewardProgramById(
+    id: string
+  ): Promise<ApiResponse<RewardItem[]>>;
 }
 
 export class MockRewardApi implements RewardApi {
@@ -339,8 +350,107 @@ export class MockRewardApi implements RewardApi {
       }, 400);
     });
   }
-}
 
+  async getRewardPrograms(
+    filter?: RewardProgramFilter
+  ): Promise<ApiResponse<Page<ProgrameReward>>> {
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        const mockPrograms: ProgrameReward[] = [
+          {
+            rewardProgramId: "rp-1",
+            name: "Chương trình tháng 12",
+            description: "Chương trình thưởng cuối năm",
+            startDate: "2025-12-01T00:00:00.000Z",
+            endDate: "2025-12-31T23:59:59.999Z",
+            status: "ACTIVE",
+            defaultGivingBudget: 10000,
+            bannerUrl: "https://example.com/banner1.jpg",
+          },
+          {
+            rewardProgramId: "rp-2",
+            name: "Chương trình quý 1/2026",
+            description: "Chương trình khởi đầu năm mới",
+            startDate: "2026-01-01T00:00:00.000Z",
+            endDate: "2026-03-31T23:59:59.999Z",
+            status: "PENDING",
+            defaultGivingBudget: 15000,
+            bannerUrl: "https://example.com/banner2.jpg",
+          },
+          {
+            rewardProgramId: "rp-3",
+            name: "Chương trình tháng 11",
+            description: "Chương trình tháng 11",
+            startDate: "2025-11-01T00:00:00.000Z",
+            endDate: "2025-11-30T23:59:59.999Z",
+            status: "INACTIVE",
+            defaultGivingBudget: 8000,
+            bannerUrl: "https://example.com/banner3.jpg",
+          },
+        ];
+
+        let filtered = [...mockPrograms];
+
+        // Filter by status
+        if (filter?.status) {
+          filtered = filtered.filter((p) => p.status === filter.status);
+        }
+
+        // Sort by startDate
+        const sortDirection = filter?.sortDirection || "DESC";
+        filtered.sort((a, b) => {
+          const ta = new Date(a.startDate).getTime();
+          const tb = new Date(b.startDate).getTime();
+          return sortDirection === "ASC" ? ta - tb : tb - ta;
+        });
+
+        // Pagination
+        const currentPage = filter?.currentPage || 1;
+        const pageSize = filter?.pageSize || 10;
+        const startIndex = (currentPage - 1) * pageSize;
+        const endIndex = startIndex + pageSize;
+        const paginated = filtered.slice(startIndex, endIndex);
+
+        const totalElements = filtered.length;
+        const totalPages = Math.ceil(totalElements / pageSize) || 1;
+
+        const page: Page<ProgrameReward> = {
+          content: paginated,
+          totalElements,
+          totalPages,
+          size: pageSize,
+          number: currentPage,
+          first: currentPage === 1,
+          last: currentPage >= totalPages,
+          numberOfElements: paginated.length,
+          empty: paginated.length === 0,
+          pageable: {
+            pageNumber: currentPage,
+            pageSize,
+            offset: startIndex,
+            paged: true,
+            unpaged: false,
+            sort: { sorted: false, unsorted: true, empty: true },
+          },
+          sort: { sorted: false, unsorted: true, empty: true },
+        };
+
+        resolve({
+          data: page,
+          success: true,
+          statusCode: 200,
+          message: "Mock reward programs fetched successfully",
+        });
+      }, 400);
+    });
+  }
+
+  async getRewardProgramById(
+    id: string
+  ): Promise<ApiResponse<RewardItem[]>> {
+    return apiClient.get(`/rewards/programs/${id}`);
+  }
+}
 export class RestRewardApi implements RewardApi {
   async getPointTransactions(
     filter?: TransactionFilter
@@ -446,6 +556,17 @@ export class RestRewardApi implements RewardApi {
       ...response,
       data: page,
     };
+  }
+
+  async getRewardPrograms(
+    filter?: RewardProgramFilter
+  ): Promise<ApiResponse<Page<ProgrameReward>>> {
+    return apiClient.get(`/rewards/programs`, { params: filter });
+  }
+  async getRewardProgramById(
+    id: string
+  ): Promise<ApiResponse<RewardItem[]>> {
+    return apiClient.get(`/rewards/programs/${id}`);
   }
 }
 
