@@ -4,10 +4,9 @@ import {
   TransactionFilter,
   TransactionType,
 } from "modules/reward/types/reward.types";
-import { Calendar, ChevronDown, Coins, Gift, Plus } from "lucide-react";
+import { Calendar, ChevronDown, Coins, Gift, Plus, Award } from "lucide-react";
 import Pagination from "../components/Pagination";
 import EmptyState from "../components/EmptyState";
-import { mockRewardApi } from "services/api/reward.api";
 import ErrorState from "../components/ErrorState";
 import { useQuery } from "shared/hooks/use-query";
 import { useFetchList } from "shared/hooks/use-fetch-list";
@@ -93,8 +92,10 @@ const FiltersBar: React.FC<{
                 <div className="text-sm text-gray-700 flex-1">
                   {value.type === "ALL"
                     ? "Tất cả"
-                    : value.type === TransactionType.RECEIVE_POINTS
+                    : value.type === TransactionType.GIFT
                     ? "Nhận điểm"
+                    : value.type === TransactionType.POLICY_REWARD
+                    ? "Thưởng chính sách"
                     : "Đổi quà"}
                 </div>
                 <div className="relative">
@@ -109,12 +110,11 @@ const FiltersBar: React.FC<{
                     className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                   >
                     <option value="ALL">Tất cả</option>
-                    <option value={TransactionType.RECEIVE_POINTS}>
-                      Nhận điểm
+                    <option value={TransactionType.GIFT}>Nhận điểm</option>
+                    <option value={TransactionType.POLICY_REWARD}>
+                      Thưởng chính sách
                     </option>
-                    <option value={TransactionType.REDEEM_POINTS}>
-                      Đổi quà
-                    </option>
+                    <option value={TransactionType.EXCHANGE}>Đổi quà</option>
                   </select>
                   <ChevronDown className="w-4 h-4 text-gray-400" />
                 </div>
@@ -137,19 +137,27 @@ const FiltersBar: React.FC<{
 
 // tạo ghi chú cho giao dịch
 const buildNote = (tx: PointTransaction) => {
-  if (tx.type === 0) return "Nhận điểm từ quản lý";
-  const firstItem = tx.items && tx.items.length > 0 ? tx.items[0] : undefined;
-  if (!firstItem) return "Đổi quà";
-  return `Đổi quà ${firstItem.rewardItemName.toLowerCase()}`;
+  if (tx.type === TransactionType.GIFT) return "Nhận điểm từ quản lý";
+  if (tx.type === TransactionType.POLICY_REWARD)
+    return "Thưởng điểm do chính sách";
+  if (tx.type === TransactionType.EXCHANGE) {
+    const firstItem = tx.items && tx.items.length > 0 ? tx.items[0] : undefined;
+    if (!firstItem) return "Đổi quà";
+    return `Đổi quà ${firstItem.rewardItemName.toLowerCase()}`;
+  }
+  return "Giao dịch điểm";
 };
+
+const isCreditTransaction = (tx: PointTransaction) =>
+  tx.type === TransactionType.GIFT || tx.type === TransactionType.POLICY_REWARD;
 
 // TransactionRow component
 const TransactionRow: React.FC<{ tx: PointTransaction }> = ({ tx }) => {
   const created = useMemo(() => {
-    return formatDateTime(tx.createdAt, { locale: "vi-VN", timeZone: "UTC" });
+    return formatDateTime(tx.createdAt, { locale: "vi-VN" });
   }, [tx.createdAt]);
 
-  const signedAmount = tx.type === 0 ? tx.amount : -tx.amount;
+  const signedAmount = isCreditTransaction(tx) ? tx.amount : -tx.amount;
   const isPlus = signedAmount >= 0;
   const amountLabel = `${isPlus ? "+" : "-"}${Math.abs(signedAmount)}`;
   const note = buildNote(tx);
@@ -166,7 +174,14 @@ const TransactionRow: React.FC<{ tx: PointTransaction }> = ({ tx }) => {
         #TRX-{tx.pointTransactionId}
       </td>
       <td className="py-4 px-5">
-        {tx.type === 0 ? (
+        {tx.type === TransactionType.POLICY_REWARD ? (
+          <Badge
+            className="bg-blue-50 text-blue-600"
+            icon={<Award className="w-3.5 h-3.5" />}
+          >
+            Thưởng chính sách
+          </Badge>
+        ) : tx.type === TransactionType.GIFT ? (
           <Badge
             className="bg-green-50 text-green-600"
             icon={<Plus className="w-3.5 h-3.5" />}
@@ -236,14 +251,13 @@ const TransactionHistoryPage: React.FC = () => {
     return toDateInputValue(d);
   }, [today]);
 
-  const PAGE_SIZE = 6;
+  const PAGE_SIZE = 5;
 
   const { query, updateQuery, resetQuery } = useQuery<TransactionFilter>({
-    startDate: defaultStart,
-    endDate: defaultEnd,
-    currentPage: 1,
-    pageSize: PAGE_SIZE,
-    sortDirection: "DESC",
+    FromDate: `${defaultStart}T00:00:00.000Z`,
+    ToDate: `${defaultEnd}T23:59:59.999Z`,
+    PageNumber: 1,
+    PageSize: PAGE_SIZE,
   });
 
   const fetchPointTransactions = useMemo(
@@ -252,7 +266,7 @@ const TransactionHistoryPage: React.FC = () => {
   );
 
   const {
-    data: rows,
+    data: transactions,
     page: pageData,
     isFetching: loading,
     error,
@@ -262,7 +276,7 @@ const TransactionHistoryPage: React.FC = () => {
   );
 
   const summaryQuery = useMemo<TransactionFilter>(
-    () => ({ currentPage: 1, pageSize: 1000, sortDirection: "DESC" }),
+    () => ({ PageNumber: 1, PageSize: 1000 }),
     []
   );
   const { data: allTransactions } = useFetchList<
@@ -272,7 +286,7 @@ const TransactionHistoryPage: React.FC = () => {
 
   const currentPoints = useMemo(() => {
     return (allTransactions || []).reduce((sum, tx) => {
-      const signed = tx.type === 0 ? tx.amount : -tx.amount;
+      const signed = isCreditTransaction(tx) ? tx.amount : -tx.amount;
       return sum + signed;
     }, 0);
   }, [allTransactions]);
@@ -280,10 +294,12 @@ const TransactionHistoryPage: React.FC = () => {
   const handleFilterChange = useCallback(
     (next: FiltersValue) => {
       updateQuery({
-        currentPage: 1,
-        startDate: next.startDate || undefined,
-        endDate: next.endDate || undefined,
-        type: next.type === "ALL" ? undefined : next.type,
+        PageNumber: 1,
+        FromDate: next.startDate
+          ? `${next.startDate}T00:00:00.000Z`
+          : undefined,
+        ToDate: next.endDate ? `${next.endDate}T23:59:59.999Z` : undefined,
+        TransactionType: next.type === "ALL" ? undefined : next.type,
       });
     },
     [updateQuery]
@@ -291,12 +307,12 @@ const TransactionHistoryPage: React.FC = () => {
 
   const handlePageChange = useCallback(
     (newPage: number) => {
-      updateQuery({ currentPage: newPage });
+      updateQuery({ PageNumber: newPage });
     },
     [updateQuery]
   );
 
-  const onReset = useCallback(() => {
+  const handleClearFilters = useCallback(() => {
     resetQuery();
   }, [resetQuery]);
 
@@ -317,12 +333,12 @@ const TransactionHistoryPage: React.FC = () => {
       <div className="bg-white rounded-lg border border-gray-100 overflow-hidden shadow-sm">
         <FiltersBar
           value={{
-            startDate: query.startDate || "",
-            endDate: query.endDate || "",
-            type: query.type ? query.type : "ALL",
+            startDate: query.FromDate ? query.FromDate.split("T")[0] : "",
+            endDate: query.ToDate ? query.ToDate.split("T")[0] : "",
+            type: query.TransactionType ? query.TransactionType : "ALL",
           }}
           onChange={handleFilterChange}
-          onReset={onReset}
+          onReset={handleClearFilters}
         />
 
         {loading ? (
@@ -351,7 +367,7 @@ const TransactionHistoryPage: React.FC = () => {
           </div>
         ) : error ? (
           <ErrorState />
-        ) : rows.length === 0 ? (
+        ) : transactions.length === 0 ? (
           <div className="min-h-[240px] flex items-center justify-center">
             <div className="w-full flex justify-center">
               <EmptyState />
@@ -359,10 +375,10 @@ const TransactionHistoryPage: React.FC = () => {
           </div>
         ) : (
           <div>
-            <TransactionsTable rows={rows} />
+            <TransactionsTable rows={transactions} />
             <div className="border-t border-gray-100">
               <Pagination
-                page={query.currentPage || 1}
+                page={query.PageNumber || 1}
                 total={pageData?.totalElements || 0}
                 limit={PAGE_SIZE}
                 setPage={handlePageChange}

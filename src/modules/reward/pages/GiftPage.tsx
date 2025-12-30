@@ -7,7 +7,9 @@ import {
   PointTransaction,
   TransactionFilter,
 } from "modules/reward/types/reward.types";
+import { TransactionType } from "modules/reward/types/reward.types";
 import { initials } from "shared/utils/initial-utils";
+import { useApi } from "contexts/ApiContext";
 
 type EmployeeOption = {
   id: string;
@@ -22,7 +24,7 @@ const EMPLOYEES: EmployeeOption[] = [
 ];
 
 const GiftPage: React.FC = () => {
-  const rewardApi = mockRewardApi;
+  const { rewardApi } = useApi();
   const nf = useMemo(() => new Intl.NumberFormat("vi-VN"), []);
 
   const fetchPointTransactions = useMemo(
@@ -31,7 +33,7 @@ const GiftPage: React.FC = () => {
   );
 
   const summaryQuery = useMemo<TransactionFilter>(
-    () => ({ currentPage: 1, pageSize: 1000, sortDirection: "DESC" }),
+    () => ({ PageNumber: 1, PageSize: 1000 }),
     []
   );
 
@@ -42,7 +44,8 @@ const GiftPage: React.FC = () => {
 
   const availablePoints = useMemo(() => {
     return (allTransactions || []).reduce((sum, tx) => {
-      const signed = tx.type === 0 ? tx.amount : -tx.amount;
+      const signed =
+        tx.type === TransactionType.EXCHANGE ? -tx.amount : tx.amount;
       return sum + signed;
     }, 0);
   }, [allTransactions]);
