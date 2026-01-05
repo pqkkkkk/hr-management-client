@@ -140,6 +140,6 @@ export interface ExchangeRewardItem {
 export interface ExchangeRewardRequest {
   items: ExchangeRewardItem[];
   programId: string;
-  userId: string;
+  userWalletId: string;
 }
 

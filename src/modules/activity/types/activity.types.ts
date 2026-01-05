@@ -5,6 +5,7 @@
 export enum ActivityStatus {
     DRAFT = "DRAFT",
     OPEN = "OPEN",
+    IN_PROGRESS = "IN_PROGRESS",
     CLOSED = "CLOSED",
     COMPLETED = "COMPLETED",
 }
@@ -92,12 +93,13 @@ export interface LeaderboardEntry {
 export interface ActivityStatistics {
     activityId: string;
     totalParticipants: number;
+    activeParticipants?: number;
     totalLogs: number;
     totalDistance: number;
-    averageDistance: number;
-    pendingLogsCount: number;
-    approvedLogsCount: number;
-    rejectedLogsCount: number;
+    averageDistancePerParticipant: number;
+    pendingLogs: number;
+    approvedLogs: number;
+    rejectedLogs: number;
 }
 
 // ========== FILTER TYPES ==========
@@ -150,6 +152,7 @@ export interface UpdateActivityStatusRequest {
 
 export interface CreateActivityLogRequest {
     activityId: string;
+    employeeId: string;
     distance: number;
     durationMinutes: number;
     logDate: string;

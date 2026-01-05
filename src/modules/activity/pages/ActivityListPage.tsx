@@ -56,7 +56,7 @@ const ActivityListPage: React.FC<ActivityListPageProps> = ({
     // Fetch function
     const fetchActivities = useMemo(() => {
         if (fetchFn) return fetchFn;
-        if (myActivitiesOnly) return activityApi.getMyActivities.bind(activityApi);
+        if (myActivitiesOnly) return activityApi.getMyActivities.bind(activityApi, user?.userId);
         return activityApi.getActivities.bind(activityApi);
     }, [activityApi, myActivitiesOnly, fetchFn]);
 
@@ -97,7 +97,7 @@ const ActivityListPage: React.FC<ActivityListPageProps> = ({
     const handleRegister = async (activityId: string) => {
         setRegisteringId(activityId);
         try {
-            const response = await activityApi.registerForActivity(activityId);
+            const response = await activityApi.registerForActivity(activityId, user?.userId);
             if (response.success) {
                 toast.success("Đăng ký thành công!");
                 refetch();
@@ -115,7 +115,7 @@ const ActivityListPage: React.FC<ActivityListPageProps> = ({
     const handleUnregister = async (activityId: string) => {
         setRegisteringId(activityId);
         try {
-            const response = await activityApi.unregisterFromActivity(activityId);
+            const response = await activityApi.unregisterFromActivity(activityId, user?.userId);
             if (response.success) {
                 toast.success("Hủy đăng ký thành công!");
                 refetch();

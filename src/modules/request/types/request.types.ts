@@ -36,13 +36,13 @@ export enum ShiftType {
 export interface LeaveDate {
   leaveDateId?: string;
   date: string; // ISO date string
-  shift: ShiftType;
+  shiftType: ShiftType;
 }
 
 export interface WfhDate {
   wfhDateId?: string;
   date: string; // ISO date string
-  shift: ShiftType;
+  shiftType: ShiftType;
 }
 
 // Additional info types
@@ -64,13 +64,13 @@ export interface AdditionalWfhInfo {
 export interface AdditionalCheckInInfo {
   requestId?: string;
   desiredCheckInTime: string; // ISO datetime string
-  currentCheckInTime: string; // ISO datetime string
+  currentCheckInTime?: string; // ISO datetime string
 }
 
 export interface AdditionalCheckOutInfo {
   requestId?: string;
   desiredCheckOutTime: string; // ISO datetime string
-  currentCheckOutTime: string; // ISO datetime string
+  currentCheckOutTime?: string; // ISO datetime string
 }
 
 export interface AdditionalTimesheetInfo {
@@ -127,10 +127,12 @@ export interface CreateLeaveRequestDTO {
 
 export interface CreateWfhRequestDTO {
   title: string;
+  employeeId: string;
   userReason?: string;
   wfhCommitment: boolean;
   workLocation?: string;
   wfhDates: WfhDate[];
+  attachmentUrl?: string;
 }
 
 export interface RejectLeaveRequestDTO {
@@ -207,9 +209,9 @@ export const requestTypeOptions = [
 ];
 
 export const shiftTypeOptions = [
-  { value: ShiftType.FULL_DAY, label: "Cả ngày" },
-  { value: ShiftType.MORNING, label: "Buổi sáng" },
-  { value: ShiftType.AFTERNOON, label: "Buổi chiều" },
+  { value: ShiftType.FULL_DAY.toString(), label: "Cả ngày" },
+  { value: ShiftType.MORNING.toString(), label: "Buổi sáng" },
+  { value: ShiftType.AFTERNOON.toString(), label: "Buổi chiều" },
 ];
 
 // Timesheet related types

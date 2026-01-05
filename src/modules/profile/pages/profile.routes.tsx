@@ -19,7 +19,7 @@ export const ProfileRoutes = (
                 <EmployeeUpdatePage />
             </ProtectedRoute>
         } />
-        <Route path="users/:userId/for-employee" element={
+        <Route path="users/for-employee" element={
             <ProtectedRoute allowedRoles={["EMPLOYEE", "MANAGER", "HR", "ADMIN"]}>
                 <EmployeePersonalUpdatePage />
             </ProtectedRoute>

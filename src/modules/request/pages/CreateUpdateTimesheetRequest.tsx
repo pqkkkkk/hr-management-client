@@ -102,13 +102,10 @@ const UpdateTimesheetRequestForm: React.FC<UpdateTimesheetModalProps> = ({ isMod
         desiredCheckOutTime: `${targetDate?.toISOString().split('T')[0]}T${checkOutTime}:00`,
         currentCheckOutTime: `${targetDate?.toISOString().split('T')[0]}T${checkOutTime}:00`,
       }
-      const response = await requestApi.createTimesheetUpdateRequest(timeSheetData);
-      if (response.success) {
-        toast.success('Gửi yêu cầu thành công!');
-        onSubmit?.();
-      } else {
-        toast.error('Có lỗi xảy ra');
-      }
+      await requestApi.createTimesheetUpdateRequest(timeSheetData);
+
+      toast.success('Gửi yêu cầu thành công!');
+      onSubmit?.();
 
       setTargetDate(null);
       setCheckInTime('');
@@ -117,8 +114,11 @@ const UpdateTimesheetRequestForm: React.FC<UpdateTimesheetModalProps> = ({ isMod
       setFile(null);
       setErrors({});
     } catch (error) {
-      toast.error('Có lỗi xảy ra');
-      console.error(error);
+      const errorMessage = error?.response?.data?.message
+        || error?.message
+        || 'Có lỗi xảy ra khi tạo yêu cầu cập nhật timesheet';
+
+      toast.error(errorMessage);
     } finally {
       setSubmitting(false);
     }

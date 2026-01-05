@@ -134,17 +134,17 @@ const CheckOutRequestForm: React.FC<CheckoutModalProps> = ({
         attachmentUrl,
       };
 
-      const response = await requestApi.createCheckOutRequest(requestData);
+      await requestApi.createCheckOutRequest(requestData);
 
-      if (response.success) {
-        setLoading(false);
-        handleSuccess();
-      } else {
-        throw new Error(response.message || "Có lỗi xảy ra khi tạo yêu cầu");
-      }
-    } catch (error: any) {
       setLoading(false);
-      toast.error(error?.message || "Có lỗi xảy ra khi tạo yêu cầu check-out");
+      handleSuccess();
+
+    } catch (error: any) {
+      const errorMessage = error?.response?.data?.message
+        || error?.message
+        || 'Có lỗi xảy ra khi tạo yêu cầu check-out';
+
+      toast.error(errorMessage);
     }
   };
 

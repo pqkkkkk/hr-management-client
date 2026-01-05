@@ -9,12 +9,13 @@ import { useFetchList } from "shared/hooks/use-fetch-list";
 import { useQuery } from "shared/hooks/use-query";
 import { Pagination, EmptyState, ActivityLogCard } from "../components";
 import { toast } from "react-toastify";
+import { useAuth } from "contexts/AuthContext";
 
 const PAGE_SIZE = 10;
 
 const PendingLogsPage: React.FC = () => {
     const { activityApi } = useApi();
-
+    const { user } = useAuth();
     const [expandedLogId, setExpandedLogId] = useState<string | null>(null);
     const [processingIds, setProcessingIds] = useState<Set<string>>(new Set());
 
@@ -48,7 +49,7 @@ const PendingLogsPage: React.FC = () => {
     const handleApprove = async (logId: string) => {
         setProcessingIds((prev) => new Set(prev).add(logId));
         try {
-            const response = await activityApi.approveActivityLog(logId);
+            const response = await activityApi.approveActivityLog(logId, user?.userId);
             if (response.success) {
                 toast.success("Đã phê duyệt kết quả");
                 refetch();
@@ -73,7 +74,7 @@ const PendingLogsPage: React.FC = () => {
 
         setProcessingIds((prev) => new Set(prev).add(logId));
         try {
-            const response = await activityApi.rejectActivityLog(logId, reason);
+            const response = await activityApi.rejectActivityLog(logId, user?.userId, reason);
             if (response.success) {
                 toast.success("Đã từ chối kết quả");
                 refetch();

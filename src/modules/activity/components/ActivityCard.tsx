@@ -26,7 +26,7 @@ const statusConfig: Record<ActivityStatus, { label: string; className: string }>
         className: "bg-gray-100 text-gray-700",
     },
     [ActivityStatus.OPEN]: {
-        label: "Đang diễn ra",
+        label: "Sắp diễn ra",
         className: "bg-green-100 text-green-700",
     },
     [ActivityStatus.CLOSED]: {
@@ -36,6 +36,10 @@ const statusConfig: Record<ActivityStatus, { label: string; className: string }>
     [ActivityStatus.COMPLETED]: {
         label: "Hoàn thành",
         className: "bg-blue-100 text-blue-700",
+    },
+    [ActivityStatus.IN_PROGRESS]: {
+        label: "Đang diễn ra",
+        className: "bg-green-100 text-green-700",
     },
 };
 
@@ -105,7 +109,7 @@ const ActivityCard: React.FC<ActivityCardProps> = ({
 
     const status = statusConfig[activity.status] || statusConfig[ActivityStatus.DRAFT];
     const isAdmin = user?.role === "MANAGER" || user?.role === "HR" || user?.role === "ADMIN";
-    const canRegister = activity.status === ActivityStatus.OPEN;
+    const canRegister = activity.status === ActivityStatus.OPEN || activity.status === ActivityStatus.IN_PROGRESS;
 
     const formatDate = (dateString: string) => {
         return new Date(dateString).toLocaleDateString("vi-VN", {

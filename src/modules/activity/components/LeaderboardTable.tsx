@@ -50,15 +50,15 @@ const CurrentUserRankCard: React.FC<CurrentUserRankProps> = ({ entry, totalParti
 
                 <div className="flex gap-6 text-right">
                     <div>
-                        <div className="text-2xl font-bold">{entry.totalDistance.toFixed(1)}</div>
+                        <div className="text-2xl font-bold">{entry?.totalDistance?.toFixed(1)}</div>
                         <div className="text-sm text-white/80">km</div>
                     </div>
                     <div>
-                        <div className="text-2xl font-bold">{entry.totalLogs}</div>
+                        <div className="text-2xl font-bold">{entry?.totalLogs}</div>
                         <div className="text-sm text-white/80">lần chạy</div>
                     </div>
                     <div>
-                        <div className="text-2xl font-bold">{formatPace(entry.averagePace)}</div>
+                        <div className="text-2xl font-bold">{formatPace(entry?.averagePace)}</div>
                         <div className="text-sm text-white/80">pace TB</div>
                     </div>
                 </div>
@@ -173,12 +173,12 @@ const LeaderboardTable: React.FC<LeaderboardTableProps> = ({
                                     </td>
                                     <td className="px-4 py-3 text-right">
                                         <span className="font-semibold text-gray-900">
-                                            {entry.totalDistance.toFixed(1)}
+                                            {entry?.totalDistance?.toFixed(1)}
                                         </span>
                                         <span className="text-gray-500 text-sm ml-1">km</span>
                                     </td>
                                     <td className="px-4 py-3 text-right text-gray-600">
-                                        {entry.totalLogs}
+                                        {entry?.totalLogs}
                                     </td>
                                     <td className="px-4 py-3 text-right text-gray-600">
                                         {formatPace(entry.averagePace)}

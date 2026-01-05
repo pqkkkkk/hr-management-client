@@ -87,7 +87,7 @@ export class MockProfileApi implements ProfileApi {
             phoneNumber: "0123456789",
             address: "TP.HCM",
             bankName: "Vietcombank",
-            bankAccount: "0123456789",
+            bankAccountNumber: "0123456789",
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),
           },

@@ -20,7 +20,7 @@ import { springApiClient } from "./api.client";
 export interface RequestApi {
   getMyRequests(filter?: RequestFilter): Promise<ApiResponse<Page<Request>>>;
   getTeamRequests(filter?: RequestFilter): Promise<ApiResponse<Page<Request>>>;
-  getRequestById(requestId: string): Promise<ApiResponse<Request>>;
+  getRequestById(requestId: string, requestType: RequestType): Promise<ApiResponse<Request>>;
   createLeaveRequest(
     data: CreateLeaveRequestDTO
   ): Promise<ApiResponse<Request>>;
@@ -163,7 +163,7 @@ export class MockRequestApi implements RequestApi {
     });
   }
 
-  async getRequestById(requestId: string): Promise<ApiResponse<Request>> {
+  async getRequestById(requestId: string, requestType: RequestType): Promise<ApiResponse<Request>> {
     return new Promise((resolve, reject) => {
       setTimeout(() => {
         const request = mockRequests.find(
@@ -215,7 +215,7 @@ export class MockRequestApi implements RequestApi {
             totalDays,
             leaveDates: data.leaveDates.map((d) => ({
               date: d.date,
-              shift: d.shiftType,
+              shiftType: d.shiftType,
             })),
           },
         };
@@ -238,7 +238,7 @@ export class MockRequestApi implements RequestApi {
     return new Promise((resolve) => {
       setTimeout(() => {
         const totalDays = data.wfhDates.reduce((sum, date) => {
-          return sum + (date.shift === ShiftType.FULL_DAY ? 1 : 0.5);
+          return sum + (date.shiftType === ShiftType.FULL_DAY ? 1 : 0.5);
         }, 0);
 
         const newRequest: Request = {
@@ -653,36 +653,100 @@ export class RestRequestApi implements RequestApi {
     return springApiClient.get(`/requests/team-requests`, { params: filter });
   }
 
-  async getRequestById(requestId: string): Promise<ApiResponse<Request>> {
-    return springApiClient.get(`/requests/${requestId}`);
+  async getRequestById(requestId: string, requestType: RequestType): Promise<ApiResponse<Request>> {
+    switch (requestType) {
+      case "LEAVE":
+        const res = await springApiClient.get<ApiResponse<Request>>(`/requests/leave/${requestId}`);
+        const requestData: Request = {
+          ...res.data,
+          additionalLeaveInfo: {
+            leaveType: res.data["leaveType"],
+            totalDays: res.data["totalDays"],
+            leaveDates: res.data["leaveDates"]
+          }
+        }
+        res.data = requestData;
+        return res;
+      case "WFH":
+        const res2 = await springApiClient.get<ApiResponse<Request>>(`/requests/wfh/${requestId}`);
+        const requestData2: Request = {
+          ...res2.data,
+          additionalWfhInfo: {
+            totalDays: res2.data["totalDays"],
+            wfhDates: res2.data["wfhDates"],
+            wfhCommitment: res2.data["wfhCommitment"],
+            workLocation: res2.data["workLocation"],
+          }
+        }
+        res2.data = requestData2;
+        return res2;
+      case "CHECK_IN":
+        const res3 = await springApiClient.get<ApiResponse<Request>>(`/requests/check-in/${requestId}`);
+        const requestData3: Request = {
+          ...res3.data,
+          additionalCheckInInfo: {
+            desiredCheckInTime: res3.data["desiredCheckInTime"]
+          }
+        }
+        res3.data = requestData3;
+        return res3;
+      case "CHECK_OUT":
+        const res4 = await springApiClient.get<ApiResponse<Request>>(`/requests/check-out/${requestId}`);
+        const requestData4: Request = {
+          ...res4.data,
+          additionalCheckOutInfo: {
+            desiredCheckOutTime: res4.data["desiredCheckOutTime"]
+          }
+        }
+        res4.data = requestData4;
+        return res4;
+      case "TIMESHEET":
+        const res5 = await springApiClient.get<ApiResponse<Request>>(`/requests/timesheet/${requestId}`);
+        const requestData5: Request = {
+          ...res5.data,
+          additionalTimesheetInfo: {
+            targetDate: res5.data["targetDate"],
+            currentCheckInTime: res5.data["currentCheckInTime"],
+            currentCheckOutTime: res5.data["currentCheckOutTime"],
+            desiredCheckInTime: res5.data["desiredCheckInTime"],
+            desiredCheckOutTime: res5.data["desiredCheckOutTime"],
+
+          }
+        }
+        res5.data = requestData5;
+        return res5;
+      default:
+        const res6 = await springApiClient.get<ApiResponse<Request>>(`/requests/${requestId}`);
+        return res6;
+    }
   }
 
   async createLeaveRequest(
     data: CreateLeaveRequestDTO
   ): Promise<ApiResponse<Request>> {
-    return springApiClient.post(`/requests/leave`, data);
+    return springApiClient.post<ApiResponse<Request>>(`/requests/leave`, data);
   }
 
   async createWfhRequest(
     data: CreateWfhRequestDTO
   ): Promise<ApiResponse<Request>> {
-    return springApiClient.post(`/requests/wfh`, data);
+    return springApiClient.post<ApiResponse<Request>>(`/requests/wfh`, data);
   }
 
   async createCheckOutRequest(
     data: CreateCheckOutRequestDTO
   ): Promise<ApiResponse<Request>> {
-    return springApiClient.post(`/requests/check-out`, data);
+    return springApiClient.post<ApiResponse<Request>>(`/requests/check-out`, data);
   }
 
   async createCheckInRequest(
     data: CreateCheckInRequestDTO
   ): Promise<ApiResponse<Request>> {
-    return springApiClient.post(`/requests/check-in`, data);
+    return springApiClient.post<ApiResponse<Request>>(`/requests/check-in`, data);
   }
 
   async approveRequest(requestId: string, approverId: string): Promise<ApiResponse<Request>> {
-    return springApiClient.patch(`/requests/${requestId}/approve`, { approverId });
+    return springApiClient.patch<ApiResponse<Request>>(`/requests/${requestId}/approve`, { approverId });
   }
 
   async rejectRequest(
@@ -690,14 +754,14 @@ export class RestRequestApi implements RequestApi {
     rejecterId: string,
     rejectReason: string
   ): Promise<ApiResponse<Request>> {
-    return springApiClient.patch(`/requests/${requestId}/reject`, { rejecterId, rejectReason });
+    return springApiClient.patch<ApiResponse<Request>>(`/requests/${requestId}/reject`, { rejecterId, rejectReason });
   }
 
   async delegateRequest(
     requestId: string,
     newProcessorId: string
   ): Promise<ApiResponse<Request>> {
-    return springApiClient.patch(`/requests/${requestId}/delegate`, { newProcessorId });
+    return springApiClient.patch<ApiResponse<Request>>(`/requests/${requestId}/delegate`, { newProcessorId });
   }
 
   async getRemainingLeaveDays(): Promise<ApiResponse<RemainingLeaveDays>> {
@@ -706,8 +770,8 @@ export class RestRequestApi implements RequestApi {
 
   async createTimesheetUpdateRequest(
     data: CreateTimesheetUpdateRequestDTO
-  ): Promise<ApiResponse<any>> {
-    return springApiClient.post(`/requests/timesheet`, data);
+  ): Promise<ApiResponse<Request>> {
+    return springApiClient.post<ApiResponse<Request>>(`/requests/timesheet`, data);
   }
 }
 

@@ -51,9 +51,9 @@ interface LogStatusBreakdownProps {
 
 const LogStatusBreakdown: React.FC<LogStatusBreakdownProps> = ({ stats }) => {
     const total = stats.totalLogs || 1;
-    const approvedPercent = ((stats.approvedLogsCount / total) * 100).toFixed(1);
-    const pendingPercent = ((stats.pendingLogsCount / total) * 100).toFixed(1);
-    const rejectedPercent = ((stats.rejectedLogsCount / total) * 100).toFixed(1);
+    const approvedPercent = ((stats.approvedLogs / total) * 100).toFixed(1);
+    const pendingPercent = ((stats.pendingLogs / total) * 100).toFixed(1);
+    const rejectedPercent = ((stats.rejectedLogs / total) * 100).toFixed(1);
 
     return (
         <div className="bg-white rounded-xl shadow-sm p-5">
@@ -82,21 +82,21 @@ const LogStatusBreakdown: React.FC<LogStatusBreakdownProps> = ({ stats }) => {
                         <div className="w-3 h-3 rounded-full bg-green-500"></div>
                         <div>
                             <div className="text-sm text-gray-600">Đã duyệt</div>
-                            <div className="font-semibold">{stats.approvedLogsCount}</div>
+                            <div className="font-semibold">{stats.approvedLogs}</div>
                         </div>
                     </div>
                     <div className="flex items-center gap-2">
                         <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
                         <div>
                             <div className="text-sm text-gray-600">Chờ duyệt</div>
-                            <div className="font-semibold">{stats.pendingLogsCount}</div>
+                            <div className="font-semibold">{stats.pendingLogs}</div>
                         </div>
                     </div>
                     <div className="flex items-center gap-2">
                         <div className="w-3 h-3 rounded-full bg-red-500"></div>
                         <div>
                             <div className="text-sm text-gray-600">Từ chối</div>
-                            <div className="font-semibold">{stats.rejectedLogsCount}</div>
+                            <div className="font-semibold">{stats.rejectedLogs}</div>
                         </div>
                     </div>
                 </div>
@@ -119,9 +119,10 @@ const ActivityInfoHeader: React.FC<ActivityInfoHeaderProps> = ({
 }) => {
     const statusConfig: Record<ActivityStatus, { label: string; className: string }> = {
         [ActivityStatus.DRAFT]: { label: "Nháp", className: "bg-gray-100 text-gray-700" },
-        [ActivityStatus.OPEN]: { label: "Đang diễn ra", className: "bg-green-100 text-green-700" },
+        [ActivityStatus.OPEN]: { label: "Sắp diễn ra", className: "bg-green-100 text-green-700" },
         [ActivityStatus.CLOSED]: { label: "Đã đóng", className: "bg-orange-100 text-orange-700" },
         [ActivityStatus.COMPLETED]: { label: "Hoàn thành", className: "bg-blue-100 text-blue-700" },
+        [ActivityStatus.IN_PROGRESS]: { label: "Đang diễn ra", className: "bg-blue-100 text-blue-700" },
     };
 
     const status = statusConfig[activity.status] || statusConfig[ActivityStatus.DRAFT];
@@ -228,11 +229,11 @@ const TopPerformersSection: React.FC<TopPerformersProps> = ({ entries }) => {
                                     alt={entry.employeeName}
                                     className="w-10 h-10 rounded-full object-cover"
                                 />
-                                <div className="font-medium text-gray-900">{entry.employeeName}</div>
+                                <div className="font-medium text-gray-900">{entry?.employeeName}</div>
                             </div>
                             <div className="text-right">
-                                <div className="font-semibold text-gray-900">{entry.totalDistance.toFixed(1)} km</div>
-                                <div className="text-sm text-gray-500">{entry.totalLogs} lần</div>
+                                <div className="font-semibold text-gray-900">{entry?.totalDistance?.toFixed(1)} km</div>
+                                <div className="text-sm text-gray-500">{entry?.totalLogs} lần</div>
                             </div>
                         </div>
                     ))}
@@ -345,27 +346,27 @@ const ActivitySummaryPage: React.FC = () => {
                 <StatCard
                     icon={<Users size={24} className="text-blue-600" />}
                     label="Số người tham gia"
-                    value={stats.totalParticipants}
+                    value={stats?.totalParticipants}
                     colorClass="bg-blue-100"
                 />
                 <StatCard
                     icon={<MapPin size={24} className="text-green-600" />}
                     label="Tổng quãng đường"
-                    value={`${stats.totalDistance.toFixed(1)} km`}
-                    subValue={`TB: ${stats.averageDistance.toFixed(2)} km/người`}
+                    value={`${stats?.totalDistance?.toFixed(1)} km`}
+                    subValue={`TB: ${stats?.averageDistancePerParticipant?.toFixed(2)} km/người`}
                     colorClass="bg-green-100"
                 />
                 <StatCard
                     icon={<Activity size={24} className="text-purple-600" />}
                     label="Tổng lần ghi nhận"
-                    value={stats.totalLogs}
+                    value={stats?.totalLogs}
                     colorClass="bg-purple-100"
                 />
                 <StatCard
                     icon={<CheckCircle size={24} className="text-emerald-600" />}
                     label="Tỉ lệ duyệt"
-                    value={`${stats.totalLogs > 0 ? ((stats.approvedLogsCount / stats.totalLogs) * 100).toFixed(0) : 0}%`}
-                    subValue={`${stats.approvedLogsCount}/${stats.totalLogs} kết quả`}
+                    value={`${stats?.totalLogs > 0 ? ((stats?.approvedLogs / stats?.totalLogs) * 100).toFixed(0) : 0}%`}
+                    subValue={`${stats?.approvedLogs}/${stats?.totalLogs} kết quả`}
                     colorClass="bg-emerald-100"
                 />
             </div>

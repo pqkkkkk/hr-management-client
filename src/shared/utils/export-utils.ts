@@ -89,7 +89,7 @@ export async function buildPdfBlob(
         { text: "Ngân hàng", bold: true },
         u.bankName || "",
         { text: "Số TK", bold: true },
-        u.bankAccount || "",
+        u.bankAccountNumber || "",
       ]);
       gridBody.push([
         { text: "Phòng ban", bold: true },
@@ -147,9 +147,9 @@ export async function buildPdfBlob(
     console.error("pdfMake dynamic generation failed:", err);
     const txt = filteredUsers.length
       ? "Danh sách nhân viên\n\n" +
-        filteredUsers
-          .map((u) => `- ${u.userId} ${u.fullName} <${u.email}> - ${u.status}`)
-          .join("\n")
+      filteredUsers
+        .map((u) => `- ${u.userId} ${u.fullName} <${u.email}> - ${u.status}`)
+        .join("\n")
       : "Danh sách nhân viên trống";
     return new Blob([txt], { type: "application/pdf" });
   }
@@ -198,7 +198,7 @@ export function userToRow(u: User): any[] {
     u.phoneNumber || "",
     u.address || "",
     u.bankName || "",
-    u.bankAccount || "",
+    u.bankAccountNumber || "",
     deptName,
   ];
 }

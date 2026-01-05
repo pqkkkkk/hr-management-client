@@ -73,17 +73,16 @@ const CheckInRequestForm: React.FC = () => {
         desiredCheckInTime,
       };
 
-      const response = await requestApi.createCheckInRequest(requestData);
+      await requestApi.createCheckInRequest(requestData);
 
-      if (response.success) {
-        toast.success("Gửi yêu cầu check-in thành công!");
-        navigate("/requests/my-requests");
-      } else {
-        throw new Error(response.message || "Có lỗi xảy ra khi tạo yêu cầu");
-      }
+      toast.success("Gửi yêu cầu check-in thành công!");
+      navigate("/requests/my-requests");
     } catch (err) {
-      console.error("Failed to create check-in request:", err);
-      toast.error(err?.message || "Có lỗi xảy ra khi tạo yêu cầu check-in");
+      const errorMessage = err?.response?.data?.message
+        || err?.message
+        || 'Có lỗi xảy ra khi tạo yêu cầu check-in';
+
+      toast.error(errorMessage);
     } finally {
       setSubmitting(false);
     }

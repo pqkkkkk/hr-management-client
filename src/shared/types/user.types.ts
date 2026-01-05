@@ -13,12 +13,16 @@ export interface User {
   phoneNumber?: string;
   dateOfBirth?: Date | string;
   address?: string;
-  bankAccount?: string;
+  bankAccountNumber?: string;
   bankName?: string;
   createdAt: Date | string;
   updatedAt: Date | string;
   departmentId?: string;
   departmentName?: string;
+  maxAnnualLeaveDays?: number;
+  remainingAnnualLeaveDays?: number;
+  maxWfhDays?: number;
+  remainingWfhDays?: number;
 }
 export interface Department {
   departmentId: string;

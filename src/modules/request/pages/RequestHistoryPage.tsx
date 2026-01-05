@@ -193,7 +193,7 @@ const FilterSection: React.FC<{
 // ==================== RequestHistoryTable Component ====================
 interface RequestHistoryTableProps {
   requests: Request[];
-  onRowClick?: (requestId: string) => void;
+  onRowClick?: (requestId: string, requestType: RequestType) => void;
 }
 
 const RequestHistoryTable: React.FC<RequestHistoryTableProps> = ({ requests, onRowClick }) => {
@@ -235,7 +235,7 @@ const RequestHistoryTable: React.FC<RequestHistoryTableProps> = ({ requests, onR
             <tr
               key={request.requestId}
               className="border-t border-gray-200 hover:bg-gray-50 cursor-pointer"
-              onClick={() => onRowClick?.(request.requestId)}
+              onClick={() => onRowClick?.(request.requestId, request.requestType)}
             >
               <td className="px-6 py-4">
                 <span className="text-sm font-medium text-gray-900">
@@ -269,7 +269,7 @@ const RequestHistoryTable: React.FC<RequestHistoryTableProps> = ({ requests, onR
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
-                    onRowClick?.(request.requestId);
+                    onRowClick?.(request.requestId, request.requestType);
                   }}
                   className="w-8 h-8 flex items-center justify-center border border-gray-200 text-gray-700 rounded hover:bg-gray-100"
                   title="Xem chi tiết"
@@ -361,8 +361,8 @@ const RequestHistoryPage: React.FC = () => {
 
   // Navigate to detail page
   const handleRowClick = useCallback(
-    (requestId: string) => {
-      navigate(`/requests/${requestId}`);
+    (requestId: string, requestType: RequestType) => {
+      navigate(`/requests/${requestId}?requestType=${requestType}`);
     },
     [navigate]
   );

@@ -27,6 +27,8 @@ const WfhRequestForm: React.FC<WfhModalProps> = ({ isModalMode = true, open, onC
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
+  const remainingWfhDays = user?.remainingWfhDays || 10;
+
   if (isModalMode && open === false) return null;
 
   const validate = (): boolean => {
@@ -63,7 +65,7 @@ const WfhRequestForm: React.FC<WfhModalProps> = ({ isModalMode = true, open, onC
       if (dayOfWeek !== 0 && dayOfWeek !== 6) {
         dates.push({
           date: d.toISOString().split('T')[0],
-          shift: shift,
+          shiftType: shift,
         });
       }
     }
@@ -94,31 +96,26 @@ const WfhRequestForm: React.FC<WfhModalProps> = ({ isModalMode = true, open, onC
 
       const requestData: CreateWfhRequestDTO = {
         title: `Yêu cầu làm việc từ xa - ${startDate} đến ${endDate}`,
-        userReason: reason || undefined,
+        employeeId: user?.userId || '',
+        userReason: reason || 'Không có lý do',
         wfhCommitment: commitment,
         workLocation,
         wfhDates,
       };
 
-      const response = await requestApi.createWfhRequest(requestData);
+      await requestApi.createWfhRequest(requestData);
 
-      if (response.success) {
-        toast.success("Gửi yêu cầu WFH thành công!");
-        if (isModalMode) {
-          onClose?.();
-        }
-        navigate("/requests/my-requests");
-      } else {
-        throw new Error(response.message || "Có lỗi xảy ra khi tạo yêu cầu");
+      toast.success("Gửi yêu cầu WFH thành công!");
+      if (isModalMode) {
+        onClose?.();
       }
+      navigate("/requests/my-requests");
     } catch (error: any) {
-      console.error("Failed to create WFH request:", error);
-      // Check if it's a "not implemented" error from REST API
-      if (error?.message?.includes("not implemented") || error?.response?.status === 501) {
-        toast.error("Chức năng tạo yêu cầu WFH chưa được hỗ trợ trên hệ thống.");
-      } else {
-        toast.error(error?.message || "Có lỗi xảy ra khi tạo yêu cầu WFH");
-      }
+      const errorMessage = error?.response?.data?.message
+        || error?.message
+        || 'Có lỗi xảy ra khi tạo yêu cầu WFH';
+
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -254,7 +251,7 @@ const WfhRequestForm: React.FC<WfhModalProps> = ({ isModalMode = true, open, onC
 
         <div className="flex items-end">
           <p className="text-sm font-semibold">
-            Số ngày WFH còn lại trong tuần: <span className="font-bold">2</span>
+            Số ngày WFH còn lại: <span className="font-bold">{remainingWfhDays}</span>
           </p>
         </div>
 
