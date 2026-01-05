@@ -3,6 +3,7 @@ import {
   CreateLeaveRequestPage,
   RequestHistoryPage,
   RequestManagementPage,
+  DelegatedRequestsPage,
   RequestDetailPage,
   CheckInRequestForm,
   CheckOutRequestForm,
@@ -17,7 +18,8 @@ const RequestRoutes = (
     <Route path="my-requests" element={<RequestHistoryPage />} />
     <Route path="create/leave" element={<CreateLeaveRequestPage />} />
     <Route path="manage" element={<RequestManagementPage />} />
-    <Route path="manage/:requestId" element={<RequestDetailPage />} />
+    <Route path="delegated" element={<DelegatedRequestsPage />} />
+    <Route path=":requestId" element={<RequestDetailPage />} />
     <Route path="create" element={<CreateRequest />} />
     <Route path="create/check-in" element={<CheckInRequestForm />} />
     <Route path="create/check-out" element={<CheckOutRequestForm />} />
@@ -28,3 +30,4 @@ const RequestRoutes = (
 );
 
 export default RequestRoutes;
+

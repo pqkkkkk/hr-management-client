@@ -151,7 +151,7 @@ const EmployeeUpdatePage: React.FC = () => {
     }
 
     const bankAccountRegex = /^[0-9]{8,20}$/;
-    if (!formData.bankAccount || !bankAccountRegex.test(formData.bankAccount)) {
+    if (!formData.bankAccountNumber || !bankAccountRegex.test(formData.bankAccountNumber)) {
       toast.error("Số tài khoản ngân hàng phải từ 8-20 chữ số.");
       return false;
     }
@@ -326,8 +326,8 @@ const EmployeeUpdatePage: React.FC = () => {
                 />
                 <FormInput
                   label="STK Ngân Hàng"
-                  value={formData.bankAccount}
-                  onChange={(value) => handleInputChange("bankAccount", value)}
+                  value={formData.bankAccountNumber}
+                  onChange={(value) => handleInputChange("bankAccountNumber", value)}
                 />
               </div>
             </div>

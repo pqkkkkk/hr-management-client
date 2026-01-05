@@ -11,7 +11,7 @@ const EmployeeActivityListPage: React.FC = () => {
             title="Hoạt động đang diễn ra"
             description="Tham gia các hoạt động chạy bộ của công ty"
             showStatusFilter={false}
-            defaultStatus={ActivityStatus.OPEN}
+            defaultStatus={ActivityStatus.IN_PROGRESS}
             showCreateButton={false}
         />
     );

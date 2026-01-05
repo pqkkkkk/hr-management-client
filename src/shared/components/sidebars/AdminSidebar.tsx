@@ -27,13 +27,13 @@ const AdminSidebar: React.FC = () => {
             <h3 className={sectionTitleClass}>Quản lý nhân sự</h3>
             <ul className="mt-2 space-y-1">
               <li>
-                <NavLink to="/profile" className={navLinkClass}>
+                <NavLink to="/profile/users/for-employee" end className={navLinkClass}>
                   <User className="w-5 h-5" />
                   <span>Thông tin cá nhân</span>
                 </NavLink>
               </li>
               <li>
-                <NavLink to="/profile/employees" className={navLinkClass}>
+                <NavLink to="/profile/users" end className={navLinkClass}>
                   <Users className="w-5 h-5" />
                   <span>Danh sách nhân viên</span>
                 </NavLink>
@@ -52,27 +52,21 @@ const AdminSidebar: React.FC = () => {
             <h3 className={sectionTitleClass}>Quản lý yêu cầu</h3>
             <ul className="mt-2 space-y-1">
               <li>
-                <NavLink to="/requests" className={navLinkClass}>
+                <NavLink to="/requests" end className={navLinkClass}>
                   <FileText className="w-5 h-5" />
                   <span>Yêu cầu của tôi</span>
                 </NavLink>
               </li>
               <li>
-                <NavLink to="/requests/manage" className={navLinkClass}>
+                <NavLink to="/requests/delegated" end className={navLinkClass}>
                   <FileText className="w-5 h-5" />
-                  <span>Tất cả yêu cầu</span>
+                  <span>Yêu cầu được ủy quyền</span>
                 </NavLink>
               </li>
               <li>
-                <NavLink to="/requests/leave/create" className={navLinkClass}>
+                <NavLink to="/requests/create" end className={navLinkClass}>
                   <FileText className="w-5 h-5" />
-                  <span>Tạo yêu cầu nghỉ phép</span>
-                </NavLink>
-              </li>
-              <li>
-                <NavLink to="/requests/attendance" className={navLinkClass}>
-                  <FileText className="w-5 h-5" />
-                  <span>Chấm công toàn công ty</span>
+                  <span>Gửi yêu cầu</span>
                 </NavLink>
               </li>
             </ul>

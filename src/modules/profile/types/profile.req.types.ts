@@ -49,7 +49,7 @@ export namespace UpdateProfileRequestForHR {
             phoneNumber: user.phoneNumber,
             dateOfBirth: user.dateOfBirth.toString(),
             address: user.address,
-            bankAccountNumber: user.bankAccount,
+            bankAccountNumber: user.bankAccountNumber,
             bankName: user.bankName,
             departmentId: user.departmentId,
         };
@@ -67,6 +67,7 @@ export interface ProfileFilter {
     status?: string;
     position?: string;
     departmentId?: string;
+    departmentName?: string;
 }
 
 export type SupportedFileFormat = "PDF" | "EXCEL";

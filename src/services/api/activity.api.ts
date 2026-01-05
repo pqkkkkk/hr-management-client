@@ -30,15 +30,15 @@ import {
 export interface ActivityApi {
     // Activities CRUD
     getActivities(filter?: ActivityFilter): Promise<ApiResponse<Page<Activity>>>;
-    getMyActivities(filter?: ActivityFilter): Promise<ApiResponse<Page<Activity>>>;
+    getMyActivities(employeeId: string, filter?: ActivityFilter): Promise<ApiResponse<Page<Activity>>>;
     getActivityById(id: string): Promise<ApiResponse<ActivityDetailResponse>>;
     createActivity(data: CreateActivityRequest): Promise<ApiResponse<Activity>>;
     updateActivity(id: string, data: UpdateActivityRequest): Promise<ApiResponse<Activity>>;
     deleteActivity(id: string): Promise<ApiResponse<void>>;
 
     // Registration
-    registerForActivity(activityId: string): Promise<ApiResponse<void>>;
-    unregisterFromActivity(activityId: string): Promise<ApiResponse<void>>;
+    registerForActivity(activityId: string, employeeId: string): Promise<ApiResponse<void>>;
+    unregisterFromActivity(activityId: string, employeeId: string): Promise<ApiResponse<void>>;
 
     // Status management
     updateActivityStatus(id: string, status: ActivityStatus): Promise<ApiResponse<Activity>>;
@@ -50,8 +50,8 @@ export interface ActivityApi {
     // Activity Logs
     getActivityLogs(filter?: ActivityLogFilter): Promise<ApiResponse<Page<ActivityLog>>>;
     createActivityLog(data: CreateActivityLogRequest): Promise<ApiResponse<ActivityLog>>;
-    approveActivityLog(id: string): Promise<ApiResponse<ActivityLog>>;
-    rejectActivityLog(id: string, reason: string): Promise<ApiResponse<ActivityLog>>;
+    approveActivityLog(id: string, reviewerId: string): Promise<ApiResponse<ActivityLog>>;
+    rejectActivityLog(id: string, reviewerId: string, reason: string): Promise<ApiResponse<ActivityLog>>;
 
     // Templates
     getActivityTemplates(): Promise<ApiResponse<ActivityTemplate[]>>;
@@ -96,7 +96,7 @@ export class MockActivityApi implements ActivityApi {
     }
 
     // GET /api/v1/activities/me
-    async getMyActivities(filter?: ActivityFilter): Promise<ApiResponse<Page<Activity>>> {
+    async getMyActivities(employeeId: string, filter?: ActivityFilter): Promise<ApiResponse<Page<Activity>>> {
         return new Promise((resolve) => {
             setTimeout(() => {
                 // Return subset as "my activities"
@@ -203,7 +203,7 @@ export class MockActivityApi implements ActivityApi {
     }
 
     // POST /api/v1/activities/:id/register
-    async registerForActivity(activityId: string): Promise<ApiResponse<void>> {
+    async registerForActivity(activityId: string, employeeId: string): Promise<ApiResponse<void>> {
         return new Promise((resolve) => {
             setTimeout(() => {
                 resolve({
@@ -217,7 +217,7 @@ export class MockActivityApi implements ActivityApi {
     }
 
     // DELETE /api/v1/activities/:id/unregister
-    async unregisterFromActivity(activityId: string): Promise<ApiResponse<void>> {
+    async unregisterFromActivity(activityId: string, employeeId: string): Promise<ApiResponse<void>> {
         return new Promise((resolve) => {
             setTimeout(() => {
                 resolve({
@@ -334,7 +334,7 @@ export class MockActivityApi implements ActivityApi {
     }
 
     // PATCH /api/v1/activity-logs/:id/approve
-    async approveActivityLog(id: string): Promise<ApiResponse<ActivityLog>> {
+    async approveActivityLog(id: string, reviewerId: string): Promise<ApiResponse<ActivityLog>> {
         return new Promise((resolve) => {
             setTimeout(() => {
                 resolve({
@@ -348,7 +348,7 @@ export class MockActivityApi implements ActivityApi {
     }
 
     // PATCH /api/v1/activity-logs/:id/reject
-    async rejectActivityLog(id: string, reason: string): Promise<ApiResponse<ActivityLog>> {
+    async rejectActivityLog(id: string, reviewerId: string, reason: string): Promise<ApiResponse<ActivityLog>> {
         return new Promise((resolve) => {
             setTimeout(() => {
                 resolve({
@@ -387,8 +387,8 @@ export class RestActivityApi implements ActivityApi {
         return dotnetApiClient.get(`/activities`, { params: filter });
     }
 
-    async getMyActivities(filter?: ActivityFilter): Promise<ApiResponse<Page<Activity>>> {
-        return dotnetApiClient.get(`/activities/me`, { params: filter });
+    async getMyActivities(employeeId: string, filter?: ActivityFilter): Promise<ApiResponse<Page<Activity>>> {
+        return dotnetApiClient.get(`/activities/me`, { params: { ...filter, employeeId } });
     }
 
     async getActivityById(id: string): Promise<ApiResponse<ActivityDetailResponse>> {
@@ -407,12 +407,12 @@ export class RestActivityApi implements ActivityApi {
         return dotnetApiClient.delete(`/activities/${id}`);
     }
 
-    async registerForActivity(activityId: string): Promise<ApiResponse<void>> {
-        return dotnetApiClient.post(`/activities/${activityId}/register`);
+    async registerForActivity(activityId: string, employeeId: string): Promise<ApiResponse<void>> {
+        return dotnetApiClient.post(`/activities/${activityId}/register?employeeId=${employeeId}`);
     }
 
-    async unregisterFromActivity(activityId: string): Promise<ApiResponse<void>> {
-        return dotnetApiClient.delete(`/activities/${activityId}/unregister`);
+    async unregisterFromActivity(activityId: string, employeeId: string): Promise<ApiResponse<void>> {
+        return dotnetApiClient.delete(`/activities/${activityId}/unregister?employeeId=${employeeId}`);
     }
 
     async updateActivityStatus(id: string, status: ActivityStatus): Promise<ApiResponse<Activity>> {
@@ -435,12 +435,12 @@ export class RestActivityApi implements ActivityApi {
         return dotnetApiClient.post(`/activity-logs`, data);
     }
 
-    async approveActivityLog(id: string): Promise<ApiResponse<ActivityLog>> {
-        return dotnetApiClient.patch(`/activity-logs/${id}/approve`);
+    async approveActivityLog(id: string, reviewerId: string): Promise<ApiResponse<ActivityLog>> {
+        return dotnetApiClient.patch(`/activity-logs/${id}/approve?reviewerId=${reviewerId}`);
     }
 
-    async rejectActivityLog(id: string, reason: string): Promise<ApiResponse<ActivityLog>> {
-        return dotnetApiClient.patch(`/activity-logs/${id}/reject`, { reason });
+    async rejectActivityLog(id: string, reviewerId: string, reason: string): Promise<ApiResponse<ActivityLog>> {
+        return dotnetApiClient.patch(`/activity-logs/${id}/reject?reviewerId=${reviewerId}`, { reason });
     }
 
     async getActivityTemplates(): Promise<ApiResponse<ActivityTemplate[]>> {

@@ -25,9 +25,9 @@ export const mockRequests: Request[] = [
             leaveType: LeaveType.ANNUAL,
             totalDays: 3,
             leaveDates: [
-                { date: "2023-11-01", shift: ShiftType.FULL_DAY },
-                { date: "2023-11-02", shift: ShiftType.FULL_DAY },
-                { date: "2023-11-03", shift: ShiftType.FULL_DAY },
+                { date: "2023-11-01", shiftType: ShiftType.FULL_DAY },
+                { date: "2023-11-02", shiftType: ShiftType.FULL_DAY },
+                { date: "2023-11-03", shiftType: ShiftType.FULL_DAY },
             ],
         },
     },
@@ -45,7 +45,7 @@ export const mockRequests: Request[] = [
         additionalLeaveInfo: {
             leaveType: LeaveType.SICK,
             totalDays: 1,
-            leaveDates: [{ date: "2023-10-30", shift: ShiftType.FULL_DAY }],
+            leaveDates: [{ date: "2023-10-30", shiftType: ShiftType.FULL_DAY }],
         },
     },
     {
@@ -67,8 +67,8 @@ export const mockRequests: Request[] = [
             leaveType: LeaveType.UNPAID,
             totalDays: 2,
             leaveDates: [
-                { date: "2023-10-25", shift: ShiftType.FULL_DAY },
-                { date: "2023-10-26", shift: ShiftType.FULL_DAY },
+                { date: "2023-10-25", shiftType: ShiftType.FULL_DAY },
+                { date: "2023-10-26", shiftType: ShiftType.FULL_DAY },
             ],
         },
     },
@@ -91,8 +91,8 @@ export const mockRequests: Request[] = [
             workLocation: "Nhà riêng, quận 7, TP.HCM",
             totalDays: 2,
             wfhDates: [
-                { date: "2023-10-23", shift: ShiftType.FULL_DAY },
-                { date: "2023-10-24", shift: ShiftType.FULL_DAY },
+                { date: "2023-10-23", shiftType: ShiftType.FULL_DAY },
+                { date: "2023-10-24", shiftType: ShiftType.FULL_DAY },
             ],
         },
     },

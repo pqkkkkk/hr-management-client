@@ -52,7 +52,7 @@ const EmployeeListPage: React.FC = () => {
         currentPage: 1,
         nameTerm: newFilters.search,
         gender: newFilters.gender,
-        departmentId: newFilters.department,
+        departmentName: newFilters.department,
         position: newFilters.position,
         status: newFilters.status,
       });

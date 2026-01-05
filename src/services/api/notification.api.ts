@@ -328,6 +328,7 @@ export class RestNotificationApi implements NotificationApi {
       console.error('[RestNotificationApi] ❌ SSE connection ERROR');
       console.error('[RestNotificationApi] readyState on error:', this.eventSource?.readyState);
       console.error('[RestNotificationApi] error event:', error);
+      this.eventSource.close();
 
       // Check if connection was never established
       if (this.eventSource?.readyState === EventSource.CONNECTING) {

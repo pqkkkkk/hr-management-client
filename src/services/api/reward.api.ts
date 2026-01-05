@@ -243,7 +243,7 @@ export class MockRewardApi implements RewardApi {
           pointTransactionId: `TXN${Date.now()}`,
           type: TransactionType.EXCHANGE,
           amount: totalPoints,
-          sourceWalletId: `wallet-${request.userId}`,
+          sourceWalletId: `wallet-${request.userWalletId}`,
           destinationWalletId: '',
           createdAt: new Date().toISOString(),
           items: request.items.map(item => ({
@@ -322,15 +322,7 @@ export class RestRewardApi implements RewardApi {
   }
 
   async getActiveRewardProgram(): Promise<ApiResponse<RewardProgramDetail>> {
-    // Get programs with ACTIVE status - assumes backend returns single active program
-    const response = await dotnetApiClient.get<ApiResponse<Page<RewardProgramDetail>>>(`/rewards/programs`, {
-      params: { status: "ACTIVE" }
-    });
-    const programs = response.data.content || [];
-    return {
-      ...response,
-      data: programs[0],
-    };
+    return dotnetApiClient.get<ApiResponse<RewardProgramDetail>>(`/rewards/programs/active`);
   }
 
   async createRewardProgram(request: RewardProgramFormData): Promise<RewardProgramResponse> {

@@ -29,7 +29,8 @@ type TabType = "overview" | "leaderboard" | "my-results";
 
 const statusConfig: Record<ActivityStatus, { label: string; className: string }> = {
     [ActivityStatus.DRAFT]: { label: "Nháp", className: "bg-gray-100 text-gray-700" },
-    [ActivityStatus.OPEN]: { label: "Đang diễn ra", className: "bg-green-100 text-green-700" },
+    [ActivityStatus.OPEN]: { label: "Sắp diễn ra", className: "bg-green-100 text-green-700" },
+    [ActivityStatus.IN_PROGRESS]: { label: "Đang diễn ra", className: "bg-green-100 text-green-700" },
     [ActivityStatus.CLOSED]: { label: "Đã đóng", className: "bg-orange-100 text-orange-700" },
     [ActivityStatus.COMPLETED]: { label: "Hoàn thành", className: "bg-blue-100 text-blue-700" },
 };
@@ -133,8 +134,8 @@ const ActionButtons: React.FC<ActionButtonsProps> = ({
                 onClick={onToggleRegistration}
                 disabled={registering}
                 className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors ${activity.isRegistered
-                        ? "bg-red-50 text-red-600 hover:bg-red-100"
-                        : "bg-blue-600 text-white hover:bg-blue-700"
+                    ? "bg-red-50 text-red-600 hover:bg-red-100"
+                    : "bg-blue-600 text-white hover:bg-blue-700"
                     } disabled:opacity-50`}
             >
                 {registering ? (
@@ -367,7 +368,7 @@ const ActivityDetailPage: React.FC = () => {
 
     const canManageActivity =
         user?.role === "MANAGER" || user?.role === "HR" || user?.role === "ADMIN";
-    const canRegister = activity?.status === ActivityStatus.OPEN;
+    const canRegister = activity?.status === ActivityStatus.OPEN || activity?.status === ActivityStatus.IN_PROGRESS;
 
     // Fetch activity details
     const fetchActivityDetails = useCallback(async () => {
@@ -391,6 +392,7 @@ const ActivityDetailPage: React.FC = () => {
         if (!id) return;
         try {
             const response = await activityApi.getActivityLeaderboard(id);
+            console.log("leaderboard", response);
             if (response.success && response.data) {
                 setLeaderboard(response.data);
             }
@@ -437,13 +439,13 @@ const ActivityDetailPage: React.FC = () => {
         setRegistering(true);
         try {
             if (activity.isRegistered) {
-                const response = await activityApi.unregisterFromActivity(id);
+                const response = await activityApi.unregisterFromActivity(id, user?.userId);
                 if (response.success) {
                     toast.success("Hủy đăng ký thành công");
                     setActivity({ ...activity, isRegistered: false });
                 }
             } else {
-                const response = await activityApi.registerForActivity(id);
+                const response = await activityApi.registerForActivity(id, user?.userId);
                 if (response.success) {
                     toast.success("Đăng ký thành công");
                     setActivity({ ...activity, isRegistered: true });

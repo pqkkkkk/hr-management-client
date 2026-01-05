@@ -23,9 +23,10 @@ const PAGE_SIZE = 10;
 
 const statusConfig: Record<ActivityStatus, { label: string; className: string }> = {
     [ActivityStatus.DRAFT]: { label: "Nháp", className: "bg-gray-100 text-gray-700" },
-    [ActivityStatus.OPEN]: { label: "Đang diễn ra", className: "bg-green-100 text-green-700" },
+    [ActivityStatus.OPEN]: { label: "Sắp diễn ra", className: "bg-green-100 text-green-700" },
     [ActivityStatus.CLOSED]: { label: "Đã đóng", className: "bg-orange-100 text-orange-700" },
     [ActivityStatus.COMPLETED]: { label: "Hoàn thành", className: "bg-blue-100 text-blue-700" },
+    [ActivityStatus.IN_PROGRESS]: { label: "Đang diễn ra", className: "bg-blue-100 text-blue-700" },
 };
 
 // ========== ACTIVITY ROW COMPONENT ==========
@@ -81,7 +82,7 @@ const ActivityRow: React.FC<ActivityRowProps> = ({ activity, onViewSummary }) =>
             <td className="px-4 py-4 text-sm text-gray-600">
                 <div className="flex items-center gap-1">
                     <Users size={14} />
-                    <span>{activity.participantsCount || 0} người</span>
+                    <span>{activity.participantsCount || "Chưa xác định"} người</span>
                 </div>
             </td>
             <td className="px-4 py-4">
@@ -119,6 +120,8 @@ const ActivityOverviewPage: React.FC = () => {
         activityApi.getActivities.bind(activityApi),
         query
     );
+
+
 
     // Handlers
     const handleSearch = useCallback(

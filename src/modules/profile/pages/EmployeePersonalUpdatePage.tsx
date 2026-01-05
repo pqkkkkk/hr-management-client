@@ -253,8 +253,8 @@ const EmployeePersonalUpdatePage: React.FC = () => {
                 <FormInput
                   disabled={true}
                   label="STK Ngân Hàng"
-                  value={formData.bankAccount}
-                  onChange={(value) => handleInputChange("bankAccount", value)}
+                  value={formData.bankAccountNumber}
+                  onChange={(value) => handleInputChange("bankAccountNumber", value)}
                 />
               </div>
             </div>

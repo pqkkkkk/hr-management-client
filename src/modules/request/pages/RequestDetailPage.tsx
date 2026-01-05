@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useApi } from "contexts/ApiContext";
 import { useAuth } from "contexts/AuthContext";
 import {
@@ -8,6 +8,7 @@ import {
   requestTypeOptions,
   requestStatusOptions,
   CreateDelegationRequest,
+  RequestType,
 } from "../types/request.types";
 import { leaveTypeOptions, shiftTypeOptions } from "../types/request.types";
 import { formatDate, formatDateTime } from "shared/utils/date-utils";
@@ -39,6 +40,8 @@ const Badge: React.FC<{ status?: RequestStatus }> = ({ status }) => {
 
 const RequestDetailPage: React.FC = () => {
   const { requestId } = useParams();
+  const [searchParams] = useSearchParams();
+  const requestType = searchParams.get("requestType") as RequestType;
   const navigate = useNavigate();
   const { requestApi } = useApi();
   const { user } = useAuth();
@@ -52,7 +55,9 @@ const RequestDetailPage: React.FC = () => {
       setError(null);
       try {
         if (!requestId) throw new Error("Missing request id");
-        const res = await requestApi.getRequestById(requestId);
+
+        const res = await requestApi.getRequestById(requestId, requestType as RequestType);
+
         if (res && res.success) {
           setRequest(res.data);
         } else {
@@ -262,8 +267,8 @@ const RequestDetailPage: React.FC = () => {
                                 <li key={idx} className="text-gray-800">
                                   {formatDate(d.date)} —{" "}
                                   {shiftTypeOptions.find(
-                                    (s) => s.value === d.shift
-                                  )?.label ?? d.shift}
+                                    (s) => s.value === d.shiftType
+                                  )?.label ?? d.shiftType}
                                 </li>
                               )
                             )}
@@ -326,6 +331,22 @@ const RequestDetailPage: React.FC = () => {
                             {formatDate(request.additionalTimesheetInfo.targetDate)}
                           </span>
                         </div>
+                        {request.additionalTimesheetInfo.currentCheckInTime && (
+                          <div className="text-sm text-gray-700">
+                            Giờ vào hiện tại:{" "}
+                            <span className="font-medium">
+                              {formatDateTime(request.additionalTimesheetInfo.currentCheckInTime).time}
+                            </span>
+                          </div>
+                        )}
+                        {request.additionalTimesheetInfo.currentCheckOutTime && (
+                          <div className="text-sm text-gray-700">
+                            Giờ ra hiện tại:{" "}
+                            <span className="font-medium">
+                              {formatDateTime(request.additionalTimesheetInfo.currentCheckOutTime).time}
+                            </span>
+                          </div>
+                        )}
                         {request.additionalTimesheetInfo.desiredCheckInTime && (
                           <div className="text-sm text-gray-700">
                             Giờ vào mong muốn:{" "}
@@ -372,8 +393,8 @@ const RequestDetailPage: React.FC = () => {
                                 <li key={idx} className="text-gray-800">
                                   {formatDate(d.date)} —{" "}
                                   {shiftTypeOptions.find(
-                                    (s) => s.value === d.shift
-                                  )?.label ?? d.shift}
+                                    (s) => s.value === d.shiftType
+                                  )?.label ?? d.shiftType}
                                 </li>
                               )
                             )}

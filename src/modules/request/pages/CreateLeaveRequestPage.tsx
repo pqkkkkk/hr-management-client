@@ -30,7 +30,7 @@ const LeaveDatesEditor: React.FC<LeaveDatesEditorProps> = ({
 
   const calculateTotalDays = (dates: LeaveDate[]): number => {
     return dates.reduce((sum, date) => {
-      return sum + (date.shift === ShiftType.FULL_DAY ? 1 : 0.5);
+      return sum + (date.shiftType === ShiftType.FULL_DAY ? 1 : 0.5);
     }, 0);
   };
 
@@ -60,7 +60,7 @@ const LeaveDatesEditor: React.FC<LeaveDatesEditorProps> = ({
 
     const newLeaveDate: LeaveDate = {
       date: selectedDate,
-      shift: selectedShift,
+      shiftType: selectedShift,
     };
 
     onLeaveDatesChange([...leaveDates, newLeaveDate]);
@@ -159,7 +159,7 @@ const LeaveDatesEditor: React.FC<LeaveDatesEditorProps> = ({
                       {formatDisplayDate(leaveDate.date)}
                     </p>
                     <p className="text-xs text-slate-500">
-                      {getShiftLabel(leaveDate.shift)}
+                      {getShiftLabel(leaveDate.shiftType)}
                     </p>
                   </div>
                 </div>
@@ -213,25 +213,13 @@ const CreateLeaveRequestPage: React.FC = () => {
 
   const [leaveDates, setLeaveDates] = useState<LeaveDate[]>([]);
   const [errors, setErrors] = useState<FormErrors>({});
-  const [remainingDays, setRemainingDays] = useState<number>(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Fetch remaining leave days
-  useEffect(() => {
-    requestApi.getRemainingLeaveDays().then((response) => {
-      if (response.success) {
-        setRemainingDays(response.data.remainingAnnualLeave);
-      }
-    }).catch((error) => {
-      console.error('Failed to fetch remaining leave days:', error);
-      // Set default value if API fails
-      setRemainingDays(12);
-    });
-  }, [requestApi]);
+  const remainingDays = user?.remainingAnnualLeaveDays || 12;
 
   const calculateTotalDays = (dates: LeaveDate[]): number => {
     return dates.reduce((sum, date) => {
-      return sum + (date.shift === ShiftType.FULL_DAY ? 1 : 0.5);
+      return sum + (date.shiftType === ShiftType.FULL_DAY ? 1 : 0.5);
     }, 0);
   };
 
@@ -277,21 +265,20 @@ const CreateLeaveRequestPage: React.FC = () => {
         leaveType: formData.leaveType as LeaveType,
         leaveDates: leaveDates.map(date => ({
           date: date.date,
-          shiftType: date.shift,
+          shiftType: date.shiftType,
         })),
       };
 
-      const response = await requestApi.createLeaveRequest(requestData);
+      await requestApi.createLeaveRequest(requestData);
 
-      if (response.success) {
-        toast.success('Tạo yêu cầu nghỉ phép thành công!');
-        navigate('/requests/my-requests');
-      } else {
-        throw new Error(response.message || response.error?.message || 'Có lỗi xảy ra khi tạo yêu cầu');
-      }
-    } catch (error) {
-      console.error('Failed to create leave request:', error);
-      toast.error(error?.message || 'Có lỗi xảy ra khi tạo yêu cầu nghỉ phép');
+      toast.success('Tạo yêu cầu nghỉ phép thành công!');
+      navigate('/requests/my-requests');
+    } catch (error: any) {
+      const errorMessage = error?.response?.data?.message
+        || error?.message
+        || 'Có lỗi xảy ra khi tạo yêu cầu nghỉ phép';
+
+      toast.error(errorMessage);
     } finally {
       setIsSubmitting(false);
     }

@@ -27,7 +27,7 @@ const EmployeeSidebar: React.FC = () => {
             <h3 className={sectionTitleClass}>Hồ sơ</h3>
             <ul className="mt-2 space-y-1">
               <li>
-                <NavLink to="/profile/users/1/for-employee" className={navLinkClass}>
+                <NavLink to="/profile/users/for-employee" className={navLinkClass}>
                   <User className="w-5 h-5" />
                   <span>Thông tin cá nhân</span>
                 </NavLink>

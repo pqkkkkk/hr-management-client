@@ -7,7 +7,7 @@ export const USER_ROLES: UserRole[] = ['EMPLOYEE', 'MANAGER', 'HR', 'ADMIN'];
 
 export type ActivityStatus = 'UPCOMING' | 'ONGOING' | 'COMPLETED';
 
-export type UserStatus = 'ACTIVE' | 'INACTIVE' | 'ON_LEAVE';
+export type UserStatus = 'ACTIVE' | 'INACTIVE';
 
 export interface Pageable {
   pageNumber: number;
@@ -40,15 +40,15 @@ export interface Page<T> {
 }
 
 export interface ApiResponse<T> {
-    data: T;
-    statusCode: number;
-    message?: string;
-    success: boolean;
-    error?: ApiError;
+  data: T;
+  statusCode: number;
+  message?: string;
+  success: boolean;
+  error?: ApiError;
 }
 export interface ApiError {
-    statusCode: number;
-    message: string;
+  statusCode: number;
+  message: string;
 }
 
 export interface DateRange {

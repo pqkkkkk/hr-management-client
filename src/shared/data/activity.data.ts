@@ -256,8 +256,8 @@ export const mockActivityStatistics: ActivityStatistics = {
     totalParticipants: 45,
     totalLogs: 128,
     totalDistance: 542.5,
-    averageDistance: 12.06,
-    pendingLogsCount: 15,
-    approvedLogsCount: 105,
-    rejectedLogsCount: 8,
+    averageDistancePerParticipant: 12.06,
+    pendingLogs: 15,
+    approvedLogs: 105,
+    rejectedLogs: 8,
 };

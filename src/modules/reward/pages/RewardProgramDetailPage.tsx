@@ -101,7 +101,7 @@ export default function RewardProgramDetailPage() {
       const response = await rewardApi.exchangeReward({
         items: [{ rewardItemId: selectedReward.rewardItemId, quantity }],
         programId: program.rewardProgramId,
-        userId: user.userId,
+        userWalletId: wallet?.userWalletId,
       });
 
       if (response.success) {

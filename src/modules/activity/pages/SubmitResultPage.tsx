@@ -121,9 +121,10 @@ const SubmitResultPage: React.FC = () => {
             // For now, we'll create the log without proof URL
             const request: CreateActivityLogRequest = {
                 activityId,
+                employeeId: user?.userId,
                 distance: parseFloat(formData.distance),
                 durationMinutes: parseInt(formData.durationMinutes),
-                logDate: formData.logDate,
+                logDate: new Date(formData.logDate).toISOString(),
                 proofUrl: undefined, // Will be set after file upload in real implementation
             };
 
@@ -280,8 +281,8 @@ const SubmitResultPage: React.FC = () => {
                         onDragLeave={() => setDragOver(false)}
                         onDrop={handleDrop}
                         className={`border-2 ${dragOver
-                                ? "border-blue-400 bg-blue-50"
-                                : "border-dashed border-gray-300 bg-white"
+                            ? "border-blue-400 bg-blue-50"
+                            : "border-dashed border-gray-300 bg-white"
                             } rounded-lg p-6 text-center cursor-pointer hover:border-gray-400 transition-colors`}
                         onClick={() => fileInputRef.current?.click()}
                     >

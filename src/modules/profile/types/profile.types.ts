@@ -22,8 +22,8 @@ export const departmentOptions = [
 ];
 
 export const genderOptions = [
-  { value: "Nam", label: "Nam" },
-  { value: "Nữ", label: "Nữ" },
+  { value: "MALE", label: "Nam" },
+  { value: "FEMALE", label: "Nữ" },
 ];
 
 export const bankOptions = [
