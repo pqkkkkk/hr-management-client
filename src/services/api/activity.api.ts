@@ -16,6 +16,7 @@ import {
     ActivityStatus,
     ActivityLogStatus,
     ActivityDetailResponse,
+    ConfigSchemaResponse,
 } from "modules/activity/types/activity.types";
 import {
     mockActivities,
@@ -29,9 +30,9 @@ import {
 
 export interface ActivityApi {
     // Activities CRUD
-    getActivities(filter?: ActivityFilter): Promise<ApiResponse<Page<Activity>>>;
+    getActivities(employeeId?: string, filter?: ActivityFilter): Promise<ApiResponse<Page<Activity>>>;
     getMyActivities(employeeId: string, filter?: ActivityFilter): Promise<ApiResponse<Page<Activity>>>;
-    getActivityById(id: string): Promise<ApiResponse<ActivityDetailResponse>>;
+    getActivityById(id: string, employeeId?: string): Promise<ApiResponse<ActivityDetailResponse>>;
     createActivity(data: CreateActivityRequest): Promise<ApiResponse<Activity>>;
     updateActivity(id: string, data: UpdateActivityRequest): Promise<ApiResponse<Activity>>;
     deleteActivity(id: string): Promise<ApiResponse<void>>;
@@ -55,13 +56,14 @@ export interface ActivityApi {
 
     // Templates
     getActivityTemplates(): Promise<ApiResponse<ActivityTemplate[]>>;
+    getTemplateSchema(templateId: string): Promise<ApiResponse<ConfigSchemaResponse>>;
 }
 
 // ========== MOCK API IMPLEMENTATION ==========
 
 export class MockActivityApi implements ActivityApi {
     // GET /api/v1/activities
-    async getActivities(filter?: ActivityFilter): Promise<ApiResponse<Page<Activity>>> {
+    async getActivities(employeeId?: string, filter?: ActivityFilter): Promise<ApiResponse<Page<Activity>>> {
         return new Promise((resolve) => {
             setTimeout(() => {
                 const page: Page<Activity> = {
@@ -378,21 +380,89 @@ export class MockActivityApi implements ActivityApi {
             }, 300);
         });
     }
+
+    // GET /api/v1/activity-templates/:id/schema
+    async getTemplateSchema(templateId: string): Promise<ApiResponse<ConfigSchemaResponse>> {
+        return new Promise((resolve) => {
+            setTimeout(() => {
+                // Mock schema for RUNNING_SIMPLE template
+                const mockSchema: ConfigSchemaResponse = {
+                    fields: [
+                        {
+                            name: "min_pace",
+                            type: "number",
+                            label: "Pace tối thiểu (phút/km)",
+                            defaultValue: 4.0,
+                            required: true,
+                            description: "Pace tối thiểu cho phép. Pace = thời gian / khoảng cách"
+                        },
+                        {
+                            name: "max_pace",
+                            type: "number",
+                            label: "Pace tối đa (phút/km)",
+                            defaultValue: 15.0,
+                            required: true,
+                            description: "Pace tối đa cho phép"
+                        },
+                        {
+                            name: "min_distance_per_log",
+                            type: "number",
+                            label: "Khoảng cách tối thiểu/lần (km)",
+                            defaultValue: 1.0,
+                            required: true,
+                            description: "Khoảng cách tối thiểu cho mỗi lần ghi nhận"
+                        },
+                        {
+                            name: "max_distance_per_day",
+                            type: "number",
+                            label: "Khoảng cách tối đa/ngày (km)",
+                            defaultValue: 42.0,
+                            required: true,
+                            description: "Khoảng cách tối đa được tính điểm trong một ngày"
+                        },
+                        {
+                            name: "points_per_km",
+                            type: "number",
+                            label: "Điểm/km",
+                            defaultValue: 10,
+                            required: true,
+                            description: "Số điểm nhận được cho mỗi km chạy"
+                        },
+                        {
+                            name: "bonus_weekend_multiplier",
+                            type: "number",
+                            label: "Hệ số cuối tuần",
+                            defaultValue: 1.5,
+                            required: true,
+                            description: "Hệ số nhân điểm cho hoạt động vào Thứ 7 và Chủ Nhật"
+                        }
+                    ]
+                };
+
+                resolve({
+                    data: mockSchema,
+                    success: true,
+                    statusCode: 200,
+                    message: "Template schema retrieved successfully",
+                });
+            }, 300);
+        });
+    }
 }
 
 // ========== REST API IMPLEMENTATION ==========
 
 export class RestActivityApi implements ActivityApi {
-    async getActivities(filter?: ActivityFilter): Promise<ApiResponse<Page<Activity>>> {
-        return dotnetApiClient.get(`/activities`, { params: filter });
+    async getActivities(employeeId?: string, filter?: ActivityFilter): Promise<ApiResponse<Page<Activity>>> {
+        return dotnetApiClient.get(`/activities`, { params: { ...filter, employeeId } });
     }
 
     async getMyActivities(employeeId: string, filter?: ActivityFilter): Promise<ApiResponse<Page<Activity>>> {
         return dotnetApiClient.get(`/activities/me`, { params: { ...filter, employeeId } });
     }
 
-    async getActivityById(id: string): Promise<ApiResponse<ActivityDetailResponse>> {
-        return dotnetApiClient.get(`/activities/${id}`);
+    async getActivityById(id: string, employeeId?: string): Promise<ApiResponse<ActivityDetailResponse>> {
+        return dotnetApiClient.get(`/activities/${id}`, { params: { employeeId } });
     }
 
     async createActivity(data: CreateActivityRequest): Promise<ApiResponse<Activity>> {
@@ -445,5 +515,9 @@ export class RestActivityApi implements ActivityApi {
 
     async getActivityTemplates(): Promise<ApiResponse<ActivityTemplate[]>> {
         return dotnetApiClient.get(`/activity-templates`);
+    }
+
+    async getTemplateSchema(templateId: string): Promise<ApiResponse<ConfigSchemaResponse>> {
+        return dotnetApiClient.get(`/activity-templates/${templateId}/schema`);
     }
 }

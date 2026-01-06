@@ -244,7 +244,7 @@ const OverviewTab: React.FC<OverviewTabProps> = ({ activity, onSubmitResult }) =
             <p>{activity.description || "Chưa có mô tả chi tiết."}</p>
         </div>
 
-        {activity.isRegistered && activity.status === ActivityStatus.OPEN && (
+        {activity.isRegistered && activity.status === ActivityStatus.IN_PROGRESS && (
             <div className="mt-6 pt-6 border-t border-gray-200">
                 <h3 className="text-sm font-medium text-gray-900 mb-3">Hành động nhanh</h3>
                 <button
@@ -293,7 +293,7 @@ const MyResultsTab: React.FC<MyResultsTabProps> = ({
     <div>
         <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-semibold text-gray-900">Kết quả của tôi</h2>
-            {activityStatus === ActivityStatus.OPEN && (
+            {activityStatus === ActivityStatus.IN_PROGRESS && (
                 <button
                     onClick={onSubmitResult}
                     className="flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors text-sm"
@@ -375,7 +375,7 @@ const ActivityDetailPage: React.FC = () => {
         if (!id) return;
         setLoading(true);
         try {
-            const response = await activityApi.getActivityById(id);
+            const response = await activityApi.getActivityById(id, user?.userId);
             if (response.success && response.data) {
                 setActivity(response.data);
             }

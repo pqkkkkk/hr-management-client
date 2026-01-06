@@ -1,14 +1,17 @@
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useApi } from "contexts/ApiContext";
+import { useAuth } from "contexts/AuthContext";
 import {
     Activity,
     ActivityStatus,
     UpdateActivityRequest,
     ActivityTemplate,
+    ConfigSchemaResponse,
 } from "../types/activity.types";
 import { ArrowLeft, Upload, Calendar, FileText, X, Image, Save } from "lucide-react";
 import { toast } from "react-toastify";
+import ActivityConfigFields from "../components/ActivityConfigFields";
 
 const statusOptions = [
     { value: ActivityStatus.DRAFT, label: "Nháp", color: "bg-gray-100 text-gray-700" },
@@ -26,6 +29,9 @@ const EditActivityPage: React.FC = () => {
     const [submitting, setSubmitting] = useState(false);
     const [activity, setActivity] = useState<Activity | null>(null);
     const [templates, setTemplates] = useState<ActivityTemplate[]>([]);
+    const [currentTemplate, setCurrentTemplate] = useState<ActivityTemplate | null>(null);
+    const [configSchema, setConfigSchema] = useState<ConfigSchemaResponse | null>(null);
+    const [configValues, setConfigValues] = useState<Record<string, any>>({});
 
     // Form state
     const [formData, setFormData] = useState<UpdateActivityRequest>({
@@ -47,44 +53,72 @@ const EditActivityPage: React.FC = () => {
     const [errors, setErrors] = useState<Record<string, string>>({});
 
     // Fetch activity
-    const fetchActivity = useCallback(async () => {
+    const fetchActivity = async () => {
         if (!id) return;
 
         setLoading(true);
         try {
-            const [activityRes, templatesRes] = await Promise.all([
-                activityApi.getActivityById(id),
-                activityApi.getActivityTemplates(),
-            ]);
-
-            if (activityRes.success && activityRes.data) {
-                const a = activityRes.data;
-                setActivity(a);
+            const response = await activityApi.getActivityById(id);
+            if (response.success && response.data) {
+                const activity = response.data;
+                setActivity(activity);
                 setFormData({
-                    name: a.name,
-                    description: a.description || "",
-                    bannerUrl: a.bannerUrl || "",
-                    startDate: a.startDate.split("T")[0],
-                    endDate: a.endDate.split("T")[0],
+                    name: activity.name,
+                    description: activity.description || "",
+                    bannerUrl: activity.bannerUrl || "",
+                    startDate: activity.startDate.split("T")[0],
+                    endDate: activity.endDate.split("T")[0],
                 });
-                setBannerPreview(a.bannerUrl || "");
-                setNewStatus(a.status);
-            }
+                if (activity.bannerUrl) {
+                    setBannerPreview(activity.bannerUrl);
+                }
+                setNewStatus(activity.status);
 
-            if (templatesRes.success && templatesRes.data) {
-                setTemplates(templatesRes.data);
+                // Fetch template schema if templateId exists
+                if (activity.templateId) {
+                    await fetchTemplateSchema(activity.templateId);
+
+                    // Initialize config values from activity or defaults
+                    if (activity.config) {
+                        setConfigValues(activity.config);
+                    }
+                }
+            } else {
+                toast.error(response.message || "Không thể tải thông tin hoạt động");
+                navigate("/activities/manage");
             }
         } catch (error) {
             console.error("Error fetching activity:", error);
-            toast.error("Không thể tải thông tin hoạt động");
+            toast.error("Đã xảy ra lỗi khi tải thông tin hoạt động");
+            navigate("/activities/manage");
         } finally {
             setLoading(false);
         }
-    }, [id, activityApi]);
+    };
+
+    // Fetch template schema
+    const fetchTemplateSchema = async (templateId: string) => {
+        try {
+            const response = await activityApi.getTemplateSchema(templateId);
+            if (response.success && response.data) {
+                setConfigSchema(response.data);
+            }
+
+            // Also fetch template info for display
+            const templatesResponse = await activityApi.getActivityTemplates();
+            if (templatesResponse.success && templatesResponse.data) {
+                const template = templatesResponse.data.find(t => t.templateId === templateId);
+                setCurrentTemplate(template || null);
+            }
+        } catch (error) {
+            console.error("Error fetching template schema:", error);
+            toast.error("Không thể tải cấu hình template");
+        }
+    };
 
     useEffect(() => {
         fetchActivity();
-    }, [fetchActivity]);
+    }, [id, activityApi, navigate]); // Added navigate to dependencies
 
     // Handle input change
     const handleInputChange = (
@@ -92,6 +126,14 @@ const EditActivityPage: React.FC = () => {
     ) => {
         const { name, value } = e.target;
         setFormData((prev) => ({ ...prev, [name]: value }));
+        if (errors[name]) {
+            setErrors((prev) => ({ ...prev, [name]: "" }));
+        }
+    };
+
+    // Handle config field change
+    const handleConfigChange = (name: string, value: any) => {
+        setConfigValues(prev => ({ ...prev, [name]: value }));
         if (errors[name]) {
             setErrors((prev) => ({ ...prev, [name]: "" }));
         }
@@ -144,6 +186,15 @@ const EditActivityPage: React.FC = () => {
             newErrors.endDate = "Ngày kết thúc phải sau ngày bắt đầu";
         }
 
+        // Validate config fields
+        if (configSchema) {
+            configSchema.fields.forEach(field => {
+                if (field.required && !configValues[field.name]) {
+                    newErrors[field.name] = `${field.label} là bắt buộc`;
+                }
+            });
+        }
+
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
     };
@@ -155,10 +206,17 @@ const EditActivityPage: React.FC = () => {
 
         setSubmitting(true);
         try {
+            // Convert date to datetime (backend expects ISO 8601 date-time)
+            const startDateTime = formData.startDate ? new Date(formData.startDate + 'T00:00:00').toISOString() : undefined;
+            const endDateTime = formData.endDate ? new Date(formData.endDate + 'T23:59:59').toISOString() : undefined;
+
             // Update activity info
             const updateResponse = await activityApi.updateActivity(id, {
                 ...formData,
+                startDate: startDateTime,
+                endDate: endDateTime,
                 bannerUrl: bannerPreview || undefined,
+                config: configValues, // Include config values
             });
 
             // Update status if changed
@@ -183,19 +241,20 @@ const EditActivityPage: React.FC = () => {
     const handleDelete = async () => {
         if (!id) return;
 
-        const confirmed = window.confirm("Bạn có chắc muốn xóa hoạt động này?");
+        const confirmed = window.confirm("Bạn có chắc muốn đóng hoạt động này?");
         if (!confirmed) return;
 
         try {
             const response = await activityApi.deleteActivity(id);
+            console.log("close activity response", response);
             if (response.success) {
-                toast.success("Đã xóa hoạt động");
+                toast.success("Đã đóng hoạt động");
                 navigate("/activities/manage");
             } else {
                 toast.error(response.message || "Có lỗi xảy ra");
             }
         } catch (error) {
-            toast.error("Đã có lỗi xảy ra khi xóa hoạt động");
+            toast.error("Đã có lỗi xảy ra khi đóng hoạt động");
         }
     };
 
@@ -218,7 +277,7 @@ const EditActivityPage: React.FC = () => {
     }
 
     return (
-        <div className="p-6 max-w-3xl mx-auto">
+        <div className="p-6 max-w-6xl mx-auto">
             {/* Back Button */}
             <button
                 onClick={() => navigate("/activities/manage")}
@@ -235,10 +294,11 @@ const EditActivityPage: React.FC = () => {
                     <p className="text-gray-600 mt-1">Cập nhật thông tin hoạt động</p>
                 </div>
                 <button
+                    disabled={submitting || !id || activity.status === "CLOSED"}
                     onClick={handleDelete}
                     className="px-4 py-2 text-red-600 border border-red-200 rounded-lg hover:bg-red-50 transition-colors"
                 >
-                    Xóa hoạt động
+                    Đóng hoạt động
                 </button>
             </div>
 
@@ -253,8 +313,8 @@ const EditActivityPage: React.FC = () => {
                                 type="button"
                                 onClick={() => setNewStatus(opt.value)}
                                 className={`px-4 py-2 rounded-lg font-medium border-2 transition-all ${newStatus === opt.value
-                                        ? `${opt.color} border-current`
-                                        : "border-gray-200 text-gray-600 hover:border-gray-300"
+                                    ? `${opt.color} border-current`
+                                    : "border-gray-200 text-gray-600 hover:border-gray-300"
                                     }`}
                             >
                                 {opt.label}
@@ -300,8 +360,8 @@ const EditActivityPage: React.FC = () => {
                             onDrop={handleDrop}
                             onClick={() => fileInputRef.current?.click()}
                             className={`border-2 ${dragOver
-                                    ? "border-blue-400 bg-blue-50"
-                                    : "border-dashed border-gray-300"
+                                ? "border-blue-400 bg-blue-50"
+                                : "border-dashed border-gray-300"
                                 } rounded-lg p-8 text-center cursor-pointer hover:border-gray-400 transition-colors`}
                         >
                             <Upload size={40} className="mx-auto text-gray-400 mb-3" />
@@ -318,86 +378,104 @@ const EditActivityPage: React.FC = () => {
                     )}
                 </div>
 
-                {/* Basic Info */}
-                <div className="bg-white rounded-xl shadow-sm p-6 space-y-4">
-                    <h2 className="font-semibold text-gray-900 mb-4">Thông tin cơ bản</h2>
+                {/* 2 Column Grid Layout for Desktop */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    {/* Left Column - Basic Info & Dates */}
+                    <div className="space-y-6">
+                        {/* Basic Info */}
+                        <div className="bg-white rounded-xl shadow-sm p-6 space-y-4">
+                            <h2 className="font-semibold text-gray-900 mb-4">Thông tin cơ bản</h2>
 
-                    {/* Name */}
+                            {/* Name */}
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    Tên hoạt động <span className="text-red-500">*</span>
+                                </label>
+                                <input
+                                    type="text"
+                                    name="name"
+                                    value={formData.name}
+                                    onChange={handleInputChange}
+                                    className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.name ? "border-red-500" : "border-gray-200"
+                                        }`}
+                                />
+                                {errors.name && (
+                                    <p className="text-red-500 text-sm mt-1">{errors.name}</p>
+                                )}
+                            </div>
+
+                            {/* Description */}
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    <FileText size={16} className="inline mr-2" />
+                                    Mô tả hoạt động
+                                </label>
+                                <textarea
+                                    name="description"
+                                    value={formData.description}
+                                    onChange={handleInputChange}
+                                    rows={4}
+                                    className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                                />
+                            </div>
+                        </div>
+
+                        {/* Date Range */}
+                        <div className="bg-white rounded-xl shadow-sm p-6">
+                            <h2 className="font-semibold text-gray-900 mb-4">
+                                <Calendar size={16} className="inline mr-2" />
+                                Thời gian
+                            </h2>
+
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                        Ngày bắt đầu <span className="text-red-500">*</span>
+                                    </label>
+                                    <input
+                                        type="date"
+                                        name="startDate"
+                                        value={formData.startDate}
+                                        onChange={handleInputChange}
+                                        className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.startDate ? "border-red-500" : "border-gray-200"
+                                            }`}
+                                    />
+                                    {errors.startDate && (
+                                        <p className="text-red-500 text-sm mt-1">{errors.startDate}</p>
+                                    )}
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                        Ngày kết thúc <span className="text-red-500">*</span>
+                                    </label>
+                                    <input
+                                        type="date"
+                                        name="endDate"
+                                        value={formData.endDate}
+                                        onChange={handleInputChange}
+                                        min={formData.startDate}
+                                        className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.endDate ? "border-red-500" : "border-gray-200"
+                                            }`}
+                                    />
+                                    {errors.endDate && (
+                                        <p className="text-red-500 text-sm mt-1">{errors.endDate}</p>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Right Column - Activity Config */}
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Tên hoạt động <span className="text-red-500">*</span>
-                        </label>
-                        <input
-                            type="text"
-                            name="name"
-                            value={formData.name}
-                            onChange={handleInputChange}
-                            className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.name ? "border-red-500" : "border-gray-200"
-                                }`}
-                        />
-                        {errors.name && (
-                            <p className="text-red-500 text-sm mt-1">{errors.name}</p>
+                        {configSchema && (
+                            <ActivityConfigFields
+                                configSchema={configSchema}
+                                configValues={configValues}
+                                onChange={handleConfigChange}
+                                errors={errors}
+                            />
                         )}
-                    </div>
-
-                    {/* Description */}
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                            <FileText size={16} className="inline mr-2" />
-                            Mô tả hoạt động
-                        </label>
-                        <textarea
-                            name="description"
-                            value={formData.description}
-                            onChange={handleInputChange}
-                            rows={4}
-                            className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
-                        />
-                    </div>
-                </div>
-
-                {/* Date Range */}
-                <div className="bg-white rounded-xl shadow-sm p-6">
-                    <h2 className="font-semibold text-gray-900 mb-4">
-                        <Calendar size={16} className="inline mr-2" />
-                        Thời gian
-                    </h2>
-
-                    <div className="grid grid-cols-2 gap-4">
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                                Ngày bắt đầu <span className="text-red-500">*</span>
-                            </label>
-                            <input
-                                type="date"
-                                name="startDate"
-                                value={formData.startDate}
-                                onChange={handleInputChange}
-                                className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.startDate ? "border-red-500" : "border-gray-200"
-                                    }`}
-                            />
-                            {errors.startDate && (
-                                <p className="text-red-500 text-sm mt-1">{errors.startDate}</p>
-                            )}
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                                Ngày kết thúc <span className="text-red-500">*</span>
-                            </label>
-                            <input
-                                type="date"
-                                name="endDate"
-                                value={formData.endDate}
-                                onChange={handleInputChange}
-                                min={formData.startDate}
-                                className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.endDate ? "border-red-500" : "border-gray-200"
-                                    }`}
-                            />
-                            {errors.endDate && (
-                                <p className="text-red-500 text-sm mt-1">{errors.endDate}</p>
-                            )}
-                        </div>
                     </div>
                 </div>
 

@@ -125,11 +125,11 @@ const TransactionRow: React.FC<{ tx: PointTransaction }> = ({ tx }) => {
       <td className="py-4 px-5">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center text-sm font-semibold text-gray-700">
-            {initials(recipientId)}
+            {tx?.destinationUsername?.slice(0, 2).toUpperCase()}
           </div>
           <div>
             <div className="text-sm font-semibold text-gray-900">
-              {recipientId}
+              {tx?.destinationUsername}
             </div>
             <div className="text-xs text-gray-500">
               #{tx.pointTransactionId}

@@ -22,11 +22,7 @@ const CurrentUserRankCard: React.FC<CurrentUserRankProps> = ({ entry, totalParti
         return `Hạng ${rank}`;
     };
 
-    const formatPace = (pace: number) => {
-        const mins = Math.floor(pace);
-        const secs = Math.round((pace - mins) * 60);
-        return `${mins}:${secs.toString().padStart(2, "0")} /km`;
-    };
+
 
     return (
         <div className="bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl p-4 mb-6 text-white">
@@ -50,16 +46,8 @@ const CurrentUserRankCard: React.FC<CurrentUserRankProps> = ({ entry, totalParti
 
                 <div className="flex gap-6 text-right">
                     <div>
-                        <div className="text-2xl font-bold">{entry?.totalDistance?.toFixed(1)}</div>
-                        <div className="text-sm text-white/80">km</div>
-                    </div>
-                    <div>
-                        <div className="text-2xl font-bold">{entry?.totalLogs}</div>
-                        <div className="text-sm text-white/80">lần chạy</div>
-                    </div>
-                    <div>
-                        <div className="text-2xl font-bold">{formatPace(entry?.averagePace)}</div>
-                        <div className="text-sm text-white/80">pace TB</div>
+                        <div className="text-2xl font-bold">{entry?.totalScore}</div>
+                        <div className="text-sm text-white/80">điểm</div>
                     </div>
                 </div>
             </div>
@@ -87,11 +75,7 @@ const LeaderboardTable: React.FC<LeaderboardTableProps> = ({
         return "";
     };
 
-    const formatPace = (pace: number) => {
-        const mins = Math.floor(pace);
-        const secs = Math.round((pace - mins) * 60);
-        return `${mins}:${secs.toString().padStart(2, "0")} /km`;
-    };
+
 
     // Find current user's entry
     const currentUserEntry = currentUserId
@@ -128,13 +112,7 @@ const LeaderboardTable: React.FC<LeaderboardTableProps> = ({
                                 Thành viên
                             </th>
                             <th className="px-4 py-3 text-right text-sm font-semibold text-gray-600">
-                                Tổng km
-                            </th>
-                            <th className="px-4 py-3 text-right text-sm font-semibold text-gray-600">
-                                Số lần
-                            </th>
-                            <th className="px-4 py-3 text-right text-sm font-semibold text-gray-600">
-                                Pace TB
+                                Tổng điểm
                             </th>
                         </tr>
                     </thead>
@@ -173,15 +151,9 @@ const LeaderboardTable: React.FC<LeaderboardTableProps> = ({
                                     </td>
                                     <td className="px-4 py-3 text-right">
                                         <span className="font-semibold text-gray-900">
-                                            {entry?.totalDistance?.toFixed(1)}
+                                            {entry?.totalScore}
                                         </span>
-                                        <span className="text-gray-500 text-sm ml-1">km</span>
-                                    </td>
-                                    <td className="px-4 py-3 text-right text-gray-600">
-                                        {entry?.totalLogs}
-                                    </td>
-                                    <td className="px-4 py-3 text-right text-gray-600">
-                                        {formatPace(entry.averagePace)}
+                                        <span className="text-gray-500 text-sm ml-1">điểm</span>
                                     </td>
                                 </tr>
                             );

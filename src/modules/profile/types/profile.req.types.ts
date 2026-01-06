@@ -33,6 +33,7 @@ export interface UpdateProfileRequestForHR {
     bankAccountNumber?: string;
     bankName?: string;
     departmentId?: string;
+    departmentName?: string;
 }
 
 export namespace UpdateProfileRequestForHR {
@@ -52,6 +53,7 @@ export namespace UpdateProfileRequestForHR {
             bankAccountNumber: user.bankAccountNumber,
             bankName: user.bankName,
             departmentId: user.departmentId,
+            departmentName: user.departmentName,
         };
     }
 }

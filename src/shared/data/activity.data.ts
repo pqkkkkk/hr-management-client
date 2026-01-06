@@ -147,7 +147,7 @@ export const mockActivityLogs: ActivityLog[] = [
 export const mockActivityTemplates: ActivityTemplate[] = [
     {
         templateId: "TPL001",
-        name: "Chạy bộ cơ bản",
+        templateName: "Chạy bộ cơ bản",
         type: "RUNNING",
         description: "Template cho hoạt động chạy bộ với các trường cơ bản",
         schema: {
@@ -157,7 +157,7 @@ export const mockActivityTemplates: ActivityTemplate[] = [
     },
     {
         templateId: "TPL002",
-        name: "Chạy bộ nâng cao",
+        templateName: "Chạy bộ nâng cao",
         type: "RUNNING",
         description: "Template cho hoạt động chạy bộ với theo dõi calories",
         schema: {
@@ -207,45 +207,35 @@ export const mockLeaderboard: LeaderboardEntry[] = [
         employeeId: "u5e6f7a8-c9d0-1234-ef01-345678901234",
         employeeName: "Lê Văn C",
         avatarUrl: "https://i.pravatar.cc/150?u=nv003",
-        totalDistance: 45.5,
-        totalLogs: 8,
-        averagePace: 6.2,
+        totalScore: 455,
     },
     {
         rank: 2,
         employeeId: "NV001",
         employeeName: "Nguyễn Văn A",
         avatarUrl: "https://i.pravatar.cc/150?u=nv001",
-        totalDistance: 38.2,
-        totalLogs: 6,
-        averagePace: 6.5,
+        totalScore: 382,
     },
     {
         rank: 3,
         employeeId: "NV005",
         employeeName: "Hoàng Văn E",
         avatarUrl: "https://i.pravatar.cc/150?u=nv005",
-        totalDistance: 32.0,
-        totalLogs: 5,
-        averagePace: 7.0,
+        totalScore: 320,
     },
     {
         rank: 4,
         employeeId: "NV004",
         employeeName: "Phạm Thị D",
         avatarUrl: "https://i.pravatar.cc/150?u=nv004",
-        totalDistance: 25.5,
-        totalLogs: 4,
-        averagePace: 7.5,
+        totalScore: 255,
     },
     {
         rank: 5,
         employeeId: "NV006",
         employeeName: "Nguyễn Văn G",
         avatarUrl: "https://i.pravatar.cc/150?u=nv006",
-        totalDistance: 18.0,
-        totalLogs: 3,
-        averagePace: 8.0,
+        totalScore: 180,
     },
 ];
 

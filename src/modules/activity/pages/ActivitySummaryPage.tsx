@@ -232,8 +232,7 @@ const TopPerformersSection: React.FC<TopPerformersProps> = ({ entries }) => {
                                 <div className="font-medium text-gray-900">{entry?.employeeName}</div>
                             </div>
                             <div className="text-right">
-                                <div className="font-semibold text-gray-900">{entry?.totalDistance?.toFixed(1)} km</div>
-                                <div className="text-sm text-gray-500">{entry?.totalLogs} lần</div>
+                                <div className="font-semibold text-gray-900">{entry?.totalScore} điểm</div>
                             </div>
                         </div>
                     ))}

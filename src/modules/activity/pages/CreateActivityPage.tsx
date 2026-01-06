@@ -5,9 +5,11 @@ import { useAuth } from "contexts/AuthContext";
 import {
     CreateActivityRequest,
     ActivityTemplate,
+    ConfigSchemaResponse,
 } from "../types/activity.types";
 import { ArrowLeft, Upload, Calendar, FileText, X, Image } from "lucide-react";
 import { toast } from "react-toastify";
+import ActivityConfigFields from "../components/ActivityConfigFields";
 
 const CreateActivityPage: React.FC = () => {
     const navigate = useNavigate();
@@ -17,6 +19,8 @@ const CreateActivityPage: React.FC = () => {
     const [submitting, setSubmitting] = useState(false);
     const [templates, setTemplates] = useState<ActivityTemplate[]>([]);
     const [loadingTemplates, setLoadingTemplates] = useState(true);
+    const [configSchema, setConfigSchema] = useState<ConfigSchemaResponse | null>(null);
+    const [configValues, setConfigValues] = useState<Record<string, any>>({});
 
     // Form state
     const [formData, setFormData] = useState<CreateActivityRequest>({
@@ -25,8 +29,8 @@ const CreateActivityPage: React.FC = () => {
         templateId: "",
         description: "",
         bannerUrl: "",
-        startDate: "",
-        endDate: "",
+        startDate: new Date().toISOString().split("T")[0],
+        endDate: new Date().toISOString().split("T")[0],
     });
 
     // Banner file upload
@@ -60,6 +64,41 @@ const CreateActivityPage: React.FC = () => {
     ) => {
         const { name, value } = e.target;
         setFormData((prev) => ({ ...prev, [name]: value }));
+        if (errors[name]) {
+            setErrors((prev) => ({ ...prev, [name]: "" }));
+        }
+
+        // Load config schema when template is selected
+        if (name === "templateId" && value) {
+            fetchTemplateSchema(value);
+        }
+    };
+
+    // Fetch template schema
+    const fetchTemplateSchema = async (templateId: string) => {
+        try {
+            const response = await activityApi.getTemplateSchema(templateId);
+            if (response.success && response.data) {
+                setConfigSchema(response.data);
+
+                // Initialize config values with defaults
+                const defaults: Record<string, any> = {};
+                response.data.fields.forEach(field => {
+                    if (field.defaultValue !== undefined) {
+                        defaults[field.name] = field.defaultValue;
+                    }
+                });
+                setConfigValues(defaults);
+            }
+        } catch (error) {
+            console.error("Error fetching template schema:", error);
+            toast.error("Không thể tải cấu hình template");
+        }
+    };
+
+    // Handle config field change
+    const handleConfigChange = (name: string, value: any) => {
+        setConfigValues(prev => ({ ...prev, [name]: value }));
         if (errors[name]) {
             setErrors((prev) => ({ ...prev, [name]: "" }));
         }
@@ -100,6 +139,10 @@ const CreateActivityPage: React.FC = () => {
             newErrors.name = "Vui lòng nhập tên hoạt động";
         }
 
+        if (!formData.templateId) {
+            newErrors.templateId = "Vui lòng chọn template";
+        }
+
         if (!formData.startDate) {
             newErrors.startDate = "Vui lòng chọn ngày bắt đầu";
         }
@@ -112,9 +155,19 @@ const CreateActivityPage: React.FC = () => {
             newErrors.endDate = "Ngày kết thúc phải sau ngày bắt đầu";
         }
 
+        // Validate config fields
+        if (configSchema) {
+            configSchema.fields.forEach(field => {
+                if (field.required && !configValues[field.name]) {
+                    newErrors[field.name] = `${field.label} là bắt buộc`;
+                }
+            });
+        }
+
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
     };
+
 
     // Handle submit
     const handleSubmit = async (e: React.FormEvent) => {
@@ -124,10 +177,17 @@ const CreateActivityPage: React.FC = () => {
 
         setSubmitting(true);
         try {
+            // Convert date to datetime (backend expects ISO 8601 date-time)
+            const startDateTime = formData.startDate ? new Date(formData.startDate + 'T00:00:00').toISOString() : '';
+            const endDateTime = formData.endDate ? new Date(formData.endDate + 'T23:59:59').toISOString() : '';
+
             // TODO: Upload banner file first, get URL
             const request: CreateActivityRequest = {
                 ...formData,
+                startDate: startDateTime,
+                endDate: endDateTime,
                 bannerUrl: bannerPreview || undefined, // In real implementation, use uploaded URL
+                config: configValues, // Include config values
             };
 
             const response = await activityApi.createActivity(request);
@@ -146,7 +206,7 @@ const CreateActivityPage: React.FC = () => {
     };
 
     return (
-        <div className="p-6 max-w-3xl mx-auto">
+        <div className="p-6 max-w-6xl mx-auto">
             {/* Back Button */}
             <button
                 onClick={() => navigate("/activities/manage")}
@@ -198,8 +258,8 @@ const CreateActivityPage: React.FC = () => {
                             onDrop={handleDrop}
                             onClick={() => fileInputRef.current?.click()}
                             className={`border-2 ${dragOver
-                                    ? "border-blue-400 bg-blue-50"
-                                    : "border-dashed border-gray-300"
+                                ? "border-blue-400 bg-blue-50"
+                                : "border-dashed border-gray-300"
                                 } rounded-lg p-8 text-center cursor-pointer hover:border-gray-400 transition-colors`}
                         >
                             <Upload size={40} className="mx-auto text-gray-400 mb-3" />
@@ -216,125 +276,163 @@ const CreateActivityPage: React.FC = () => {
                     )}
                 </div>
 
-                {/* Basic Info */}
-                <div className="bg-white rounded-xl shadow-sm p-6 space-y-4">
-                    <h2 className="font-semibold text-gray-900 mb-4">Thông tin cơ bản</h2>
+                {/* 2 Column Grid Layout for Desktop */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    {/* Left Column - Basic Info & Dates */}
+                    <div className="space-y-6">
+                        {/* Basic Info */}
+                        <div className="bg-white rounded-xl shadow-sm p-6 space-y-4">
+                            <h2 className="font-semibold text-gray-900 mb-4">Thông tin cơ bản</h2>
 
-                    {/* Name */}
+                            {/* Name */}
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    Tên hoạt động <span className="text-red-500">*</span>
+                                </label>
+                                <input
+                                    type="text"
+                                    name="name"
+                                    value={formData.name}
+                                    onChange={handleInputChange}
+                                    placeholder="VD: Chạy bộ mùa xuân 2025"
+                                    className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.name ? "border-red-500" : "border-gray-200"
+                                        }`}
+                                />
+                                {errors.name && (
+                                    <p className="text-red-500 text-sm mt-1">{errors.name}</p>
+                                )}
+                            </div>
+
+                            {/* Type & Template */}
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                        Loại hoạt động
+                                    </label>
+                                    <select
+                                        name="type"
+                                        value={formData.type}
+                                        onChange={handleInputChange}
+                                        className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                                    >
+                                        <option value="RUNNING">Chạy bộ</option>
+                                    </select>
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                        Template <span className="text-red-500">*</span>
+                                    </label>
+                                    <select
+                                        name="templateId"
+                                        value={formData.templateId}
+                                        onChange={handleInputChange}
+                                        disabled={loadingTemplates}
+                                        className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white disabled:opacity-50 ${errors.templateId ? "border-red-500" : "border-gray-200"
+                                            }`}
+                                    >
+                                        <option value="">-- Chọn template --</option>
+                                        {templates.map((t) => (
+                                            <option key={t.templateId} value={t.templateId}>
+                                                {t.templateName}
+                                            </option>
+                                        ))}
+                                    </select>
+                                    {errors.templateId && (
+                                        <p className="text-red-500 text-sm mt-1">{errors.templateId}</p>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* Description */}
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    <FileText size={16} className="inline mr-2" />
+                                    Mô tả hoạt động
+                                </label>
+                                <textarea
+                                    name="description"
+                                    value={formData.description}
+                                    onChange={handleInputChange}
+                                    rows={4}
+                                    placeholder="Mô tả chi tiết về hoạt động..."
+                                    className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                                />
+                            </div>
+                        </div>
+
+                        {/* Date Range */}
+                        <div className="bg-white rounded-xl shadow-sm p-6">
+                            <h2 className="font-semibold text-gray-900 mb-4">
+                                <Calendar size={16} className="inline mr-2" />
+                                Thời gian
+                            </h2>
+
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                        Ngày bắt đầu <span className="text-red-500">*</span>
+                                    </label>
+                                    <input
+                                        type="date"
+                                        name="startDate"
+                                        value={formData.startDate}
+                                        onChange={handleInputChange}
+                                        className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.startDate ? "border-red-500" : "border-gray-200"
+                                            }`}
+                                    />
+                                    {errors.startDate && (
+                                        <p className="text-red-500 text-sm mt-1">{errors.startDate}</p>
+                                    )}
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                        Ngày kết thúc <span className="text-red-500">*</span>
+                                    </label>
+                                    <input
+                                        type="date"
+                                        name="endDate"
+                                        value={formData.endDate}
+                                        onChange={handleInputChange}
+                                        min={formData.startDate}
+                                        className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.endDate ? "border-red-500" : "border-gray-200"
+                                            }`}
+                                    />
+                                    {errors.endDate && (
+                                        <p className="text-red-500 text-sm mt-1">{errors.endDate}</p>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Right Column - Activity Config */}
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Tên hoạt động <span className="text-red-500">*</span>
-                        </label>
-                        <input
-                            type="text"
-                            name="name"
-                            value={formData.name}
-                            onChange={handleInputChange}
-                            placeholder="VD: Chạy bộ mùa xuân 2025"
-                            className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.name ? "border-red-500" : "border-gray-200"
-                                }`}
-                        />
-                        {errors.name && (
-                            <p className="text-red-500 text-sm mt-1">{errors.name}</p>
+                        {configSchema ? (
+                            <ActivityConfigFields
+                                configSchema={configSchema}
+                                configValues={configValues}
+                                onChange={handleConfigChange}
+                                errors={errors}
+                            />
+                        ) : (
+                            /* Placeholder when no template selected */
+                            <div className="bg-white rounded-xl shadow-sm p-6">
+                                <h2 className="font-semibold text-gray-900 mb-4">Cấu hình hoạt động</h2>
+                                <div className="text-center py-12">
+                                    <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gray-100 flex items-center justify-center">
+                                        <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
+                                        </svg>
+                                    </div>
+                                    <p className="text-gray-500 font-medium mb-1">Chưa có cấu hình</p>
+                                    <p className="text-sm text-gray-400">
+                                        Cấu hình hoạt động sẽ được hiển thị ở đây khi bạn chọn template
+                                    </p>
+                                </div>
+                            </div>
                         )}
-                    </div>
-
-                    {/* Type & Template */}
-                    <div className="grid grid-cols-2 gap-4">
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                                Loại hoạt động
-                            </label>
-                            <select
-                                name="type"
-                                value={formData.type}
-                                onChange={handleInputChange}
-                                className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
-                            >
-                                <option value="RUNNING">Chạy bộ</option>
-                            </select>
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                                Template
-                            </label>
-                            <select
-                                name="templateId"
-                                value={formData.templateId}
-                                onChange={handleInputChange}
-                                disabled={loadingTemplates}
-                                className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white disabled:opacity-50"
-                            >
-                                <option value="">Không sử dụng template</option>
-                                {templates.map((t) => (
-                                    <option key={t.templateId} value={t.templateId}>
-                                        {t.name}
-                                    </option>
-                                ))}
-                            </select>
-                        </div>
-                    </div>
-
-                    {/* Description */}
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                            <FileText size={16} className="inline mr-2" />
-                            Mô tả hoạt động
-                        </label>
-                        <textarea
-                            name="description"
-                            value={formData.description}
-                            onChange={handleInputChange}
-                            rows={4}
-                            placeholder="Mô tả chi tiết về hoạt động..."
-                            className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
-                        />
-                    </div>
-                </div>
-
-                {/* Date Range */}
-                <div className="bg-white rounded-xl shadow-sm p-6">
-                    <h2 className="font-semibold text-gray-900 mb-4">
-                        <Calendar size={16} className="inline mr-2" />
-                        Thời gian
-                    </h2>
-
-                    <div className="grid grid-cols-2 gap-4">
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                                Ngày bắt đầu <span className="text-red-500">*</span>
-                            </label>
-                            <input
-                                type="date"
-                                name="startDate"
-                                value={formData.startDate}
-                                onChange={handleInputChange}
-                                className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.startDate ? "border-red-500" : "border-gray-200"
-                                    }`}
-                            />
-                            {errors.startDate && (
-                                <p className="text-red-500 text-sm mt-1">{errors.startDate}</p>
-                            )}
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                                Ngày kết thúc <span className="text-red-500">*</span>
-                            </label>
-                            <input
-                                type="date"
-                                name="endDate"
-                                value={formData.endDate}
-                                onChange={handleInputChange}
-                                min={formData.startDate}
-                                className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.endDate ? "border-red-500" : "border-gray-200"
-                                    }`}
-                            />
-                            {errors.endDate && (
-                                <p className="text-red-500 text-sm mt-1">{errors.endDate}</p>
-                            )}
-                        </div>
                     </div>
                 </div>
 

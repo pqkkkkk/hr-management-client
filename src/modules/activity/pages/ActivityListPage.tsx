@@ -25,6 +25,7 @@ export interface ActivityListPageProps {
     defaultStatus?: ActivityStatus;
     showCreateButton?: boolean;
     myActivitiesOnly?: boolean;
+    fetchIsRegistered?: boolean;
     fetchFn?: (filter: ActivityFilterType) => Promise<ApiResponse<Page<Activity>>>;
 }
 
@@ -35,6 +36,7 @@ const ActivityListPage: React.FC<ActivityListPageProps> = ({
     defaultStatus,
     showCreateButton = false,
     myActivitiesOnly = false,
+    fetchIsRegistered = false,
     fetchFn,
 }) => {
     const navigate = useNavigate();
@@ -57,6 +59,7 @@ const ActivityListPage: React.FC<ActivityListPageProps> = ({
     const fetchActivities = useMemo(() => {
         if (fetchFn) return fetchFn;
         if (myActivitiesOnly) return activityApi.getMyActivities.bind(activityApi, user?.userId);
+        if (fetchIsRegistered) return activityApi.getActivities.bind(activityApi, user?.userId);
         return activityApi.getActivities.bind(activityApi);
     }, [activityApi, myActivitiesOnly, fetchFn]);
 
