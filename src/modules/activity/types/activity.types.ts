@@ -63,11 +63,24 @@ export interface ActivityLog {
 
 export interface ActivityTemplate {
     templateId: string;
-    name: string;
+    templateName: string;
     type: string;
     description?: string;
     schema?: Record<string, any>;
     createdAt: string;
+}
+
+export interface ConfigFieldResponse {
+    name: string;
+    type: string;
+    label: string;
+    defaultValue?: any;
+    required: boolean;
+    description?: string;
+}
+
+export interface ConfigSchemaResponse {
+    fields: ConfigFieldResponse[];
 }
 
 export interface ActivityParticipant {
@@ -85,9 +98,7 @@ export interface LeaderboardEntry {
     employeeId: string;
     employeeName: string;
     avatarUrl?: string;
-    totalDistance: number;
-    totalLogs: number;
-    averagePace: number;
+    totalScore: number;
 }
 
 export interface ActivityStatistics {
@@ -153,6 +164,7 @@ export interface UpdateActivityStatusRequest {
 export interface CreateActivityLogRequest {
     activityId: string;
     employeeId: string;
+    employeeName?: string;
     distance: number;
     durationMinutes: number;
     logDate: string;

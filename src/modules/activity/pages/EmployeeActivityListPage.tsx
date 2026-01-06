@@ -13,6 +13,7 @@ const EmployeeActivityListPage: React.FC = () => {
             showStatusFilter={false}
             defaultStatus={ActivityStatus.IN_PROGRESS}
             showCreateButton={false}
+            fetchIsRegistered={true}
         />
     );
 };

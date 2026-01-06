@@ -122,6 +122,7 @@ const SubmitResultPage: React.FC = () => {
             const request: CreateActivityLogRequest = {
                 activityId,
                 employeeId: user?.userId,
+                employeeName: user?.fullName,
                 distance: parseFloat(formData.distance),
                 durationMinutes: parseInt(formData.durationMinutes),
                 logDate: new Date(formData.logDate).toISOString(),
