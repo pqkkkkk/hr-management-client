@@ -27,7 +27,7 @@ const SubmitResultPage: React.FC = () => {
     });
 
     // File upload state
-    const [files, setFiles] = useState<File[]>([]);
+    const [file, setFile] = useState<File | null>(null);
     const [dragOver, setDragOver] = useState(false);
     const fileInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -57,16 +57,14 @@ const SubmitResultPage: React.FC = () => {
 
     // Handle file selection
     const onFiles = (fList: FileList | null) => {
-        if (!fList) return;
-        const arr = Array.from(fList);
+        if (!fList || fList.length === 0) return;
+        const selectedFile = fList[0];
         // Filter by size (max 5MB) and only images
-        const filtered = arr.filter(
-            (f) => f.size <= 5 * 1024 * 1024 && f.type.startsWith("image/")
-        );
-        if (filtered.length < arr.length) {
+        if (selectedFile.size <= 5 * 1024 * 1024 && selectedFile.type.startsWith("image/")) {
+            setFile(selectedFile);
+        } else {
             toast.warning("Chỉ chấp nhận file ảnh dưới 5MB");
         }
-        setFiles((prev) => [...prev, ...filtered]);
     };
 
     const handleDrop = (e: React.DragEvent) => {
@@ -75,8 +73,8 @@ const SubmitResultPage: React.FC = () => {
         onFiles(e.dataTransfer.files);
     };
 
-    const removeFile = (index: number) => {
-        setFiles((f) => f.filter((_, i) => i !== index));
+    const removeFile = () => {
+        setFile(null);
     };
 
     // Handle input change
@@ -296,46 +294,36 @@ const SubmitResultPage: React.FC = () => {
                             ref={fileInputRef}
                             type="file"
                             accept="image/*"
-                            multiple
                             onChange={(e) => onFiles(e.target.files)}
                             className="hidden"
                         />
                     </div>
 
-                    {/* File List */}
-                    {files.length > 0 && (
-                        <ul className="mt-3 space-y-2">
-                            {files.map((f, i) => (
-                                <li
-                                    key={i}
-                                    className="flex items-center justify-between bg-gray-50 border rounded-lg px-3 py-2"
-                                >
-                                    <div className="flex items-center gap-3">
-                                        {/* Preview thumbnail */}
-                                        <img
-                                            src={URL.createObjectURL(f)}
-                                            alt={f.name}
-                                            className="w-10 h-10 object-cover rounded"
-                                        />
-                                        <div>
-                                            <div className="font-medium text-sm text-gray-900 truncate max-w-[200px]">
-                                                {f.name}
-                                            </div>
-                                            <div className="text-xs text-gray-500">
-                                                {(f.size / 1024).toFixed(0)} KB
-                                            </div>
-                                        </div>
+                    {/* File Preview */}
+                    {file && (
+                        <div className="mt-3 flex items-center justify-between bg-gray-50 border rounded-lg px-3 py-2">
+                            <div className="flex items-center gap-3">
+                                {/* Preview thumbnail */}
+                                <img
+                                    src={URL.createObjectURL(file)}
+                                    alt={file.name}
+                                    className="w-10 h-10 object-cover rounded"
+                                />
+                                <div>
+                                    <div className="font-medium text-sm">{file.name}</div>
+                                    <div className="text-xs text-gray-500">
+                                        {(file.size / 1024).toFixed(0)} KB
                                     </div>
-                                    <button
-                                        type="button"
-                                        onClick={() => removeFile(i)}
-                                        className="text-red-500 hover:text-red-700 p-1"
-                                    >
-                                        <X size={18} />
-                                    </button>
-                                </li>
-                            ))}
-                        </ul>
+                                </div>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={removeFile}
+                                className="text-red-500 hover:text-red-700 text-sm font-medium"
+                            >
+                                Xóa
+                            </button>
+                        </div>
                     )}
 
                     <p className="text-sm text-gray-500 mt-2">

@@ -15,7 +15,7 @@ const CheckInRequestForm: React.FC = () => {
   const [date, setDate] = useState<string>("");
   const [time, setTime] = useState<string>("");
   const [reason, setReason] = useState<string>("");
-  const [files, setFiles] = useState<File[]>([]);
+  const [file, setFile] = useState<File | null>(null);
   const [dragOver, setDragOver] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -29,17 +29,20 @@ const CheckInRequestForm: React.FC = () => {
     setTime(formatTimeForInput(now));
   }, []);
 
-  const onFiles = (fList: FileList | null) => {
-    if (!fList) return;
-    const arr = Array.from(fList);
-    const filtered = arr.filter((f) => f.size <= 5 * 1024 * 1024);
-    setFiles((prev) => [...prev, ...filtered]);
+  const onFileSelect = (fList: FileList | null) => {
+    if (!fList || fList.length === 0) return;
+    const selectedFile = fList[0];
+    if (selectedFile.size <= 5 * 1024 * 1024) {
+      setFile(selectedFile);
+    } else {
+      toast.warning("File quá lớn. Tối đa 5MB");
+    }
   };
 
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     setDragOver(false);
-    onFiles(e.dataTransfer.files);
+    onFileSelect(e.dataTransfer.files);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -88,8 +91,8 @@ const CheckInRequestForm: React.FC = () => {
     }
   };
 
-  const removeFile = (index: number) => {
-    setFiles((f) => f.filter((_, i) => i !== index));
+  const removeFile = () => {
+    setFile(null);
   };
 
   return (
@@ -192,36 +195,28 @@ const CheckInRequestForm: React.FC = () => {
               <input
                 ref={fileInputRef}
                 type="file"
-                multiple
-                onChange={(e) => onFiles(e.target.files)}
+                onChange={(e) => onFileSelect(e.target.files)}
                 className="hidden"
                 disabled={isBeforeEight}
               />
             </div>
-            {/* Danh sách file đã đính kèm */}
-            {files.length > 0 && (
-              <ul className="mt-3">
-                {files.map((f, i) => (
-                  <li
-                    key={i}
-                    className="flex items-center justify-between bg-gray-50 border rounded px-3 py-2 text-sm mb-2"
-                  >
-                    <div>
-                      <div className="font-medium">{f.name}</div>
-                      <div className="text-xs text-gray-500">
-                        {(f.size / 1024).toFixed(0)} KB
-                      </div>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => removeFile(i)}
-                      className="text-red-500 text-sm"
-                    >
-                      Xóa
-                    </button>
-                  </li>
-                ))}
-              </ul>
+            {/* File đã đính kèm */}
+            {file && (
+              <div className="mt-3 flex items-center justify-between bg-gray-50 border rounded px-3 py-2 text-sm">
+                <div>
+                  <div className="font-medium">{file.name}</div>
+                  <div className="text-xs text-gray-500">
+                    {(file.size / 1024).toFixed(0)} KB
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={removeFile}
+                  className="text-red-500 text-sm"
+                >
+                  Xóa
+                </button>
+              </div>
             )}
           </div>
           {/* Hiển thị lỗi */}
@@ -232,7 +227,7 @@ const CheckInRequestForm: React.FC = () => {
               type="button"
               onClick={() => {
                 setReason("");
-                setFiles([]);
+                setFile(null);
                 setError(null);
               }}
               className="px-4 py-2 border rounded bg-white"
