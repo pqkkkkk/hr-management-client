@@ -221,10 +221,10 @@ const EmployeeUpdatePage: React.FC = () => {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                   <FormSelect
                     label="Phòng ban"
-                    value={formData.departmentId}
+                    value={formData.departmentName}
                     options={departmentOptions}
                     onChange={(value) =>
-                      handleInputChange("departmentId", value)
+                      handleInputChange("departmentName", value)
                     }
                   />
                   <FormDateInput

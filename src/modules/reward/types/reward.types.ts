@@ -34,7 +34,9 @@ export interface PointTransaction {
   type: TransactionType;
   amount: number;
   sourceWalletId: string | null;
+  sourceUsername?: string;
   destinationWalletId: string;
+  destinationUsername?: string;
   createdAt: string;
   items: RewardItemTransaction[];
 }
