@@ -10,11 +10,14 @@ import {
 import { ArrowLeft, Upload, Calendar, FileText, X, Image } from "lucide-react";
 import { toast } from "react-toastify";
 import ActivityConfigFields from "../components/ActivityConfigFields";
+import { useFileUpload } from "shared/hooks/useFileUpload";
+import { response } from "express";
 
 const CreateActivityPage: React.FC = () => {
     const navigate = useNavigate();
     const { activityApi } = useApi();
     const { user } = useAuth();
+    const { uploadSingleFile, uploading } = useFileUpload();
 
     const [submitting, setSubmitting] = useState(false);
     const [templates, setTemplates] = useState<ActivityTemplate[]>([]);
@@ -181,12 +184,19 @@ const CreateActivityPage: React.FC = () => {
             const startDateTime = formData.startDate ? new Date(formData.startDate + 'T00:00:00').toISOString() : '';
             const endDateTime = formData.endDate ? new Date(formData.endDate + 'T23:59:59').toISOString() : '';
 
-            // TODO: Upload banner file first, get URL
+            // Upload banner file first if exists
+            let bannerUrl: string | undefined;
+            if (bannerFile) {
+                bannerUrl = await uploadSingleFile(bannerFile, {
+                    errorMessage: 'Không thể tải lên banner.',
+                });
+            }
+
             const request: CreateActivityRequest = {
                 ...formData,
                 startDate: startDateTime,
                 endDate: endDateTime,
-                bannerUrl: bannerPreview || undefined, // In real implementation, use uploaded URL
+                bannerUrl: bannerUrl || undefined, // Use uploaded URL from server
                 config: configValues, // Include config values
             };
 
@@ -447,13 +457,18 @@ const CreateActivityPage: React.FC = () => {
                     </button>
                     <button
                         type="submit"
-                        disabled={submitting}
+                        disabled={submitting || uploading}
                         className="flex-1 px-4 py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors disabled:opacity-50"
                     >
-                        {submitting ? (
+                        {uploading ? (
                             <span className="flex items-center justify-center gap-2">
                                 <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                                Đang tạo...
+                                Đang tải lên banner...
+                            </span>
+                        ) : submitting ? (
+                            <span className="flex items-center justify-center gap-2">
+                                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                                Đang tạo hoạt động...
                             </span>
                         ) : (
                             "Tạo hoạt động"
