@@ -10,6 +10,7 @@ import {
   LeaveType,
   ShiftType,
   TimesheetResponse,
+  TimesheetDailyEntry,
   CreateCheckOutRequestDTO,
   CreateCheckInRequestDTO,
   CreateTimesheetUpdateRequestDTO,
@@ -48,6 +49,11 @@ export interface RequestApi {
     employeeId: string,
     yearMonth: string
   ): Promise<ApiResponse<TimesheetResponse>>;
+
+  getTimesheetByDate(
+    employeeId: string, 
+    date: string
+  ): Promise<ApiResponse<TimesheetDailyEntry>>;
 
   createTimesheetUpdateRequest(
     data: CreateTimesheetUpdateRequestDTO
@@ -605,6 +611,57 @@ export class MockRequestApi implements RequestApi {
     });
   }
 
+  async getTimesheetByDate(
+    employeeId: string, 
+    date: string
+  ): Promise<ApiResponse<TimesheetDailyEntry>> {
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        const data: TimesheetResponse = { 
+          employeeId: employeeId,
+          employeeName: "Nguyễn Văn A",
+          yearMonth: date.slice(0,7),
+          timesheets: [
+            {
+              dailyTsId: "TS001",
+              date: date,
+              morningStatus: "PRESENT",
+              afternoonStatus: "PRESENT",
+              morningWfh: false,
+              afternoonWfh: false,
+              totalWorkCredit: 1.0,
+              checkInTime: `${date}T08:25:00Z`,
+              checkOutTime: `${date}T18:40:00Z`,
+              lateMinutes: 0,
+              earlyLeaveMinutes: 0,
+              overtimeMinutes: 70,
+              isFinalized: false,
+              employeeId,
+              employeeName: "Nguyễn Văn A",
+            },
+          ],
+          summary: {
+            totalDays: 1,
+            morningPresentCount: 1,
+            afternoonPresentCount: 1,
+            lateDaysCount: 0,
+            totalLateMinutes: 0,
+            totalOvertimeMinutes: 70,
+            totalWorkCredit: 1.0,
+          },
+        };
+        resolve({
+          data: data.timesheets[0],
+          success: true,
+          statusCode: 200,
+          message: "Timesheet by date retrieved successfully",
+        });
+      }, 500);
+    });
+  }
+
+
+
   async createTimesheetUpdateRequest(
     data: CreateTimesheetUpdateRequestDTO
   ): Promise<ApiResponse<any>> {
@@ -638,6 +695,11 @@ export class RestRequestApi implements RequestApi {
     return springApiClient.get<ApiResponse<TimesheetResponse>>(
       `/timesheets/employee/${employeeId}/monthly`,
       { params: { yearMonth } }
+    );
+  }
+  async getTimesheetByDate(employeeId: string, date: string): Promise<ApiResponse<TimesheetDailyEntry>> {
+    return springApiClient.get<ApiResponse<TimesheetDailyEntry>>(
+      `/timesheets/employee/${employeeId}/date/${date}`,
     );
   }
 

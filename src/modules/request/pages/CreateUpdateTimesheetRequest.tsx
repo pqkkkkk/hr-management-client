@@ -4,6 +4,7 @@ import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
 import { useApi } from "contexts/ApiContext";
 import { CreateTimesheetUpdateRequestDTO } from "../types/request.types";
+import { TimesheetDailyEntry } from "../types/request.types";
 import { useAuth } from "contexts/AuthContext";
 
 interface UpdateTimesheetModalProps {
@@ -28,14 +29,40 @@ const UpdateTimesheetRequestForm: React.FC<UpdateTimesheetModalProps> = ({ isMod
   const [errors, setErrors] = useState<Record<string, string>>({});
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
+  // Lấy timesheet theo ngày khi mở form hoặc khi chọn ngày mới
   useEffect(() => {
-    const now = new Date();
-    setTargetDate(now);
-    setCheckInTime(formatTimeForInput(now));
-    const d = new Date(now.getTime());
-    d.setHours(d.getHours() + 9);
-    setCheckOutTime(formatTimeForInput(d));
-  }, []);
+    const fetchTimesheetForDate = async (date: Date | null) => {
+      if (!date || !user?.userId) return console.log('Không có ngày hoặc userId để lấy timesheet');
+      const dateStr = date.toISOString().slice(0, 10); // YYYY-MM-DD
+
+      try {
+        const res = await requestApi.getTimesheetByDate(user.userId, dateStr);
+
+        if (res?.data ) {
+          const entry: TimesheetDailyEntry = res.data;
+          setCheckInTime(entry.checkInTime ? entry.checkInTime.slice(11, 16) : "");
+          setCheckOutTime(entry.checkOutTime ? entry.checkOutTime.slice(11, 16) : "");
+        } else {
+          setCheckInTime("");
+          setCheckOutTime("");
+          toast.error("Không có dữ liệu chấm công cho ngày này!");
+        }
+      } catch {
+        setCheckInTime("");
+        setCheckOutTime("");
+        toast.error("Không có dữ liệu chấm công cho ngày này!");
+      }
+    };
+
+    if (!targetDate) {
+      const now = new Date();
+      setTargetDate(now);
+      fetchTimesheetForDate(now);
+    } else {
+      fetchTimesheetForDate(targetDate);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [targetDate, user?.userId]);
 
   // If rendered as modal but not open, do not render anything
   if (isModalMode && !open) return null;
@@ -139,7 +166,12 @@ const UpdateTimesheetRequestForm: React.FC<UpdateTimesheetModalProps> = ({ isMod
             type="date"
             className="w-full border rounded px-3 py-2"
             value={targetDate?.toISOString().split('T')[0]}
-            onChange={(e) => setTargetDate(new Date(e.target.value))}
+            onChange={(e) => {
+              const d = new Date(e.target.value);
+              console.log('Ngày được chọn:', d, 'ISO:', d.toISOString());
+              setTargetDate(d);
+              // fetchTimesheetForDate sẽ tự động chạy qua useEffect
+            }}
           />
         </div>
       </div>
@@ -149,11 +181,11 @@ const UpdateTimesheetRequestForm: React.FC<UpdateTimesheetModalProps> = ({ isMod
         <div className="flex gap-3 mb-4">
           <div className="flex-1 border border-gray-200 rounded p-3 bg-gray-50">
             <div className="text-xs text-gray-500">Giờ vào</div>
-            <div className="font-medium">08:30</div>
+            <div className="font-medium">{checkInTime}</div>
           </div>
           <div className="flex-1 border border-gray-200 rounded p-3 bg-gray-50">
             <div className="text-xs text-gray-500">Giờ ra</div>
-            <div className="font-medium">17:30</div>
+            <div className="font-medium">{checkOutTime}</div>
           </div>
         </div>
 
