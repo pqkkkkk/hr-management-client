@@ -8,12 +8,14 @@ import {
 } from "../types/activity.types";
 import { ArrowLeft, Upload, Calendar, Clock, MapPin, X } from "lucide-react";
 import { toast } from "react-toastify";
+import { useFileUpload } from "shared/hooks/useFileUpload";
 
 const SubmitResultPage: React.FC = () => {
     const { id: activityId } = useParams<{ id: string }>();
     const navigate = useNavigate();
     const { activityApi } = useApi();
     const { user } = useAuth();
+    const { uploadSingleFile, uploading } = useFileUpload();
 
     const [activity, setActivity] = useState<Activity | null>(null);
     const [loading, setLoading] = useState(true);
@@ -115,8 +117,14 @@ const SubmitResultPage: React.FC = () => {
 
         setSubmitting(true);
         try {
-            // TODO: Upload files first if exists, then get URLs
-            // For now, we'll create the log without proof URL
+            // Upload proof image first if exists
+            let proofUrl: string | undefined;
+            if (file) {
+                proofUrl = await uploadSingleFile(file, {
+                    errorMessage: 'Không thể tải lên ảnh chứng minh.',
+                });
+            }
+
             const request: CreateActivityLogRequest = {
                 activityId,
                 employeeId: user?.userId,
@@ -124,7 +132,7 @@ const SubmitResultPage: React.FC = () => {
                 distance: parseFloat(formData.distance),
                 durationMinutes: parseInt(formData.durationMinutes),
                 logDate: new Date(formData.logDate).toISOString(),
-                proofUrl: undefined, // Will be set after file upload in real implementation
+                proofUrl: proofUrl, // Set uploaded URL or undefined
             };
 
             const response = await activityApi.createActivityLog(request);
@@ -342,13 +350,18 @@ const SubmitResultPage: React.FC = () => {
                     </button>
                     <button
                         type="submit"
-                        disabled={submitting}
+                        disabled={submitting || uploading}
                         className="flex-1 px-4 py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                        {submitting ? (
+                        {uploading ? (
                             <span className="flex items-center justify-center gap-2">
                                 <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                                Đang gửi...
+                                Đang tải lên ảnh...
+                            </span>
+                        ) : submitting ? (
+                            <span className="flex items-center justify-center gap-2">
+                                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                                Đang gửi kết quả...
                             </span>
                         ) : (
                             "Ghi nhận kết quả"
