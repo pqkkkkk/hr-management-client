@@ -1,11 +1,14 @@
 import React, { useEffect, useRef, useState } from "react";
-import { formatDateForInput, formatTimeForInput } from "shared/utils/date-utils";
+import {
+  formatDateForInput,
+  formatTimeForInput,
+} from "shared/utils/date-utils";
 import { useApi } from "contexts/ApiContext";
 import { useAuth } from "contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import { CreateCheckInRequestDTO } from "../types/request.types";
-
+import { useFileUpload } from "shared/hooks/useFileUpload";
 
 const CheckInRequestForm: React.FC = () => {
   const { requestApi } = useApi();
@@ -20,6 +23,7 @@ const CheckInRequestForm: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const { uploadSingleFile, uploading } = useFileUpload();
 
   const isBeforeEight = !!time && time < "08:00";
 
@@ -55,25 +59,32 @@ const CheckInRequestForm: React.FC = () => {
       setError("Không thể tạo yêu cầu cho thời gian ở tương lai.");
       return;
     }
-
+    // Upload file before creating request (only for late check-in)
+    let attachmentUrl: string | undefined;
+    if (file && !isBeforeEight) {
+      attachmentUrl = await uploadSingleFile(file, {
+        errorMessage: "Không thể tải lên tệp đính kèm.",
+      });
+    }
     // If time >= 08:00 AM, reason is required
     if (!isBeforeEight && !reason.trim()) {
       setError("Vui lòng nhập lý do.");
       return;
     }
-
     setSubmitting(true);
 
     try {
       const desiredCheckInTime = `${date}T${time}:00`;
 
       const requestData: CreateCheckInRequestDTO = {
-        title: time >= "08:00"
-          ? `Yêu cầu check-in trễ - ${date} ${time}`
-          : `Yêu cầu check-in - ${date} ${time}`,
+        title:
+          time >= "08:00"
+            ? `Yêu cầu check-in trễ - ${date} ${time}`
+            : `Yêu cầu check-in - ${date} ${time}`,
         userReason: isBeforeEight ? undefined : reason,
         employeeId: user?.userId || "",
         desiredCheckInTime,
+        attachmentUrl,
       };
 
       await requestApi.createCheckInRequest(requestData);
@@ -81,9 +92,10 @@ const CheckInRequestForm: React.FC = () => {
       toast.success("Gửi yêu cầu check-in thành công!");
       navigate("/requests/my-requests");
     } catch (err) {
-      const errorMessage = err?.response?.data?.message
-        || err?.message
-        || 'Có lỗi xảy ra khi tạo yêu cầu check-in';
+      const errorMessage =
+        err?.response?.data?.message ||
+        err?.message ||
+        "Có lỗi xảy ra khi tạo yêu cầu check-in";
 
       toast.error(errorMessage);
     } finally {
@@ -144,8 +156,9 @@ const CheckInRequestForm: React.FC = () => {
               {isBeforeEight ? null : <span className="text-red-500">*</span>}
             </label>
             <textarea
-              className={`w-full border rounded p-3 min-h-[90px] resize-none ${isBeforeEight ? "opacity-50 pointer-events-none" : ""
-                }`}
+              className={`w-full border rounded p-3 min-h-[90px] resize-none ${
+                isBeforeEight ? "opacity-50 pointer-events-none" : ""
+              }`}
               placeholder={
                 isBeforeEight
                   ? "Không cần nhập lý do"
@@ -163,7 +176,7 @@ const CheckInRequestForm: React.FC = () => {
             </label>
             <div
               onDragOver={(e) => {
-                if (isBeforeEight) return;
+                if (isBeforeEight || uploading) return;
                 e.preventDefault();
                 setDragOver(true);
               }}
@@ -171,37 +184,67 @@ const CheckInRequestForm: React.FC = () => {
                 if (!isBeforeEight) setDragOver(false);
               }}
               onDrop={(e) => {
-                if (!isBeforeEight) handleDrop(e);
+                if (!isBeforeEight && !uploading) handleDrop(e);
               }}
-              className={`border-2 ${dragOver && !isBeforeEight
-                ? "border-blue-400 bg-blue-50"
-                : "border-dashed border-gray-300 bg-white"
-                } rounded p-6 text-center ${isBeforeEight
+              className={`border-2 ${
+                dragOver && !isBeforeEight
+                  ? "border-blue-400 bg-blue-50"
+                  : "border-dashed border-gray-300 bg-white"
+              } rounded p-6 text-center ${
+                isBeforeEight || uploading
                   ? "opacity-50 pointer-events-none"
                   : "cursor-pointer"
-                }`}
+              }`}
               onClick={() => {
-                if (!isBeforeEight) fileInputRef.current?.click();
+                if (!isBeforeEight && !uploading) fileInputRef.current?.click();
               }}
             >
-              <div className="text-gray-500">
-                {isBeforeEight
-                  ? "Không cần đính kèm file"
-                  : "Nhấn để tải lên hoặc kéo thả"}
-              </div>
-              <div className="text-xs text-gray-400">
-                PNG, JPG, PDF (Tối đa 5MB)
-              </div>
+              {uploading ? (
+                <>
+                  <svg
+                    className="w-8 h-8 animate-spin mx-auto text-blue-600"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    ></circle>
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+                    ></path>
+                  </svg>
+                  <div className="text-blue-600 mt-2">Đang tải lên...</div>
+                </>
+              ) : (
+                <>
+                  <div className="text-gray-500">
+                    {isBeforeEight
+                      ? "Không cần đính kèm file"
+                      : "Nhấn để tải lên hoặc kéo thả"}
+                  </div>
+                  <div className="text-xs text-gray-400">
+                    PNG, JPG, PDF (Tối đa 5MB)
+                  </div>
+                </>
+              )}
               <input
                 ref={fileInputRef}
                 type="file"
                 onChange={(e) => onFileSelect(e.target.files)}
                 className="hidden"
-                disabled={isBeforeEight}
+                disabled={isBeforeEight || uploading}
               />
             </div>
             {/* File đã đính kèm */}
-            {file && (
+            {file && !uploading && (
               <div className="mt-3 flex items-center justify-between bg-gray-50 border rounded px-3 py-2 text-sm">
                 <div>
                   <div className="font-medium">{file.name}</div>
@@ -213,6 +256,7 @@ const CheckInRequestForm: React.FC = () => {
                   type="button"
                   onClick={removeFile}
                   className="text-red-500 text-sm"
+                  disabled={submitting}
                 >
                   Xóa
                 </button>
@@ -236,8 +280,8 @@ const CheckInRequestForm: React.FC = () => {
             </button>
             <button
               type="submit"
-              className="px-4 py-2 rounded bg-blue-600 text-white flex items-center gap-2"
-              disabled={submitting}
+              className="px-4 py-2 rounded bg-blue-600 text-white flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              disabled={uploading || submitting}
             >
               {submitting ? (
                 <>
@@ -269,7 +313,6 @@ const CheckInRequestForm: React.FC = () => {
             </button>
           </div>
         </form>
-
       </div>
     </div>
   );

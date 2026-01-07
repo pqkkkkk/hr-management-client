@@ -30,8 +30,9 @@ const Badge: React.FC<{ status?: RequestStatus }> = ({ status }) => {
   const label = opt?.label ?? status;
   return (
     <span
-      className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${classMap[status] || "bg-gray-100 text-gray-800"
-        }`}
+      className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
+        classMap[status] || "bg-gray-100 text-gray-800"
+      }`}
     >
       {label}
     </span>
@@ -56,7 +57,10 @@ const RequestDetailPage: React.FC = () => {
       try {
         if (!requestId) throw new Error("Missing request id");
 
-        const res = await requestApi.getRequestById(requestId, requestType as RequestType);
+        const res = await requestApi.getRequestById(
+          requestId,
+          requestType as RequestType
+        );
 
         if (res && res.success) {
           setRequest(res.data);
@@ -86,10 +90,12 @@ const RequestDetailPage: React.FC = () => {
   const doApprove = async () => {
     if (!request || !user) return;
     try {
-      const res = await requestApi.approveRequest(request.requestId, user.userId);
+      const res = await requestApi.approveRequest(
+        request.requestId,
+        user.userId
+      );
 
       if (res && res.success) setRequest(res.data);
-
     } catch (err) {
       toast.error(err?.message || "Không thể duyệt yêu cầu");
     } finally {
@@ -100,7 +106,11 @@ const RequestDetailPage: React.FC = () => {
   const doReject = async (reason: string) => {
     if (!request || !user) return;
     try {
-      const res = await requestApi.rejectRequest(request.requestId, user.userId, reason);
+      const res = await requestApi.rejectRequest(
+        request.requestId,
+        user.userId,
+        reason
+      );
       if (res && res.success) setRequest(res.data);
     } catch (err) {
       toast.error(err?.message || "Không thể từ chối yêu cầu");
@@ -112,7 +122,10 @@ const RequestDetailPage: React.FC = () => {
   const doDelegate = async (data: CreateDelegationRequest) => {
     if (!request || !user) return;
     try {
-      const res = await requestApi.delegateRequest(request.requestId, data.delegateToId);
+      const res = await requestApi.delegateRequest(
+        request.requestId,
+        data.delegateToId
+      );
       if (res && res.success) setRequest(res.data);
     } catch (err) {
       toast.error(err?.message || "Không thể ủy quyền");
@@ -124,6 +137,13 @@ const RequestDetailPage: React.FC = () => {
   const getTypeLabel = (t?: string) => {
     const opt = requestTypeOptions.find((x) => x.value === (t as any));
     return opt ? opt.label : t;
+  };
+
+  const handleViewFile = () => {
+    if (!request?.attachmentUrl) return;
+
+    // Mở file trong tab mới
+    window.open(request.attachmentUrl, "_blank", "noopener,noreferrer");
   };
 
   return (
@@ -289,7 +309,9 @@ const RequestDetailPage: React.FC = () => {
                           Giờ check-in mong muốn:{" "}
                           <span className="font-medium">
                             {(() => {
-                              const { time, date } = formatDateTime(request.additionalCheckInInfo.desiredCheckInTime);
+                              const { time, date } = formatDateTime(
+                                request.additionalCheckInInfo.desiredCheckInTime
+                              );
                               return `${time} ${date}`;
                             })()}
                           </span>
@@ -309,7 +331,10 @@ const RequestDetailPage: React.FC = () => {
                           Giờ check-out mong muốn:{" "}
                           <span className="font-medium">
                             {(() => {
-                              const { time, date } = formatDateTime(request.additionalCheckOutInfo.desiredCheckOutTime);
+                              const { time, date } = formatDateTime(
+                                request.additionalCheckOutInfo
+                                  .desiredCheckOutTime
+                              );
                               return `${time} ${date}`;
                             })()}
                           </span>
@@ -328,22 +353,35 @@ const RequestDetailPage: React.FC = () => {
                         <div className="text-sm text-gray-700">
                           Ngày cần sửa:{" "}
                           <span className="font-medium">
-                            {formatDate(request.additionalTimesheetInfo.targetDate)}
+                            {formatDate(
+                              request.additionalTimesheetInfo.targetDate
+                            )}
                           </span>
                         </div>
                         {request.additionalTimesheetInfo.currentCheckInTime && (
                           <div className="text-sm text-gray-700">
                             Giờ vào hiện tại:{" "}
                             <span className="font-medium">
-                              {formatDateTime(request.additionalTimesheetInfo.currentCheckInTime).time}
+                              {
+                                formatDateTime(
+                                  request.additionalTimesheetInfo
+                                    .currentCheckInTime
+                                ).time
+                              }
                             </span>
                           </div>
                         )}
-                        {request.additionalTimesheetInfo.currentCheckOutTime && (
+                        {request.additionalTimesheetInfo
+                          .currentCheckOutTime && (
                           <div className="text-sm text-gray-700">
                             Giờ ra hiện tại:{" "}
                             <span className="font-medium">
-                              {formatDateTime(request.additionalTimesheetInfo.currentCheckOutTime).time}
+                              {
+                                formatDateTime(
+                                  request.additionalTimesheetInfo
+                                    .currentCheckOutTime
+                                ).time
+                              }
                             </span>
                           </div>
                         )}
@@ -351,15 +389,26 @@ const RequestDetailPage: React.FC = () => {
                           <div className="text-sm text-gray-700">
                             Giờ vào mong muốn:{" "}
                             <span className="font-medium">
-                              {formatDateTime(request.additionalTimesheetInfo.desiredCheckInTime).time}
+                              {
+                                formatDateTime(
+                                  request.additionalTimesheetInfo
+                                    .desiredCheckInTime
+                                ).time
+                              }
                             </span>
                           </div>
                         )}
-                        {request.additionalTimesheetInfo.desiredCheckOutTime && (
+                        {request.additionalTimesheetInfo
+                          .desiredCheckOutTime && (
                           <div className="text-sm text-gray-700">
                             Giờ ra mong muốn:{" "}
                             <span className="font-medium">
-                              {formatDateTime(request.additionalTimesheetInfo.desiredCheckOutTime).time}
+                              {
+                                formatDateTime(
+                                  request.additionalTimesheetInfo
+                                    .desiredCheckOutTime
+                                ).time
+                              }
                             </span>
                           </div>
                         )}
@@ -451,70 +500,34 @@ const RequestDetailPage: React.FC = () => {
                             </div>
                           </div>
 
-                          <div className="flex items-center gap-3">
-                            <button
-                              type="button"
-                              className="text-gray-600 hover:text-gray-800"
-                              title="Tải xuống (biểu tượng)"
+                          <button
+                            type="button"
+                            onClick={handleViewFile}
+                            className="text-gray-600 hover:text-gray-800 transition-colors"
+                            title="Xem"
+                          >
+                            <svg
+                              width="18"
+                              height="18"
+                              viewBox="0 0 24 24"
+                              fill="none"
                             >
-                              <svg
-                                width="18"
-                                height="18"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                              >
-                                <path
-                                  d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"
-                                  stroke="currentColor"
-                                  strokeWidth="1.5"
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                />
-                                <path
-                                  d="M7 10l5 5 5-5"
-                                  stroke="currentColor"
-                                  strokeWidth="1.5"
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                />
-                                <path
-                                  d="M12 15V3"
-                                  stroke="currentColor"
-                                  strokeWidth="1.5"
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                />
-                              </svg>
-                            </button>
-
-                            <button
-                              type="button"
-                              className="text-gray-600 hover:text-gray-800"
-                              title="Xem (biểu tượng)"
-                            >
-                              <svg
-                                width="18"
-                                height="18"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                              >
-                                <path
-                                  d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"
-                                  stroke="currentColor"
-                                  strokeWidth="1.5"
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                />
-                                <circle
-                                  cx="12"
-                                  cy="12"
-                                  r="3"
-                                  stroke="currentColor"
-                                  strokeWidth="1.5"
-                                />
-                              </svg>
-                            </button>
-                          </div>
+                              <path
+                                d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"
+                                stroke="currentColor"
+                                strokeWidth="1.5"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                              />
+                              <circle
+                                cx="12"
+                                cy="12"
+                                r="3"
+                                stroke="currentColor"
+                                strokeWidth="1.5"
+                              />
+                            </svg>
+                          </button>
                         </div>
                       </div>
                     </div>
@@ -529,7 +542,8 @@ const RequestDetailPage: React.FC = () => {
                   >
                     Đóng
                   </button>
-                  {request.status === RequestStatus.PENDING ? (
+                  {request.status === RequestStatus.PENDING &&
+                  user?.role !== "EMPLOYEE" ? (
                     <>
                       <button
                         onClick={() => setIsDelegateOpen(true)}
@@ -602,11 +616,11 @@ const RequestDetailPage: React.FC = () => {
                         Phê duyệt
                       </button>
                     </>
-                  ) : (
+                  ) : request.status !== RequestStatus.PENDING ? (
                     <button className="px-4 py-2 bg-gray-100 text-gray-800 rounded">
                       Quay lại
                     </button>
-                  )}
+                  ) : null}
                 </div>
               </div>
 
