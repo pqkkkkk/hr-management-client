@@ -26,6 +26,7 @@ import {
   MockActivityApi,
   RestActivityApi,
 } from "services/api/activity.api";
+import { MockTimesheetApi, RestTimesheetApi, TimesheetApi } from "services/api/timesheet.api";
 
 interface ApiContextType {
   profileApi: ProfileApi;
@@ -34,6 +35,7 @@ interface ApiContextType {
   fileApi: FileApi;
   rewardApi: RewardApi;
   activityApi: ActivityApi;
+  timesheetApi: TimesheetApi;
 }
 
 interface ApiProviderProps {
@@ -52,6 +54,7 @@ const createApiServices = (apiType: ApiType): ApiContextType => {
         fileApi: new MockFileApi(),
         rewardApi: new MockRewardApi(),
         activityApi: new MockActivityApi(),
+        timesheetApi: new MockTimesheetApi(),
       };
     case "REST":
       return {
@@ -61,6 +64,7 @@ const createApiServices = (apiType: ApiType): ApiContextType => {
         fileApi: new RestFileApi(),
         rewardApi: new RestRewardApi(),
         activityApi: new RestActivityApi(),
+        timesheetApi: new RestTimesheetApi(),
       };
     default:
       throw new Error(`Unsupported API type: ${apiType}`);

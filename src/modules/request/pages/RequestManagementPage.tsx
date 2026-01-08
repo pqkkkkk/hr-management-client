@@ -55,6 +55,7 @@ const RequestManagementPage: React.FC = () => {
     (newFilters: Filters) => {
       updateQuery({
         currentPage: 1,
+        nameTerm: newFilters.nameTerm || undefined,
         type: newFilters.requestType ? (newFilters.requestType as RequestType) : undefined,
         status: newFilters.status ? (newFilters.status as RequestStatus) : undefined,
         startDate: newFilters.dateFrom || undefined,
@@ -206,6 +207,7 @@ const RequestManagementPage: React.FC = () => {
           <div className="px-6">
             <SearchAndFilter
               filters={{
+                nameTerm: query.nameTerm,
                 dateFrom: query.startDate,
                 dateTo: query.endDate,
                 requestType: query.type,

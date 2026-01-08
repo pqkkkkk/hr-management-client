@@ -10,7 +10,7 @@ export interface AuthApi {
 
 export class RestAuthApi implements AuthApi {
   async signIn(req: SignInRequest): Promise<ApiResponse<SignInResponse>> {
-    throw new Error('Method not implemented.');
+    return springApiClient.post<ApiResponse<SignInResponse>>('/auth/login', req);
   }
   async refreshToken(req: RefreshTokenRequest): Promise<ApiResponse<RefreshTokenResponse>> {
     throw new Error('Method not implemented.');

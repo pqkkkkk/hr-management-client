@@ -30,9 +30,8 @@ const Badge: React.FC<{ status?: RequestStatus }> = ({ status }) => {
   const label = opt?.label ?? status;
   return (
     <span
-      className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
-        classMap[status] || "bg-gray-100 text-gray-800"
-      }`}
+      className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${classMap[status] || "bg-gray-100 text-gray-800"
+        }`}
     >
       {label}
     </span>
@@ -373,18 +372,18 @@ const RequestDetailPage: React.FC = () => {
                         )}
                         {request.additionalTimesheetInfo
                           .currentCheckOutTime && (
-                          <div className="text-sm text-gray-700">
-                            Giờ ra hiện tại:{" "}
-                            <span className="font-medium">
-                              {
-                                formatDateTime(
-                                  request.additionalTimesheetInfo
-                                    .currentCheckOutTime
-                                ).time
-                              }
-                            </span>
-                          </div>
-                        )}
+                            <div className="text-sm text-gray-700">
+                              Giờ ra hiện tại:{" "}
+                              <span className="font-medium">
+                                {
+                                  formatDateTime(
+                                    request.additionalTimesheetInfo
+                                      .currentCheckOutTime
+                                  ).time
+                                }
+                              </span>
+                            </div>
+                          )}
                         {request.additionalTimesheetInfo.desiredCheckInTime && (
                           <div className="text-sm text-gray-700">
                             Giờ vào mong muốn:{" "}
@@ -400,18 +399,18 @@ const RequestDetailPage: React.FC = () => {
                         )}
                         {request.additionalTimesheetInfo
                           .desiredCheckOutTime && (
-                          <div className="text-sm text-gray-700">
-                            Giờ ra mong muốn:{" "}
-                            <span className="font-medium">
-                              {
-                                formatDateTime(
-                                  request.additionalTimesheetInfo
-                                    .desiredCheckOutTime
-                                ).time
-                              }
-                            </span>
-                          </div>
-                        )}
+                            <div className="text-sm text-gray-700">
+                              Giờ ra mong muốn:{" "}
+                              <span className="font-medium">
+                                {
+                                  formatDateTime(
+                                    request.additionalTimesheetInfo
+                                      .desiredCheckOutTime
+                                  ).time
+                                }
+                              </span>
+                            </div>
+                          )}
                       </div>
                     </div>
                   )}
@@ -543,7 +542,7 @@ const RequestDetailPage: React.FC = () => {
                     Đóng
                   </button>
                   {request.status === RequestStatus.PENDING &&
-                  user?.role !== "EMPLOYEE" ? (
+                    user?.role !== "EMPLOYEE" ? (
                     <>
                       <button
                         onClick={() => setIsDelegateOpen(true)}

@@ -10,7 +10,7 @@ import { ToastContainer } from "react-toastify";
 function App() {
   return (
     <BrowserRouter>
-      <AuthProvider>
+      <AuthProvider authApiType={process.env.REACT_APP_AUTH_API_TYPE || "MOCK"}>
         <ApiProvider apiType={process.env.REACT_APP_API_TYPE || "MOCK"}>
           <NotificationProvider>
             <AppRoutes />
