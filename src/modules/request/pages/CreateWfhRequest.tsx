@@ -1,10 +1,16 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { X, Paperclip, ChevronDown } from "lucide-react";
 import { useApi } from "contexts/ApiContext";
 import { useAuth } from "contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
-import { CreateWfhRequestDTO, ShiftType, WfhDate, shiftTypeOptions } from "../types/request.types";
+import { useFileUpload } from "shared/hooks/useFileUpload";
+import {
+  CreateWfhRequestDTO,
+  ShiftType,
+  WfhDate,
+  shiftTypeOptions,
+} from "../types/request.types";
 
 interface WfhModalProps {
   isModalMode?: boolean;
@@ -12,8 +18,12 @@ interface WfhModalProps {
   onClose?: () => void;
 }
 
-const WfhRequestForm: React.FC<WfhModalProps> = ({ isModalMode = true, open, onClose }) => {
-  const { requestApi, fileApi } = useApi();
+const WfhRequestForm: React.FC<WfhModalProps> = ({
+  isModalMode = true,
+  open,
+  onClose,
+}) => {
+  const { requestApi } = useApi();
   const { user } = useAuth();
   const navigate = useNavigate();
 
@@ -26,8 +36,11 @@ const WfhRequestForm: React.FC<WfhModalProps> = ({ isModalMode = true, open, onC
   const [file, setFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [dragOver, setDragOver] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const remainingWfhDays = user?.remainingWfhDays || 10;
+  const { uploadSingleFile, uploading } = useFileUpload();
 
   if (isModalMode && open === false) return null;
 
@@ -54,6 +67,29 @@ const WfhRequestForm: React.FC<WfhModalProps> = ({ isModalMode = true, open, onC
     return Object.keys(newErrors).length === 0;
   };
 
+  const onFileSelect = (files: FileList | null) => {
+    if (!files || files.length === 0) return;
+    const selectedFile = files[0];
+    const maxSize = 5 * 1024 * 1024; // 5MB
+    if (selectedFile.size > maxSize) {
+      toast.error("Tệp không được vượt quá 5MB");
+      return;
+    }
+    setFile(selectedFile);
+    setDragOver(false);
+  };
+
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragOver(false);
+    onFileSelect(e.dataTransfer.files);
+  };
+
+  const removeFile = () => {
+    setFile(null);
+  };
+
   const generateWfhDates = (): WfhDate[] => {
     const dates: WfhDate[] = [];
     const start = new Date(startDate);
@@ -64,7 +100,7 @@ const WfhRequestForm: React.FC<WfhModalProps> = ({ isModalMode = true, open, onC
       const dayOfWeek = d.getDay();
       if (dayOfWeek !== 0 && dayOfWeek !== 6) {
         dates.push({
-          date: d.toISOString().split('T')[0],
+          date: d.toISOString().split("T")[0],
           shiftType: shift,
         });
       }
@@ -75,32 +111,26 @@ const WfhRequestForm: React.FC<WfhModalProps> = ({ isModalMode = true, open, onC
   const handleSubmit = async () => {
     if (!validate()) return;
 
-    setLoading(true);
-
     try {
       // Upload attachment file if exists
       let attachmentUrl: string | undefined = undefined;
       if (file) {
-        try {
-          const uploadResponse = await fileApi.uploadFile(file);
-          if (uploadResponse.success && uploadResponse.data) {
-            attachmentUrl = uploadResponse.data;
-          }
-        } catch (uploadError) {
-          console.error("Failed to upload file:", uploadError);
-          toast.warning("Không thể tải lên tệp đính kèm.");
-        }
+        attachmentUrl = await uploadSingleFile(file, {
+          errorMessage: "Không thể tải lên tệp đính kèm.",
+        });
       }
 
+      setLoading(true);
       const wfhDates = generateWfhDates();
 
       const requestData: CreateWfhRequestDTO = {
         title: `Yêu cầu làm việc từ xa - ${startDate} đến ${endDate}`,
-        employeeId: user?.userId || '',
-        userReason: reason || 'Không có lý do',
+        employeeId: user?.userId || "",
+        userReason: reason || "Không có lý do",
         wfhCommitment: commitment,
         workLocation,
         wfhDates,
+        attachmentUrl,
       };
 
       await requestApi.createWfhRequest(requestData);
@@ -111,9 +141,10 @@ const WfhRequestForm: React.FC<WfhModalProps> = ({ isModalMode = true, open, onC
       }
       navigate("/requests/my-requests");
     } catch (error: any) {
-      const errorMessage = error?.response?.data?.message
-        || error?.message
-        || 'Có lỗi xảy ra khi tạo yêu cầu WFH';
+      const errorMessage =
+        error?.response?.data?.message ||
+        error?.message ||
+        "Có lỗi xảy ra khi tạo yêu cầu WFH";
 
       toast.error(errorMessage);
     } finally {
@@ -159,31 +190,45 @@ const WfhRequestForm: React.FC<WfhModalProps> = ({ isModalMode = true, open, onC
 
       <div className="mt-6 grid grid-cols-1 gap-y-4 sm:grid-cols-2 sm:gap-x-6">
         <div>
-          <label className="mb-1 block text-sm font-semibold">Ngày bắt đầu</label>
+          <label className="mb-1 block text-sm font-semibold">
+            Ngày bắt đầu
+          </label>
           <input
             type="date"
             value={startDate}
             onChange={(e) => setStartDate(e.target.value)}
-            className={`w-full rounded-lg border px-3 py-2 focus:outline-none focus:ring-1 focus:ring-black ${errors.startDate ? "border-red-500" : ""}`}
+            className={`w-full rounded-lg border px-3 py-2 focus:outline-none focus:ring-1 focus:ring-black ${
+              errors.startDate ? "border-red-500" : ""
+            }`}
             disabled={loading}
           />
-          {errors.startDate && <p className="mt-1 text-xs text-red-500">{errors.startDate}</p>}
+          {errors.startDate && (
+            <p className="mt-1 text-xs text-red-500">{errors.startDate}</p>
+          )}
         </div>
 
         <div>
-          <label className="mb-1 block text-sm font-semibold">Ngày kết thúc</label>
+          <label className="mb-1 block text-sm font-semibold">
+            Ngày kết thúc
+          </label>
           <input
             type="date"
             value={endDate}
             onChange={(e) => setEndDate(e.target.value)}
-            className={`w-full rounded-lg border px-3 py-2 focus:outline-none focus:ring-1 focus:ring-black ${errors.endDate ? "border-red-500" : ""}`}
+            className={`w-full rounded-lg border px-3 py-2 focus:outline-none focus:ring-1 focus:ring-black ${
+              errors.endDate ? "border-red-500" : ""
+            }`}
             disabled={loading}
           />
-          {errors.endDate && <p className="mt-1 text-xs text-red-500">{errors.endDate}</p>}
+          {errors.endDate && (
+            <p className="mt-1 text-xs text-red-500">{errors.endDate}</p>
+          )}
         </div>
 
         <div>
-          <label className="mb-1 block text-sm font-semibold">Ca làm việc</label>
+          <label className="mb-1 block text-sm font-semibold">
+            Ca làm việc
+          </label>
           <div className="relative">
             <select
               value={shift}
@@ -202,16 +247,22 @@ const WfhRequestForm: React.FC<WfhModalProps> = ({ isModalMode = true, open, onC
         </div>
 
         <div>
-          <label className="mb-1 block text-sm font-semibold">Địa chỉ làm việc</label>
+          <label className="mb-1 block text-sm font-semibold">
+            Địa chỉ làm việc
+          </label>
           <input
             type="text"
             placeholder="Nhập địa chỉ"
             value={workLocation}
             onChange={(e) => setWorkLocation(e.target.value)}
-            className={`w-full rounded-lg border px-3 py-2 focus:outline-none focus:ring-1 focus:ring-black ${errors.workLocation ? "border-red-500" : ""}`}
+            className={`w-full rounded-lg border px-3 py-2 focus:outline-none focus:ring-1 focus:ring-black ${
+              errors.workLocation ? "border-red-500" : ""
+            }`}
             disabled={loading}
           />
-          {errors.workLocation && <p className="mt-1 text-xs text-red-500">{errors.workLocation}</p>}
+          {errors.workLocation && (
+            <p className="mt-1 text-xs text-red-500">{errors.workLocation}</p>
+          )}
         </div>
 
         <div className="sm:col-span-2">
@@ -226,32 +277,102 @@ const WfhRequestForm: React.FC<WfhModalProps> = ({ isModalMode = true, open, onC
           />
         </div>
 
-        <div>
-          <label className="mb-1 block text-sm font-semibold">Đính kèm file</label>
-          <label className="flex w-fit cursor-pointer items-center gap-2 rounded-lg border px-4 py-2 text-sm hover:bg-gray-50">
-            <span>{file ? file.name : "Tải tệp lên"}</span>
-            <Paperclip className="h-4 w-4" />
-            <input
-              type="file"
-              className="hidden"
-              onChange={(e) => setFile(e.target.files?.[0] || null)}
-              disabled={loading}
-            />
+        <div className="sm:col-span-2">
+          <label className="mb-1 block text-sm font-semibold">
+            Đính kèm file
           </label>
-          {file && (
-            <button
-              type="button"
-              onClick={() => setFile(null)}
-              className="mt-1 text-xs text-red-500 hover:underline"
-            >
-              Xóa tệp
-            </button>
+          <div
+            onDragOver={(e) => {
+              if (uploading || loading) return;
+              e.preventDefault();
+              setDragOver(true);
+            }}
+            onDragLeave={() => {
+              setDragOver(false);
+            }}
+            onDrop={(e) => {
+              if (!uploading && !loading) handleDrop(e);
+            }}
+            className={`border-2 ${
+              dragOver
+                ? "border-blue-400 bg-blue-50"
+                : "border-dashed border-gray-300 bg-white"
+            } rounded-lg p-6 text-center ${
+              uploading || loading
+                ? "opacity-50 pointer-events-none"
+                : "cursor-pointer"
+            }`}
+            onClick={() => {
+              if (!uploading && !loading) fileInputRef.current?.click();
+            }}
+          >
+            {uploading ? (
+              <>
+                <svg
+                  className="w-8 h-8 animate-spin mx-auto text-blue-600"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                  ></circle>
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+                  ></path>
+                </svg>
+                <div className="text-blue-600 mt-2">Đang tải lên...</div>
+              </>
+            ) : (
+              <>
+                <div className="text-gray-500">
+                  Nhấn để tải lên hoặc kéo thả
+                </div>
+                <div className="text-xs text-gray-400 mt-1">
+                  PNG, JPG, PDF (Tối đa 5MB)
+                </div>
+              </>
+            )}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".png,.jpg,.jpeg,.pdf"
+              onChange={(e) => onFileSelect(e.target.files)}
+              className="hidden"
+              disabled={uploading || loading}
+            />
+          </div>
+          {file && !uploading && (
+            <div className="mt-3 flex items-center justify-between bg-gray-50 border rounded-lg px-3 py-2 text-sm">
+              <div>
+                <div className="font-medium text-gray-800">{file.name}</div>
+                <div className="text-xs text-gray-500">
+                  {(file.size / 1024).toFixed(1)} KB
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={removeFile}
+                className="text-red-500 hover:text-red-700 text-xs font-medium"
+                disabled={loading}
+              >
+                Xóa
+              </button>
+            </div>
           )}
         </div>
 
         <div className="flex items-end">
           <p className="text-sm font-semibold">
-            Số ngày WFH còn lại: <span className="font-bold">{remainingWfhDays}</span>
+            Số ngày WFH còn lại:{" "}
+            <span className="font-bold">{remainingWfhDays}</span>
           </p>
         </div>
 
@@ -263,30 +384,48 @@ const WfhRequestForm: React.FC<WfhModalProps> = ({ isModalMode = true, open, onC
             onChange={(e) => setCommitment(e.target.checked)}
             disabled={loading}
           />
-          <span className={`text-sm ${errors.commitment ? "text-red-500" : ""}`}>
+          <span
+            className={`text-sm ${errors.commitment ? "text-red-500" : ""}`}
+          >
             Tôi cam kết đảm bảo tiến độ công việc
           </span>
         </div>
-        {errors.commitment && <p className="text-xs text-red-500 sm:col-span-2">{errors.commitment}</p>}
+        {errors.commitment && (
+          <p className="text-xs text-red-500 sm:col-span-2">
+            {errors.commitment}
+          </p>
+        )}
       </div>
 
       <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-between">
         <button
           onClick={handleCancel}
           className="rounded-lg border px-4 py-2 text-sm hover:bg-gray-50"
-          disabled={loading}
+          disabled={loading || uploading}
         >
           Hủy
         </button>
         <button
           onClick={handleSubmit}
-          className="rounded-lg bg-black px-6 py-2 text-sm text-white hover:bg-gray-800 disabled:opacity-50 flex items-center justify-center gap-2"
-          disabled={loading}
+          className="rounded-lg bg-blue-600 px-6 py-2 text-sm text-white hover:bg-blue-700 disabled:opacity-50 flex items-center justify-center gap-2"
+          disabled={loading || uploading}
         >
           {loading && (
             <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
-              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+              <circle
+                className="opacity-25"
+                cx="12"
+                cy="12"
+                r="10"
+                stroke="currentColor"
+                strokeWidth="4"
+                fill="none"
+              />
+              <path
+                className="opacity-75"
+                fill="currentColor"
+                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+              />
             </svg>
           )}
           {loading ? "Đang gửi..." : "Gửi"}

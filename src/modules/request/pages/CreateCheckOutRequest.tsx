@@ -1,10 +1,14 @@
 import React, { useState, useEffect, useRef } from "react";
-import { formatDateForInput, formatTimeForInput } from "shared/utils/date-utils";
+import {
+  formatDateForInput,
+  formatTimeForInput,
+} from "shared/utils/date-utils";
 import { useApi } from "contexts/ApiContext";
 import { useAuth } from "contexts/AuthContext";
 import { toast } from "react-toastify";
 import { CreateCheckOutRequestDTO } from "../types/request.types";
 import { useNavigate } from "react-router-dom";
+import { useFileUpload } from "shared/hooks/useFileUpload";
 
 interface CheckoutModalProps {
   isModalMode?: boolean;
@@ -15,7 +19,7 @@ interface CheckoutModalProps {
 const CheckOutRequestForm: React.FC<CheckoutModalProps> = ({
   isModalMode = false,
   open,
-  onClose
+  onClose,
 }) => {
   const { requestApi, fileApi } = useApi();
   const { user } = useAuth();
@@ -31,6 +35,7 @@ const CheckOutRequestForm: React.FC<CheckoutModalProps> = ({
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const isBeforeSeventeen = !!time && time < "17:00";
+  const { uploadSingleFile, uploading } = useFileUpload();
 
   // Auto-fill date and time on mount
   useEffect(() => {
@@ -100,34 +105,31 @@ const CheckOutRequestForm: React.FC<CheckoutModalProps> = ({
     onFileSelect(e.dataTransfer.files);
   };
 
-  const handleSubmit = async () => {
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
     const isValid = await validate();
     if (!isValid) return;
+
+    // Upload attachment file if exists to get attachmentUrl first
+    let attachmentUrl: string | undefined;
+    if (file) {
+      attachmentUrl = await uploadSingleFile(file, {
+        errorMessage:
+          "Không thể tải lên tệp đính kèm. Yêu cầu sẽ được gửi không có tệp.",
+      });
+    }
 
     try {
       setLoading(true);
 
-      // Upload attachment file if exists to get attachmentUrl first
-      let attachmentUrl: string | undefined = undefined;
-      if (file) {
-        try {
-          const uploadResponse = await fileApi.uploadFile(file);
-          if (uploadResponse.success && uploadResponse.data) {
-            attachmentUrl = uploadResponse.data;
-          }
-        } catch (uploadError) {
-          console.error("Failed to upload file:", uploadError);
-          // Continue without attachment if upload fails
-          toast.warning("Không thể tải lên tệp đính kèm. Yêu cầu sẽ được gửi không có tệp.");
-        }
-      }
-
       const desiredCheckOutTime = `${date}T${time}:00`;
 
       const requestData: CreateCheckOutRequestDTO = {
-        title: time < "17:00"
-          ? `Yêu cầu check-out sớm - ${date} ${time}`
-          : `Yêu cầu check-out - ${date} ${time}`,
+        title:
+          time < "17:00"
+            ? `Yêu cầu check-out sớm - ${date} ${time}`
+            : `Yêu cầu check-out - ${date} ${time}`,
         userReason: reason || undefined,
         employeeId: user?.userId || "",
         desiredCheckOutTime,
@@ -136,15 +138,16 @@ const CheckOutRequestForm: React.FC<CheckoutModalProps> = ({
 
       await requestApi.createCheckOutRequest(requestData);
 
-      setLoading(false);
       handleSuccess();
-
     } catch (error: any) {
-      const errorMessage = error?.response?.data?.message
-        || error?.message
-        || 'Có lỗi xảy ra khi tạo yêu cầu check-out';
+      const errorMessage =
+        error?.response?.data?.message ||
+        error?.message ||
+        "Có lỗi xảy ra khi tạo yêu cầu check-out";
 
       toast.error(errorMessage);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -165,7 +168,14 @@ const CheckOutRequestForm: React.FC<CheckoutModalProps> = ({
 
   // Form content component
   const formContent = (
-    <form onSubmit={handleSubmit} className={`${isModalMode ? 'bg-white rounded-xl w-full max-w-lg shadow-xl' : 'bg-white rounded-lg shadow'} p-6 relative`}>
+    <form
+      onSubmit={handleSubmit}
+      className={`${
+        isModalMode
+          ? "bg-white rounded-xl w-full max-w-lg shadow-xl"
+          : "bg-white rounded-lg shadow"
+      } p-6 relative`}
+    >
       {isModalMode && !loading && (
         <button
           onClick={onClose}
@@ -185,8 +195,9 @@ const CheckOutRequestForm: React.FC<CheckoutModalProps> = ({
           <label className="text-sm text-gray-600 block mb-2">Ngày</label>
           <input
             type="date"
-            className={`w-full border rounded px-3 py-2 ${errors.date ? "border-red-500" : "focus:ring-2 focus:ring-black"
-              }`}
+            className={`w-full border rounded px-3 py-2 ${
+              errors.date ? "border-red-500" : "focus:ring-2 focus:ring-black"
+            }`}
             value={date}
             onChange={(e) => {
               setDate(e.target.value);
@@ -205,8 +216,9 @@ const CheckOutRequestForm: React.FC<CheckoutModalProps> = ({
           <label className="text-sm text-gray-600 block mb-2">Giờ</label>
           <input
             type="time"
-            className={`w-full border rounded px-3 py-2 ${errors.time ? "border-red-500" : ""
-              }`}
+            className={`w-full border rounded px-3 py-2 ${
+              errors.time ? "border-red-500" : ""
+            }`}
             value={time}
             onChange={(e) => {
               setTime(e.target.value);
@@ -228,9 +240,9 @@ const CheckOutRequestForm: React.FC<CheckoutModalProps> = ({
           {isBeforeSeventeen ? <span className="text-red-500">*</span> : null}
         </label>
         <textarea
-          className={`w-full border rounded p-3 min-h-[90px] resize-none ${!isBeforeSeventeen ? "opacity-50 pointer-events-none" : ""
-            } ${errors.reason ? "border-red-500" : ""
-            }`}
+          className={`w-full border rounded p-3 min-h-[90px] resize-none ${
+            !isBeforeSeventeen ? "opacity-50 pointer-events-none" : ""
+          } ${errors.reason ? "border-red-500" : ""}`}
           placeholder={
             !isBeforeSeventeen
               ? "Không cần nhập lý do"
@@ -256,7 +268,7 @@ const CheckOutRequestForm: React.FC<CheckoutModalProps> = ({
         </label>
         <div
           onDragOver={(e) => {
-            if (!isBeforeSeventeen) return;
+            if (!isBeforeSeventeen || uploading) return;
             e.preventDefault();
             setDragOver(true);
           }}
@@ -264,36 +276,66 @@ const CheckOutRequestForm: React.FC<CheckoutModalProps> = ({
             if (isBeforeSeventeen) setDragOver(false);
           }}
           onDrop={(e) => {
-            if (isBeforeSeventeen) handleDrop(e);
+            if (isBeforeSeventeen && !uploading) handleDrop(e);
           }}
-          className={`border-2 ${dragOver && isBeforeSeventeen
-            ? "border-blue-400 bg-blue-50"
-            : "border-dashed border-gray-300 bg-white"
-            } rounded p-6 text-center ${!isBeforeSeventeen
+          className={`border-2 ${
+            dragOver && isBeforeSeventeen
+              ? "border-blue-400 bg-blue-50"
+              : "border-dashed border-gray-300 bg-white"
+          } rounded p-6 text-center ${
+            !isBeforeSeventeen || uploading
               ? "opacity-50 pointer-events-none"
               : "cursor-pointer"
-            }`}
+          }`}
           onClick={() => {
-            if (isBeforeSeventeen) fileInputRef.current?.click();
+            if (isBeforeSeventeen && !uploading) fileInputRef.current?.click();
           }}
         >
-          <div className="text-gray-500">
-            {!isBeforeSeventeen
-              ? "Không cần đính kèm file"
-              : "Nhấn để tải lên hoặc kéo thả"}
-          </div>
-          <div className="text-xs text-gray-400">
-            PNG, JPG, PDF (Tối đa 5MB)
-          </div>
+          {uploading ? (
+            <>
+              <svg
+                className="w-8 h-8 animate-spin mx-auto text-blue-600"
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+              >
+                <circle
+                  className="opacity-25"
+                  cx="12"
+                  cy="12"
+                  r="10"
+                  stroke="currentColor"
+                  strokeWidth="4"
+                ></circle>
+                <path
+                  className="opacity-75"
+                  fill="currentColor"
+                  d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+                ></path>
+              </svg>
+              <div className="text-blue-600 mt-2">Đang tải lên...</div>
+            </>
+          ) : (
+            <>
+              <div className="text-gray-500">
+                {!isBeforeSeventeen
+                  ? "Không cần đính kèm file"
+                  : "Nhấn để tải lên hoặc kéo thả"}
+              </div>
+              <div className="text-xs text-gray-400">
+                PNG, JPG, PDF (Tối đa 5MB)
+              </div>
+            </>
+          )}
           <input
             ref={fileInputRef}
             type="file"
             onChange={(e) => onFileSelect(e.target.files)}
             className="hidden"
-            disabled={!isBeforeSeventeen || loading}
+            disabled={!isBeforeSeventeen || loading || uploading}
           />
         </div>
-        {file && (
+        {file && !uploading && (
           <ul className="mt-3">
             <li
               key={file.name}
@@ -309,6 +351,7 @@ const CheckOutRequestForm: React.FC<CheckoutModalProps> = ({
                 type="button"
                 onClick={() => setFile(null)}
                 className="text-red-500 text-sm"
+                disabled={loading}
               >
                 Xóa
               </button>
@@ -350,8 +393,8 @@ const CheckOutRequestForm: React.FC<CheckoutModalProps> = ({
 
         <button
           type="submit"
-          className="px-4 py-2 rounded bg-blue-600 text-white flex items-center gap-2"
-          disabled={loading}
+          className="px-4 py-2 rounded bg-blue-600 text-white flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+          disabled={uploading || loading}
         >
           {loading && (
             <svg
@@ -393,9 +436,7 @@ const CheckOutRequestForm: React.FC<CheckoutModalProps> = ({
   // Render as page
   return (
     <div className="min-h-screen bg-gray-100 flex items-start justify-center py-12 px-4">
-      <div className="w-full max-w-lg">
-        {formContent}
-      </div>
+      <div className="w-full max-w-lg">{formContent}</div>
     </div>
   );
 };

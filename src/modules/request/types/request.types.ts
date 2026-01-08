@@ -151,13 +151,13 @@ export interface CreateCheckInRequestDTO {
   title?: string;
   userReason?: string;
   employeeId: string;
-  desiredCheckInTime: string; // ISO datetime string
+  desiredCheckInTime: string;
+  attachmentUrl?: string;
 }
 
 export type CreateDelegationRequest = {
   delegateToId: string;
 };
-
 
 export interface RequestFilter {
   employeeId?: string;
@@ -260,4 +260,5 @@ export interface CreateTimesheetUpdateRequestDTO {
   currentCheckInTime?: string;
   desiredCheckOutTime?: string;
   currentCheckOutTime: string;
+  attachmentUrl?: string;
 }
