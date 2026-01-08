@@ -23,7 +23,7 @@ const RequestRoutes = (
     <Route path="create" element={<CreateRequest />} />
     <Route path="create/check-in" element={<CheckInRequestForm />} />
     <Route path="create/check-out" element={<CheckOutRequestForm />} />
-    <Route path="create/wfh" element={<WfhRequestForm isModalMode={false} open={true} />} />
+    <Route path="create/wfh" element={<WfhRequestForm />} />
     <Route path="create/update-timesheet" element={<UpdateTimesheetRequestForm />} />
     <Route path="timesheet" element={<TimesheetViewPage />} />
   </Route>
