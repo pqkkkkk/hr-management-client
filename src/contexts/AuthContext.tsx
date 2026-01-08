@@ -17,7 +17,7 @@ interface AuthProviderProps {
   authApiType?: ApiType;
 }
 
-const createAuthApi = (type: ApiType) : AuthApi => {
+const createAuthApi = (type: ApiType): AuthApi => {
   switch (type) {
     case 'REST':
       return new RestAuthApi();
@@ -27,7 +27,7 @@ const createAuthApi = (type: ApiType) : AuthApi => {
   }
 }
 
-export const AuthProvider: React.FC<AuthProviderProps> = ({ children, authApiType = 'MOCK'}) => {
+export const AuthProvider: React.FC<AuthProviderProps> = ({ children, authApiType = 'MOCK' }) => {
   const [user, setUser] = useState<User | null>(() => {
     const storedUser = sessionStorage.getItem('user');
     return storedUser ? JSON.parse(storedUser) : null;
@@ -44,7 +44,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children, authApiTyp
     try {
       const response = await authApi.signIn(req);
 
-      if(response.data.authenticated) {
+      if (response.data.user) {
+        response.data.user.role = req.role;
         setUser(response.data.user);
         setIsAuthenticated(true);
         sessionStorage.setItem('user', JSON.stringify(response.data.user));
@@ -52,7 +53,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children, authApiTyp
         sessionStorage.setItem('refreshToken', response.data.refreshToken);
         sessionStorage.setItem('isAuthenticated', 'true');
       }
-      else{
+      else {
         throw new Error(response.error?.message || response.message || 'Authentication failed');
       }
     } catch (error) {

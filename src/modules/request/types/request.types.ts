@@ -161,6 +161,7 @@ export type CreateDelegationRequest = {
 
 export interface RequestFilter {
   employeeId?: string;
+  nameTerm?: string;
   approverId?: string;
   processorId?: string;
   departmentId?: string;

@@ -24,12 +24,14 @@ const UpdateTimesheetRequestForm: React.FC<UpdateTimesheetModalProps> = ({
   onSubmit,
 }) => {
   const navigate = useNavigate();
-  const { requestApi } = useApi();
+  const { requestApi, timesheetApi } = useApi();
   const { user } = useAuth();
 
   const [targetDate, setTargetDate] = useState<Date | null>(null);
-  const [checkInTime, setCheckInTime] = useState<string>("");
-  const [checkOutTime, setCheckOutTime] = useState<string>("");
+  const [currentCheckInTime, setCurrentCheckInTime] = useState<string>("");
+  const [currentCheckOutTime, setCurrentCheckOutTime] = useState<string>("");
+  const [desiredCheckInTime, setDesiedCheckInTime] = useState<string>("");
+  const [desiredCheckOutTime, setDesiredCheckOutTime] = useState<string>("");
   const [reason, setReason] = useState<string>("");
   const [file, setFile] = useState<File | null>(null);
   const [dragOver, setDragOver] = useState(false);
@@ -41,11 +43,35 @@ const UpdateTimesheetRequestForm: React.FC<UpdateTimesheetModalProps> = ({
   useEffect(() => {
     const now = new Date();
     setTargetDate(now);
-    setCheckInTime(formatTimeForInput(now));
+    setDesiedCheckInTime(formatTimeForInput(now));
     const d = new Date(now.getTime());
     d.setHours(d.getHours() + 9);
-    setCheckOutTime(formatTimeForInput(d));
+    setDesiredCheckOutTime(formatTimeForInput(d));
   }, []);
+
+  // Auto fill check in time and check out time of target date
+  // Raise error if timesheet record of target date is not found
+  useEffect(() => {
+    if (!targetDate) return;
+    const getTimesheet = async () => {
+      try {
+        const response = await timesheetApi.getTimesheetByEmployeeIdAndDate(
+          user?.userId || "",
+          targetDate.toISOString().split("T")[0]
+        );
+
+        if (!response.data) {
+          throw new Error("Bảng chấm công chưa tồn tại ngày đã chọn. Không thể gửi yêu cầu cập nhật bảng chấm công cho ngày này");
+        }
+
+        setCurrentCheckInTime(response.data.checkInTime ? formatTimeForInput(new Date(response.data.checkInTime)) : "Không có check in");
+        setCurrentCheckOutTime(response.data.checkOutTime ? formatTimeForInput(new Date(response.data.checkOutTime)) : "Không có check out");
+      } catch (error) {
+        toast.error(error.message);
+      }
+    };
+    getTimesheet();
+  }, [targetDate]);
 
   // If rendered as modal but not open, do not render anything
   if (isModalMode && !open) return null;
@@ -65,8 +91,8 @@ const UpdateTimesheetRequestForm: React.FC<UpdateTimesheetModalProps> = ({
   };
 
   const handleCancel = () => {
-    setCheckInTime("");
-    setCheckOutTime("");
+    setDesiedCheckInTime("");
+    setDesiredCheckOutTime("");
     setReason("");
     setFile(null);
     setErrors({});
@@ -79,13 +105,13 @@ const UpdateTimesheetRequestForm: React.FC<UpdateTimesheetModalProps> = ({
     if (!targetDate) {
       newErrors.date = "Vui lòng chọn ngày";
     }
-    if (!checkInTime) {
+    if (!desiredCheckInTime) {
       newErrors.timeIn = "Vui lòng chọn giờ vào";
     }
-    if (!checkOutTime) {
+    if (!desiredCheckOutTime) {
       newErrors.timeOut = "Vui lòng chọn giờ ra";
     }
-    if (checkInTime && checkOutTime && checkInTime >= checkOutTime) {
+    if (desiredCheckInTime && desiredCheckOutTime && desiredCheckInTime >= desiredCheckOutTime) {
       newErrors.timeOut = "Giờ ra phải sau giờ vào";
     }
     if (!reason.trim()) {
@@ -109,24 +135,19 @@ const UpdateTimesheetRequestForm: React.FC<UpdateTimesheetModalProps> = ({
     setSubmitting(true);
     try {
       const timeSheetData: CreateTimesheetUpdateRequestDTO = {
-        title: `Yêu cầu cập nhật timesheet - ${
-          targetDate?.toISOString().split("T")[0]
-        } ${checkInTime}-${checkOutTime}`,
+        title: `Yêu cầu cập nhật timesheet - ${targetDate?.toISOString().split("T")[0]
+          } ${desiredCheckInTime}-${desiredCheckOutTime}`,
         userReason: reason,
         employeeId: user?.userId || "u1a2b3c4-e5f6-7890-abcd-ef1234567890",
         targetDate: targetDate?.toISOString().split("T")[0],
-        desiredCheckInTime: `${
-          targetDate?.toISOString().split("T")[0]
-        }T${checkInTime}:00`,
-        currentCheckInTime: `${
-          targetDate?.toISOString().split("T")[0]
-        }T${checkInTime}:00`,
-        desiredCheckOutTime: `${
-          targetDate?.toISOString().split("T")[0]
-        }T${checkOutTime}:00`,
-        currentCheckOutTime: `${
-          targetDate?.toISOString().split("T")[0]
-        }T${checkOutTime}:00`,
+        desiredCheckInTime: `${targetDate?.toISOString().split("T")[0]
+          }T${desiredCheckInTime}:00`,
+        currentCheckInTime: `${targetDate?.toISOString().split("T")[0]
+          }T${currentCheckInTime}:00`,
+        desiredCheckOutTime: `${targetDate?.toISOString().split("T")[0]
+          }T${desiredCheckOutTime}:00`,
+        currentCheckOutTime: `${targetDate?.toISOString().split("T")[0]
+          }T${currentCheckOutTime}:00`,
         attachmentUrl,
       };
       await requestApi.createTimesheetUpdateRequest(timeSheetData);
@@ -135,8 +156,8 @@ const UpdateTimesheetRequestForm: React.FC<UpdateTimesheetModalProps> = ({
       onSubmit?.();
 
       setTargetDate(null);
-      setCheckInTime("");
-      setCheckOutTime("");
+      setDesiedCheckInTime("");
+      setDesiredCheckOutTime("");
       setReason("");
       setFile(null);
       setErrors({});
@@ -155,11 +176,10 @@ const UpdateTimesheetRequestForm: React.FC<UpdateTimesheetModalProps> = ({
   const formContent = (
     <form
       onSubmit={handleSubmit}
-      className={`${
-        isModalMode
-          ? "bg-white rounded-xl w-full max-w-lg shadow-xl"
-          : "bg-white rounded-lg shadow-md"
-      } p-6 relative`}
+      className={`${isModalMode
+        ? "bg-white rounded-xl w-full max-w-lg shadow-xl"
+        : "bg-white rounded-lg shadow-md"
+        } p-6 relative`}
     >
       {isModalMode && !submitting && (
         <button
@@ -177,9 +197,8 @@ const UpdateTimesheetRequestForm: React.FC<UpdateTimesheetModalProps> = ({
         <div className="flex items-center">
           <input
             type="date"
-            className={`w-full border rounded px-3 py-2 ${
-              errors.date ? "border-red-500" : ""
-            }`}
+            className={`w-full border rounded px-3 py-2 ${errors.date ? "border-red-500" : ""
+              }`}
             value={targetDate?.toISOString().split("T")[0]}
             onChange={(e) => setTargetDate(new Date(e.target.value))}
           />
@@ -196,11 +215,11 @@ const UpdateTimesheetRequestForm: React.FC<UpdateTimesheetModalProps> = ({
         <div className="flex gap-3 mb-4">
           <div className="flex-1 border border-gray-200 rounded p-3 bg-gray-50">
             <div className="text-xs text-gray-500">Giờ vào</div>
-            <div className="font-medium">08:30</div>
+            <div className="font-medium">{currentCheckInTime}</div>
           </div>
           <div className="flex-1 border border-gray-200 rounded p-3 bg-gray-50">
             <div className="text-xs text-gray-500">Giờ ra</div>
-            <div className="font-medium">17:30</div>
+            <div className="font-medium">{currentCheckOutTime}</div>
           </div>
         </div>
 
@@ -211,11 +230,10 @@ const UpdateTimesheetRequestForm: React.FC<UpdateTimesheetModalProps> = ({
           <div>
             <input
               type="time"
-              className={`w-full border rounded px-3 py-2 ${
-                errors.timeIn ? "border-red-500" : ""
-              }`}
-              value={checkInTime}
-              onChange={(e) => setCheckInTime(e.target.value)}
+              className={`w-full border rounded px-3 py-2 ${errors.timeIn ? "border-red-500" : ""
+                }`}
+              value={desiredCheckInTime}
+              onChange={(e) => setDesiedCheckInTime(e.target.value)}
             />
             {errors.timeIn && (
               <p className="mt-1 text-xs text-red-500">{errors.timeIn}</p>
@@ -224,11 +242,10 @@ const UpdateTimesheetRequestForm: React.FC<UpdateTimesheetModalProps> = ({
           <div>
             <input
               type="time"
-              className={`w-full border rounded px-3 py-2 ${
-                errors.timeOut ? "border-red-500" : ""
-              }`}
-              value={checkOutTime}
-              onChange={(e) => setCheckOutTime(e.target.value)}
+              className={`w-full border rounded px-3 py-2 ${errors.timeOut ? "border-red-500" : ""
+                }`}
+              value={desiredCheckOutTime}
+              onChange={(e) => setDesiredCheckOutTime(e.target.value)}
             />
             {errors.timeOut && (
               <p className="mt-1 text-xs text-red-500">{errors.timeOut}</p>
@@ -245,9 +262,8 @@ const UpdateTimesheetRequestForm: React.FC<UpdateTimesheetModalProps> = ({
           Lý do / Ghi chú
         </label>
         <textarea
-          className={`w-full border rounded p-3 min-h-[90px] resize-none ${
-            errors.reason ? "border-red-500" : ""
-          }`}
+          className={`w-full border rounded p-3 min-h-[90px] resize-none ${errors.reason ? "border-red-500" : ""
+            }`}
           rows={4}
           value={reason}
           onChange={(e) => setReason(e.target.value)}
@@ -272,15 +288,13 @@ const UpdateTimesheetRequestForm: React.FC<UpdateTimesheetModalProps> = ({
           onDrop={(e) => {
             if (!uploading && !submitting) handleDrop(e);
           }}
-          className={`border-2 ${
-            dragOver
-              ? "border-blue-400 bg-blue-50"
-              : "border-dashed border-gray-300 bg-white"
-          } rounded p-6 text-center ${
-            uploading || submitting
+          className={`border-2 ${dragOver
+            ? "border-blue-400 bg-blue-50"
+            : "border-dashed border-gray-300 bg-white"
+            } rounded p-6 text-center ${uploading || submitting
               ? "opacity-50 pointer-events-none"
               : "cursor-pointer"
-          }`}
+            }`}
           onClick={() => {
             if (!uploading && !submitting) fileInputRef.current?.click();
           }}
