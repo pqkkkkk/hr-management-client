@@ -1,15 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Clock, FileText, Calendar } from 'lucide-react';
-import { RequestStatus, RequestType } from 'modules/request/types/request.types';
-
-interface Request {
-  requestId: string;
-  type: RequestType;
-  status: RequestStatus;
-  createdAt: string;
-  submittedDate?: string;
-}
+import { RequestStatus, RequestType, Request } from 'modules/request/types/request.types';
 
 interface RecentRequestsProps {
   requests: Request[];
@@ -71,7 +63,6 @@ const formatDate = (dateString: string) => {
 
 const RecentRequests: React.FC<RecentRequestsProps> = ({ requests, isLoading = false }) => {
   const navigate = useNavigate();
-
   if (isLoading) {
     return (
       <div className="bg-white rounded-lg shadow p-6">
@@ -118,14 +109,14 @@ const RecentRequests: React.FC<RecentRequestsProps> = ({ requests, isLoading = f
           >
             <div className="flex items-center space-x-3 flex-1">
               <div className="text-gray-500">
-                {getRequestIcon(request.type)}
+                {getRequestIcon(request.requestType)}
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-gray-900 truncate">
-                  {getRequestTypeText(request.type)}
+                  {getRequestTypeText(request.requestType)}
                 </p>
                 <p className="text-xs text-gray-500">
-                  {formatDate(request.submittedDate || request.createdAt)}
+                  {formatDate(request.createdAt)}
                 </p>
               </div>
             </div>
