@@ -46,6 +46,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children, authApiTyp
 
       if (response.data.user) {
         response.data.user.role = req.role;
+        console.log("user data", response.data.user);
         setUser(response.data.user);
         setIsAuthenticated(true);
         sessionStorage.setItem('user', JSON.stringify(response.data.user));

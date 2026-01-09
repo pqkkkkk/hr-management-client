@@ -74,13 +74,6 @@ const CheckOutRequestForm: React.FC<CheckoutModalProps> = ({
 
     if (!time) {
       newErrors.time = "Vui lòng chọn giờ";
-    } else if (date && !newErrors.date) {
-      const selectedDateTime = new Date(`${date}T${time}`);
-      const now = new Date();
-
-      if (selectedDateTime > now) {
-        newErrors.time = "Không được chọn thời điểm trong tương lai";
-      }
     }
 
     // Bắt buộc nhập lý do nếu check-out trước 17:00
@@ -163,18 +156,17 @@ const CheckOutRequestForm: React.FC<CheckoutModalProps> = ({
     // Close modal
     onClose?.();
 
-    navigate("/requests/history");
+    navigate("/requests/my-requests");
   };
 
   // Form content component
   const formContent = (
     <form
       onSubmit={handleSubmit}
-      className={`${
-        isModalMode
-          ? "bg-white rounded-xl w-full max-w-lg shadow-xl"
-          : "bg-white rounded-lg shadow"
-      } p-6 relative`}
+      className={`${isModalMode
+        ? "bg-white rounded-xl w-full max-w-lg shadow-xl"
+        : "bg-white rounded-lg shadow"
+        } p-6 relative`}
     >
       {isModalMode && !loading && (
         <button
@@ -195,9 +187,8 @@ const CheckOutRequestForm: React.FC<CheckoutModalProps> = ({
           <label className="text-sm text-gray-600 block mb-2">Ngày</label>
           <input
             type="date"
-            className={`w-full border rounded px-3 py-2 ${
-              errors.date ? "border-red-500" : "focus:ring-2 focus:ring-black"
-            }`}
+            className={`w-full border rounded px-3 py-2 ${errors.date ? "border-red-500" : "focus:ring-2 focus:ring-black"
+              }`}
             value={date}
             onChange={(e) => {
               setDate(e.target.value);
@@ -216,9 +207,8 @@ const CheckOutRequestForm: React.FC<CheckoutModalProps> = ({
           <label className="text-sm text-gray-600 block mb-2">Giờ</label>
           <input
             type="time"
-            className={`w-full border rounded px-3 py-2 ${
-              errors.time ? "border-red-500" : ""
-            }`}
+            className={`w-full border rounded px-3 py-2 ${errors.time ? "border-red-500" : ""
+              }`}
             value={time}
             onChange={(e) => {
               setTime(e.target.value);
@@ -240,9 +230,8 @@ const CheckOutRequestForm: React.FC<CheckoutModalProps> = ({
           {isBeforeSeventeen ? <span className="text-red-500">*</span> : null}
         </label>
         <textarea
-          className={`w-full border rounded p-3 min-h-[90px] resize-none ${
-            !isBeforeSeventeen ? "opacity-50 pointer-events-none" : ""
-          } ${errors.reason ? "border-red-500" : ""}`}
+          className={`w-full border rounded p-3 min-h-[90px] resize-none ${!isBeforeSeventeen ? "opacity-50 pointer-events-none" : ""
+            } ${errors.reason ? "border-red-500" : ""}`}
           placeholder={
             !isBeforeSeventeen
               ? "Không cần nhập lý do"
@@ -278,15 +267,13 @@ const CheckOutRequestForm: React.FC<CheckoutModalProps> = ({
           onDrop={(e) => {
             if (isBeforeSeventeen && !uploading) handleDrop(e);
           }}
-          className={`border-2 ${
-            dragOver && isBeforeSeventeen
-              ? "border-blue-400 bg-blue-50"
-              : "border-dashed border-gray-300 bg-white"
-          } rounded p-6 text-center ${
-            !isBeforeSeventeen || uploading
+          className={`border-2 ${dragOver && isBeforeSeventeen
+            ? "border-blue-400 bg-blue-50"
+            : "border-dashed border-gray-300 bg-white"
+            } rounded p-6 text-center ${!isBeforeSeventeen || uploading
               ? "opacity-50 pointer-events-none"
               : "cursor-pointer"
-          }`}
+            }`}
           onClick={() => {
             if (isBeforeSeventeen && !uploading) fileInputRef.current?.click();
           }}

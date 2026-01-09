@@ -39,6 +39,8 @@ export interface PointTransaction {
   destinationUsername?: string;
   createdAt: string;
   items: RewardItemTransaction[];
+  rewardProgramId?: string;
+  rewardProgramName?: string;
 }
 
 export interface GiftPointsRequest {

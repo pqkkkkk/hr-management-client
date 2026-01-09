@@ -138,6 +138,9 @@ const TransactionRow: React.FC<{ tx: PointTransaction }> = ({ tx }) => {
         </div>
       </td>
       <td className="py-4 px-5">
+        <div className="text-sm text-gray-700">{tx.rewardProgramName || "—"}</div>
+      </td>
+      <td className="py-4 px-5">
         <div className="text-sm text-gray-700">{dateInfo.date}</div>
         <div className="text-xs text-gray-500">{dateInfo.time}</div>
       </td>
@@ -158,6 +161,7 @@ const TransactionsTable: React.FC<{ rows: PointTransaction[] }> = ({ rows }) => 
         <thead>
           <tr className="bg-gray-50 text-left text-xs text-gray-600 font-semibold uppercase tracking-wide">
             <th className="py-3 px-5">NGƯỜI NHẬN</th>
+            <th className="py-3 px-5">CHƯƠNG TRÌNH</th>
             <th className="py-3 px-5">THỜI GIAN</th>
             <th className="py-3 px-5 text-right">ĐIỂM ĐÃ TẶNG</th>
           </tr>

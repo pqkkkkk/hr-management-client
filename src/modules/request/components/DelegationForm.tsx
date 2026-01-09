@@ -32,7 +32,7 @@ const DelegationForm: React.FC<DelegationFormProps> = ({
     try {
       // Fetch users with role ADMIN (or MANAGER depending on logic, user said ADMIN)
       // Assuming getProfiles supports role filtering
-      const res = await profileApi.getProfiles({ role: "ADMIN", pageSize: 100 });
+      const res = await profileApi.getProfiles({ roles: ["ADMIN"], pageSize: 100 });
       if (res && res.success && res.data) {
         setDelegates(res.data.content);
       }
@@ -103,8 +103,8 @@ const DelegationForm: React.FC<DelegationFormProps> = ({
               }}
               disabled={!canSubmit}
               className={`px-4 py-2 rounded ${!canSubmit
-                  ? "bg-blue-300 text-white cursor-not-allowed opacity-70"
-                  : "bg-blue-600 text-white"
+                ? "bg-blue-300 text-white cursor-not-allowed opacity-70"
+                : "bg-blue-600 text-white"
                 }`}
             >
               Gửi
