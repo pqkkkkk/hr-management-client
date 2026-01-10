@@ -10,6 +10,7 @@ import {
   RewardProgramDetail,
   UserWallet,
   ExchangeRewardRequest,
+  DistributePointsResponse,
 } from "modules/reward/types/reward.types";
 import { RewardProgramFormData, RewardProgramResponse } from "modules/reward/types/rewardForm";
 import {
@@ -37,9 +38,16 @@ export interface RewardApi {
 
   // Wallet
   getWallet(userId: string, programId: string): Promise<ApiResponse<UserWallet>>;
+  getWalletsByProgram(programId: string, pageNumber?: number, pageSize?: number): Promise<Page<UserWallet>>;
 
   // Exchange
   exchangeReward(request: ExchangeRewardRequest): Promise<ApiResponse<PointTransaction>>;
+
+  // Admin - Point Distribution
+  distributePoints(programId: string, startDate: string, endDate: string): Promise<DistributePointsResponse>;
+
+  // Admin - Update Program
+  updateRewardProgram(id: string, request: RewardProgramFormData): Promise<ApiResponse<RewardProgramDetail>>;
 }
 
 // ========== MOCK API IMPLEMENTATION ==========
@@ -277,6 +285,72 @@ export class MockRewardApi implements RewardApi {
       }, 300);
     });
   }
+
+  async getWalletsByProgram(programId: string, pageNumber = 1, pageSize = 20): Promise<Page<UserWallet>> {
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        const wallets = mockUserWallets.filter(w => w.programId === programId);
+        const startIndex = (pageNumber - 1) * pageSize;
+        const paginated = wallets.slice(startIndex, startIndex + pageSize);
+
+        resolve({
+          content: paginated,
+          totalElements: wallets.length,
+          totalPages: Math.ceil(wallets.length / pageSize) || 1,
+          size: pageSize,
+          number: pageNumber - 1,
+          first: pageNumber === 1,
+          last: startIndex + pageSize >= wallets.length,
+          numberOfElements: paginated.length,
+          empty: paginated.length === 0,
+          pageable: {
+            pageNumber: pageNumber - 1,
+            pageSize,
+            offset: startIndex,
+            paged: true,
+            unpaged: false,
+            sort: { sorted: false, unsorted: true, empty: true },
+          },
+          sort: { sorted: false, unsorted: true, empty: true },
+        });
+      }, 300);
+    });
+  }
+
+  async distributePoints(programId: string, startDate: string, endDate: string): Promise<DistributePointsResponse> {
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        resolve({
+          totalUsersProcessed: 5,
+          totalPointsDistributed: 150,
+          totalTransactionsCreated: 8,
+          userSummaries: [
+            { userId: "user1", userName: "Nguyen Van A", pointsEarned: 30, pointsByPolicy: { NOT_LATE: 20, OVERTIME: 10 } },
+            { userId: "user2", userName: "Tran Thi B", pointsEarned: 45, pointsByPolicy: { NOT_LATE: 25, FULL_ATTENDANCE: 20 } },
+          ],
+        });
+      }, 1000);
+    });
+  }
+
+  async updateRewardProgram(id: string, request: RewardProgramFormData): Promise<ApiResponse<RewardProgramDetail>> {
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        resolve({
+          data: {
+            ...request,
+            rewardProgramId: id,
+            status: 'ACTIVE',
+            items: request.items.map(i => ({ ...i, rewardItemId: i.rewardItemId || 'mock-id', programId: id })),
+            policies: request.policies.map(p => ({ ...p, policyId: p.policyId || 'mock-id', programId: id, calculationPeriod: 'MONTHLY', isActive: true }))
+          },
+          success: true,
+          statusCode: 200,
+          message: "Updated successfully",
+        });
+      }, 500);
+    });
+  }
 }
 
 // ========== REST API IMPLEMENTATION ==========
@@ -335,5 +409,22 @@ export class RestRewardApi implements RewardApi {
 
   async exchangeReward(request: ExchangeRewardRequest): Promise<ApiResponse<PointTransaction>> {
     return dotnetApiClient.post(`/rewards/transactions/exchange`, request);
+  }
+
+  async getWalletsByProgram(programId: string, pageNumber = 1, pageSize = 20): Promise<Page<UserWallet>> {
+    return dotnetApiClient.get(`/rewards/wallets/program/${programId}`, {
+      params: { pageNumber, pageSize }
+    });
+  }
+
+  async distributePoints(programId: string, startDate: string, endDate: string): Promise<DistributePointsResponse> {
+    return dotnetApiClient.post(`/rewards/programs/${programId}/distribute-points`, {
+      startDate,
+      endDate
+    });
+  }
+
+  async updateRewardProgram(id: string, request: RewardProgramFormData): Promise<ApiResponse<RewardProgramDetail>> {
+    return dotnetApiClient.put(`/rewards/programs/${id}`, request);
   }
 }

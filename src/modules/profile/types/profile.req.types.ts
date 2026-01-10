@@ -64,7 +64,7 @@ export interface ProfileFilter {
     sortBy?: string;
     sortDirection?: string;
     nameTerm?: string;
-    role?: string;
+    roles?: string[];
     gender?: string;
     status?: string;
     position?: string;

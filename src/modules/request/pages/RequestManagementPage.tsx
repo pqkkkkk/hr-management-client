@@ -102,7 +102,12 @@ const RequestManagementPage: React.FC = () => {
       }
     } catch (err) {
       console.error("Approve failed", err);
-      toast.error("Phê duyệt thất bại");
+
+      const errorMessage =
+        err?.response?.data?.message ||
+        err?.message || "Không rõ lý do";
+
+      toast.error("Phê duyệt thất bại: " + errorMessage);
     } finally {
       setShowApproveModal(false);
       setSelectedRequestId(null);

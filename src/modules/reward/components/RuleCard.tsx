@@ -56,7 +56,14 @@ const RuleCard: React.FC<RuleCardProps> = ({
     FULL_ATTENDANCE: { unitValue: 1, pointsPerUnit: 10 },
   });
 
-  // Sync với initial policies
+  // Store policy IDs to preserve them during updates
+  const [policyIds, setPolicyIds] = useState<Record<PolicyType, string | undefined>>({
+    OVERTIME: undefined,
+    NOT_LATE: undefined,
+    FULL_ATTENDANCE: undefined,
+  });
+
+  // Sync with initial policies
   useEffect(() => {
     if (policies.length > 0) {
       const enabled: Record<PolicyType, boolean> = {
@@ -65,19 +72,24 @@ const RuleCard: React.FC<RuleCardProps> = ({
         FULL_ATTENDANCE: false,
       };
       const values = { ...policyValues };
+      const ids = { ...policyIds };
 
       policies.forEach(p => {
         enabled[p.policyType] = true;
         values[p.policyType] = { unitValue: p.unitValue, pointsPerUnit: p.pointsPerUnit };
+        if (p.policyId) {
+          ids[p.policyType] = p.policyId;
+        }
       });
 
       setEnabledPolicies(enabled);
       setPolicyValues(values);
+      setPolicyIds(ids);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [policies]); // Add policies dependency if it might change from parent, though usually it's initial.
 
-  // Update parent khi policies thay đổi
+  // Update parent when policies change
   const updatePolicies = (
     newEnabled: Record<PolicyType, boolean>,
     newValues: Record<PolicyType, { unitValue: number; pointsPerUnit: number }>
@@ -85,6 +97,7 @@ const RuleCard: React.FC<RuleCardProps> = ({
     const updatedPolicies = POLICY_CONFIGS
       .filter(config => newEnabled[config.type])
       .map(config => ({
+        policyId: policyIds[config.type], // Preserve ID
         policyType: config.type,
         unitValue: newValues[config.type].unitValue,
         pointsPerUnit: newValues[config.type].pointsPerUnit,

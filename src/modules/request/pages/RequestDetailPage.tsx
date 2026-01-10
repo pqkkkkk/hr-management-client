@@ -96,7 +96,12 @@ const RequestDetailPage: React.FC = () => {
 
       if (res && res.success) setRequest(res.data);
     } catch (err) {
-      toast.error(err?.message || "Không thể duyệt yêu cầu");
+      const errorMessage =
+        err?.response?.data?.message ||
+        err?.message ||
+        "Có lỗi xảy ra khi duyệt yêu cầu";
+
+      toast.error(errorMessage);
     } finally {
       closeApprove();
     }

@@ -199,6 +199,9 @@ const TransactionRow: React.FC<{ tx: PointTransaction }> = ({ tx }) => {
           </Badge>
         )}
       </td>
+      <td className="py-4 px-5 text-sm text-gray-600">
+        {tx.rewardProgramName || "—"}
+      </td>
       <td className="py-4 px-5 text-sm text-gray-600">{note}</td>
       <td className="py-4 px-5 text-right text-sm font-semibold">
         <span className={isPlus ? "text-green-600" : "text-red-600"}>
@@ -221,6 +224,7 @@ const TransactionsTable: React.FC<{ rows: PointTransaction[] }> = ({
             <th className="py-3 px-5">Ngày thực hiện</th>
             <th className="py-3 px-5">Mã GD</th>
             <th className="py-3 px-5">Loại giao dịch</th>
+            <th className="py-3 px-5">Chương trình</th>
             <th className="py-3 px-5">Ghi chú</th>
             <th className="py-3 px-5 text-right">Biến động</th>
           </tr>

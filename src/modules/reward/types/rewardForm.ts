@@ -8,12 +8,14 @@ export interface RewardProgramFormData {
   defaultGivingBudget: number;
   bannerUrl: string;
   items: Array<{
+    rewardItemId?: string;
     name: string;
     requiredPoints: number;
     quantity: number;
     imageUrl: string;
   }>;
   policies: Array<{
+    policyId?: string;
     policyType: PolicyType;
     unitValue: number;
     pointsPerUnit: number;
@@ -33,12 +35,14 @@ export interface GeneralInfoCardProps {
 
 export interface RewardListCardProps {
   items: Array<{
+    rewardItemId?: string;
     name: string;
     requiredPoints: number;
     quantity: number;
     imageUrl: string;
   }>;
   onItemsChange: (items: Array<{
+    rewardItemId?: string;
     name: string;
     requiredPoints: number;
     quantity: number;
@@ -48,12 +52,14 @@ export interface RewardListCardProps {
 
 export interface RuleCardProps {
   policies: Array<{
+    policyId?: string;
     policyType: PolicyType;
     unitValue: number;
     pointsPerUnit: number;
   }>;
   defaultGivingBudget: number;
   onPoliciesChange: (policies: Array<{
+    policyId?: string;
     policyType: PolicyType;
     unitValue: number;
     pointsPerUnit: number;

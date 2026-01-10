@@ -39,6 +39,8 @@ export interface PointTransaction {
   destinationUsername?: string;
   createdAt: string;
   items: RewardItemTransaction[];
+  rewardProgramId?: string;
+  rewardProgramName?: string;
 }
 
 export interface GiftPointsRequest {
@@ -50,6 +52,7 @@ export interface GiftPointsRequest {
 export interface UserWallet {
   userWalletId: string;
   userId: string;
+  userName?: string;
   programId: string;
   personalPoint: number;
   givingBudget: number;
@@ -145,3 +148,22 @@ export interface ExchangeRewardRequest {
   userWalletId: string;
 }
 
+// Auto Point Distribution Types
+export interface DistributePointsRequest {
+  startDate: string;
+  endDate: string;
+}
+
+export interface UserPointSummary {
+  userId: string;
+  userName: string;
+  pointsEarned: number;
+  pointsByPolicy: Record<string, number>;
+}
+
+export interface DistributePointsResponse {
+  totalUsersProcessed: number;
+  totalPointsDistributed: number;
+  totalTransactionsCreated: number;
+  userSummaries: UserPointSummary[];
+}
