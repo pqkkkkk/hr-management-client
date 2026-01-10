@@ -102,6 +102,12 @@ const AdminSidebar: React.FC = () => {
             <h3 className={sectionTitleClass}>Quản lý thưởng</h3>
             <ul className="mt-2 space-y-1">
               <li>
+                <NavLink to="/rewards/programs/current-active" className={navLinkClass}>
+                  <Gift className="w-5 h-5" />
+                  <span>Quản lý đợt khen thưởng hiện tại</span>
+                </NavLink>
+              </li>
+              <li>
                 <NavLink to="/rewards/programs/create" className={navLinkClass}>
                   <Gift className="w-5 h-5" />
                   <span>Tạo chương trình thưởng</span>

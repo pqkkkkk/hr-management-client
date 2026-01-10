@@ -3,21 +3,53 @@ import { RewardListCardProps } from "../types/rewardForm";
 import ImageUploader from "./ImageUploader";
 
 const RewardListCard: React.FC<RewardListCardProps> = ({ items, onItemsChange }) => {
-  const [newItem, setNewItem] = useState({
+  const [editingIndex, setEditingIndex] = useState<number | null>(null);
+  const [formData, setFormData] = useState({
     name: "",
     requiredPoints: 0,
     quantity: 0,
     imageUrl: ""
   });
 
-  const handleAddItem = () => {
-    if (newItem.name && newItem.requiredPoints > 0) {
-      onItemsChange([...items, { ...newItem }]);
-      setNewItem({ name: "", requiredPoints: 0, quantity: 0, imageUrl: "" });
+  const handleSubmit = () => {
+    if (formData.name && formData.requiredPoints > 0) {
+      if (editingIndex !== null) {
+        // Update existing item
+        const updatedItems = [...items];
+        updatedItems[editingIndex] = {
+          ...updatedItems[editingIndex], // Keep ID if exists
+          ...formData
+        };
+        onItemsChange(updatedItems);
+        setEditingIndex(null);
+      } else {
+        // Add new item
+        onItemsChange([...items, { ...formData }]);
+      }
+      setFormData({ name: "", requiredPoints: 0, quantity: 0, imageUrl: "" });
     }
   };
 
+  const handleEdit = (index: number) => {
+    setEditingIndex(index);
+    const item = items[index];
+    setFormData({
+      name: item.name,
+      requiredPoints: item.requiredPoints,
+      quantity: item.quantity,
+      imageUrl: item.imageUrl
+    });
+  };
+
+  const handleCancel = () => {
+    setEditingIndex(null);
+    setFormData({ name: "", requiredPoints: 0, quantity: 0, imageUrl: "" });
+  };
+
   const handleRemoveItem = (index: number) => {
+    if (editingIndex === index) {
+      handleCancel();
+    }
     onItemsChange(items.filter((_, i) => i !== index));
   };
 
@@ -30,49 +62,64 @@ const RewardListCard: React.FC<RewardListCardProps> = ({ items, onItemsChange })
           </div>
           <h2 className="font-semibold">Danh mục phần thưởng</h2>
         </div>
-
-        <button className="text-indigo-600 font-medium">+ Thêm nhanh</button>
       </div>
 
-      {/* Add form */}
-      <div className="border rounded-xl p-4 mb-4 bg-gray-50">
+      {/* Form */}
+      <div className={`border rounded-xl p-4 mb-4 ${editingIndex !== null ? 'bg-indigo-50 border-indigo-200' : 'bg-gray-50'}`}>
+        <div className="flex justify-between items-center mb-3">
+          <span className="text-sm font-medium text-gray-700">
+            {editingIndex !== null ? '🖊 Chỉnh sửa phần thưởng' : '➕ Thêm phần thưởng mới'}
+          </span>
+          {editingIndex !== null && (
+            <button
+              onClick={handleCancel}
+              className="text-xs text-gray-500 hover:text-gray-700"
+            >
+              Hủy bỏ
+            </button>
+          )}
+        </div>
+
         <div className="grid grid-cols-3 gap-3 mb-3">
           <input
             className="border rounded-xl px-3 py-2 bg-white"
             placeholder="Tên phần thưởng *"
-            value={newItem.name}
-            onChange={(e) => setNewItem({ ...newItem, name: e.target.value })}
+            value={formData.name}
+            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
           />
           <input
             className="border rounded-xl px-3 py-2 bg-white"
             placeholder="Điểm quy đổi *"
             type="number"
-            value={newItem.requiredPoints || ''}
-            onChange={(e) => setNewItem({ ...newItem, requiredPoints: parseInt(e.target.value) || 0 })}
+            value={formData.requiredPoints || ''}
+            onChange={(e) => setFormData({ ...formData, requiredPoints: parseInt(e.target.value) || 0 })}
           />
           <input
             className="border rounded-xl px-3 py-2 bg-white"
             placeholder="Số lượng (Opt)"
             type="number"
-            value={newItem.quantity || ''}
-            onChange={(e) => setNewItem({ ...newItem, quantity: parseInt(e.target.value) || 0 })}
+            value={formData.quantity || ''}
+            onChange={(e) => setFormData({ ...formData, quantity: parseInt(e.target.value) || 0 })}
           />
         </div>
 
         <div className="mb-3">
           <ImageUploader
-            value={newItem.imageUrl}
-            onChange={(url) => setNewItem({ ...newItem, imageUrl: url })}
+            value={formData.imageUrl}
+            onChange={(url) => setFormData({ ...formData, imageUrl: url })}
             placeholder="Tải ảnh phần thưởng (optional)"
             previewHeight="h-24"
           />
         </div>
 
         <button
-          className="w-full rounded-xl bg-indigo-500 text-white py-2 hover:bg-indigo-600 transition-colors"
-          onClick={handleAddItem}
+          className={`w-full rounded-xl py-2 transition-colors ${editingIndex !== null
+              ? 'bg-indigo-600 text-white hover:bg-indigo-700'
+              : 'bg-indigo-500 text-white hover:bg-indigo-600'
+            }`}
+          onClick={handleSubmit}
         >
-          + Thêm phần thưởng
+          {editingIndex !== null ? '💾 Lưu thay đổi' : '+ Thêm phần thưởng'}
         </button>
       </div>
 
@@ -89,7 +136,7 @@ const RewardListCard: React.FC<RewardListCardProps> = ({ items, onItemsChange })
           </thead>
           <tbody>
             {items.map((item, index) => (
-              <tr key={index} className="border-b last:border-none">
+              <tr key={index} className={`border-b last:border-none ${editingIndex === index ? 'bg-indigo-50' : ''}`}>
                 <td className="py-3">
                   <div className="flex items-center gap-3">
                     {item.imageUrl && (
@@ -106,11 +153,21 @@ const RewardListCard: React.FC<RewardListCardProps> = ({ items, onItemsChange })
                   {item.requiredPoints.toLocaleString()} pts
                 </td>
                 <td className="text-center">{item.quantity || '∞'}</td>
-                <td
-                  className="text-right cursor-pointer text-red-500 hover:text-red-700"
-                  onClick={() => handleRemoveItem(index)}
-                >
-                  🗑
+                <td className="text-right space-x-2">
+                  <button
+                    className="text-gray-400 hover:text-indigo-600"
+                    onClick={() => handleEdit(index)}
+                    title="Chỉnh sửa"
+                  >
+                    ✎
+                  </button>
+                  <button
+                    className="text-gray-400 hover:text-red-600"
+                    onClick={() => handleRemoveItem(index)}
+                    title="Xóa"
+                  >
+                    🗑
+                  </button>
                 </td>
               </tr>
             ))}

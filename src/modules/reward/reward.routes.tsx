@@ -5,8 +5,10 @@ import {
   GiftedPointTransactionPage,
   RewardProgramDetailPage,
   CreateRewardProgramPage,
+  AdminRewardManagementPage,
 } from "./pages";
 import ProtectedRoute from "shared/components/ProtectedRoute";
+import EditRewardProgramPage from "./pages/EditRewardProgramPage";
 
 const RewardRoutes = (
   <Route path="/rewards">
@@ -28,6 +30,16 @@ const RewardRoutes = (
     <Route path="programs/create" element={
       <ProtectedRoute allowedRoles={["ADMIN"]}>
         <CreateRewardProgramPage />
+      </ProtectedRoute>
+    } />
+    <Route path="programs/current-active" element={
+      <ProtectedRoute allowedRoles={["ADMIN"]}>
+        <AdminRewardManagementPage />
+      </ProtectedRoute>
+    } />
+    <Route path="programs/edit/:id" element={
+      <ProtectedRoute allowedRoles={["ADMIN"]}>
+        <EditRewardProgramPage />
       </ProtectedRoute>
     } />
   </Route>
