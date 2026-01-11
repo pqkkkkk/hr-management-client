@@ -1,14 +1,15 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from 'contexts/AuthContext';
+import { useApi } from 'contexts/ApiContext';
 import ManagerStatsCards from './components/ManagerStatsCards';
 import PendingRequestsTable from './components/PendingRequestsTable';
-import TeamAttendanceChart from './components/TeamAttendanceChart';
 import TeamActivitiesWidget from './components/TeamActivitiesWidget';
-import { RequestStatus, RequestType } from 'modules/request/types/request.types';
+import { Request, RequestStatus, RequestType } from 'modules/request/types/request.types';
+import { Activity, ActivityStatus as ActivityStatusEnum } from 'modules/activity/types/activity.types';
 import { ActivityStatus } from 'shared/types/common.types';
 
-// Mock data interfaces
+// Pending request interface for table display
 interface PendingRequest {
   requestId: string;
   employeeName: string;
@@ -17,14 +18,6 @@ interface PendingRequest {
   status: RequestStatus;
   submittedDate: string;
   createdAt: string;
-}
-
-interface AttendanceData {
-  day: string;
-  date: string;
-  onTimeRate: number;
-  lateCount: number;
-  absentCount: number;
 }
 
 interface TopPerformer {
@@ -47,15 +40,16 @@ interface TeamActivity {
 
 const ManagerDashboard: React.FC = () => {
   const { user } = useAuth();
+  const { requestApi, profileApi, rewardApi, activityApi } = useApi();
   const navigate = useNavigate();
 
   // Stats state
-  const [pendingRequests, setPendingRequests] = useState(8);
-  const [teamMembers, setTeamMembers] = useState(15);
-  const [activeTeamMembers, setActiveTeamMembers] = useState(14);
-  const [onLeaveToday, setOnLeaveToday] = useState(2);
-  const [giftedPointsThisMonth, setGiftedPointsThisMonth] = useState(450);
-  const [budgetRemaining] = useState(550);
+  const [pendingRequests, setPendingRequests] = useState(0);
+  const [teamMembers, setTeamMembers] = useState(0);
+  const [activeTeamMembers, setActiveTeamMembers] = useState(0);
+  const [onLeaveToday, setOnLeaveToday] = useState(0);
+  const [giftedPointsThisMonth, setGiftedPointsThisMonth] = useState(0);
+  const [budgetRemaining] = useState(0);
 
   // Pending requests state
   const [requests, setRequests] = useState<PendingRequest[]>([]);
@@ -63,134 +57,161 @@ const ManagerDashboard: React.FC = () => {
   const [isApproving, setIsApproving] = useState(false);
   const [isRejecting, setIsRejecting] = useState(false);
 
-  // Attendance data state
-  const [attendanceData, setAttendanceData] = useState<AttendanceData[]>([]);
-  const [isLoadingAttendance, setIsLoadingAttendance] = useState(true);
-  const [weeklyAverage, setWeeklyAverage] = useState(88);
-  const [onTimeToday, setOnTimeToday] = useState(12);
-  const [notCheckedInToday, setNotCheckedInToday] = useState(3);
-
   // Team activities state
   const [teamActivities, setTeamActivities] = useState<TeamActivity[]>([]);
   const [isLoadingActivities, setIsLoadingActivities] = useState(true);
 
-  // Fetch dashboard data
-  useEffect(() => {
-    const fetchDashboardData = async () => {
-      try {
-        // TODO: Replace with actual API calls when backend is ready
-        setTimeout(() => {
-          // Mock pending requests, use mock profile api instead of hardcoded data in the component
-          setRequests([
-            {
-              requestId: '1',
-              employeeName: 'Nguyễn Văn A',
-              type: RequestType.LEAVE,
-              status: RequestStatus.PENDING,
-              submittedDate: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-              createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-            },
-            {
-              requestId: '2',
-              employeeName: 'Trần Thị B',
-              type: RequestType.TIMESHEET,
-              status: RequestStatus.PENDING,
-              submittedDate: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(),
-              createdAt: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(),
-            },
-            {
-              requestId: '3',
-              employeeName: 'Lê Văn C',
-              type: RequestType.WFH,
-              status: RequestStatus.PENDING,
-              submittedDate: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString(),
-              createdAt: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString(),
-            },
-            {
-              requestId: '4',
-              employeeName: 'Phạm Thị D',
-              type: RequestType.LEAVE,
-              status: RequestStatus.PENDING,
-              submittedDate: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
-              createdAt: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
-            },
-            {
-              requestId: '5',
-              employeeName: 'Hoàng Văn E',
-              type: RequestType.CHECK_IN,
-              status: RequestStatus.PENDING,
-              submittedDate: new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString(),
-              createdAt: new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString(),
-            },
-          ]);
-          setIsLoadingRequests(false);
+  // Error state
+  const [error, setError] = useState<string | null>(null);
 
-          // Mock attendance data (last 7 days), use mock attendance api instead of hardcoded data in the component
-          const days = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];
-          const mockAttendance: AttendanceData[] = days.map((day, index) => {
-            const date = new Date();
-            date.setDate(date.getDate() - (6 - index));
-            return {
-              day,
-              date: date.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' }),
-              onTimeRate: 75 + Math.floor(Math.random() * 20),
-              lateCount: Math.floor(Math.random() * 3),
-              absentCount: Math.floor(Math.random() * 2),
-            };
-          });
-          setAttendanceData(mockAttendance);
-          setIsLoadingAttendance(false);
+  // Helper function to calculate progress based on dates
+  const calculateProgress = (startDate: string, endDate: string): number => {
+    const start = new Date(startDate).getTime();
+    const end = new Date(endDate).getTime();
+    const now = Date.now();
+    
+    if (now <= start) return 0;
+    if (now >= end) return 100;
+    
+    return Math.round(((now - start) / (end - start)) * 100);
+  };
 
-          // Mock team activities, use mock activities api instead of hardcoded data in the component
-          setTeamActivities([
-            {
-              activityId: '1',
-              name: 'Chạy bộ Marathon 2025',
-              status: 'ONGOING' as ActivityStatus,
-              participantsCount: 12,
-              totalTeamMembers: 15,
-              progress: 45,
-              topPerformers: [
-                { employeeId: '1', employeeName: 'Nguyễn Văn A', score: 125, rank: 1 },
-                { employeeId: '2', employeeName: 'Trần Thị B', score: 98, rank: 2 },
-                { employeeId: '3', employeeName: 'Lê Văn C', score: 87, rank: 3 },
-              ],
-            },
-            {
-              activityId: '2',
-              name: 'Giải Cầu lông nội bộ',
-              status: 'UPCOMING' as ActivityStatus,
-              participantsCount: 8,
-              totalTeamMembers: 15,
-              progress: 0,
-              topPerformers: [],
-            },
-            {
-              activityId: '3',
-              name: 'Yoga buổi sáng',
-              status: 'ONGOING' as ActivityStatus,
-              participantsCount: 10,
-              totalTeamMembers: 15,
-              progress: 60,
-              topPerformers: [
-                { employeeId: '4', employeeName: 'Phạm Thị D', score: 156, rank: 1 },
-                { employeeId: '5', employeeName: 'Hoàng Văn E', score: 142, rank: 2 },
-                { employeeId: '1', employeeName: 'Nguyễn Văn A', score: 138, rank: 3 },
-              ],
-            },
-          ]);
-          setIsLoadingActivities(false);
-        }, 1000);
-      } catch (error) {
-        console.error('Error fetching dashboard data:', error);
-        setIsLoadingRequests(false);
-        setIsLoadingAttendance(false);
-        setIsLoadingActivities(false);
+  // Helper function to map Activity status to TeamActivity status
+  const mapActivityStatus = (status: ActivityStatusEnum): ActivityStatus => {
+    switch (status) {
+      case ActivityStatusEnum.OPEN:
+      case ActivityStatusEnum.IN_PROGRESS:
+        return 'ONGOING';
+      case ActivityStatusEnum.DRAFT:
+        return 'UPCOMING';
+      case ActivityStatusEnum.CLOSED:
+      case ActivityStatusEnum.COMPLETED:
+        return 'COMPLETED';
+      default:
+        return 'UPCOMING';
+    }
+  };
+
+  // Fetch team pending requests
+  const fetchTeamRequests = useCallback(async () => {
+    if (!user?.userId) return;
+    
+    try {
+      setIsLoadingRequests(true);
+      const response = await requestApi.getTeamRequests({ 
+        status: RequestStatus.PENDING,
+        approverId: user.userId,
+      });
+      if (response.success && response.data) {
+        const pendingRequestsList: PendingRequest[] = response.data.content.map((req: Request) => ({
+          requestId: req.requestId,
+          employeeName: req.employeeFullName || 'Unknown',
+          type: req.requestType,
+          status: req.status,
+          submittedDate: req.createdAt,
+          createdAt: req.createdAt,
+        }));
+        setRequests(pendingRequestsList);
+        setPendingRequests(response.data.totalElements);
       }
-    };
+    } catch (err) {
+      console.error('Error fetching team requests:', err);
+      setError('Không thể tải danh sách yêu cầu');
+    } finally {
+      setIsLoadingRequests(false);
+    }
+  }, [requestApi, user?.userId]);
 
-    fetchDashboardData();
-  }, []);
+  // Fetch team members count
+  const fetchTeamMembers = useCallback(async () => {
+    try {
+      const response = await profileApi.getProfiles({ 
+        departmentId: user?.departmentId,
+        pageSize: 100 
+      });
+      if (response.success && response.data) {
+        const members = response.data.content;
+        setTeamMembers(response.data.totalElements);
+        // Count active members (assuming status field exists)
+        const activeCount = members.filter((m: any) => m.status === 'ACTIVE').length;
+        setActiveTeamMembers(activeCount || response.data.totalElements);
+      }
+    } catch (err) {
+      console.error('Error fetching team members:', err);
+    }
+  }, [profileApi, user?.departmentId]);
+
+  // Fetch gifted points this month
+  const fetchGiftedPoints = useCallback(async () => {
+    try {
+      const now = new Date();
+      const year = now.getFullYear();
+      const month = String(now.getMonth() + 1).padStart(2, '0');
+      const lastDay = new Date(year, now.getMonth() + 1, 0).getDate();
+      
+      const fromDate = `${year}-${month}-01T00:00:00.000Z`;
+      const toDate = `${year}-${month}-${String(lastDay).padStart(2, '0')}T23:59:59.999Z`;
+      
+      const response = await rewardApi.getMyGiftTransactions({
+        FromDate: fromDate,
+        ToDate: toDate,
+        PageSize: 100,
+      });
+      
+      if (response.success && response.data) {
+        const totalGifted = response.data.content.reduce((sum: number, transaction: any) => {
+          return sum + (transaction.amount || 0);
+        }, 0);
+        setGiftedPointsThisMonth(totalGifted);
+      }
+    } catch (err) {
+      console.error('Error fetching gifted points:', err);
+    }
+  }, [rewardApi]);
+
+  // Fetch team activities
+  const fetchTeamActivities = useCallback(async () => {
+    try {
+      setIsLoadingActivities(true);
+      const response = await activityApi.getActivities(undefined, {
+        pageSize: 5,
+        status: ActivityStatusEnum.OPEN,
+      });
+      
+      if (response.success && response.data) {
+        const activities: TeamActivity[] = response.data.content.map((activity: Activity) => ({
+          activityId: activity.activityId,
+          name: activity.name,
+          status: mapActivityStatus(activity.status),
+          participantsCount: activity.participantsCount || 0,
+          totalTeamMembers: teamMembers || 15, // Use actual team members count
+          progress: calculateProgress(activity.startDate, activity.endDate),
+          topPerformers: [], // Would need separate API call for leaderboard
+        }));
+        setTeamActivities(activities);
+      }
+    } catch (err) {
+      console.error('Error fetching team activities:', err);
+    } finally {
+      setIsLoadingActivities(false);
+    }
+  }, [activityApi, teamMembers]);
+
+  // Fetch all dashboard data
+  useEffect(() => {
+    fetchTeamRequests();
+    fetchTeamMembers();
+    fetchGiftedPoints();
+  }, [fetchTeamRequests, fetchTeamMembers, fetchGiftedPoints]);
+
+  // Fetch activities after team members are loaded
+  useEffect(() => {
+    if (teamMembers > 0) {
+      fetchTeamActivities();
+    } else {
+      fetchTeamActivities();
+    }
+  }, [teamMembers, fetchTeamActivities]);
 
 
 
@@ -226,15 +247,8 @@ const ManagerDashboard: React.FC = () => {
         />
       </div>
 
-      {/* Team Performance Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <TeamAttendanceChart
-          data={attendanceData}
-          isLoading={isLoadingAttendance}
-          weeklyAverage={weeklyAverage}
-          onTimeToday={onTimeToday}
-          notCheckedInToday={notCheckedInToday}
-        />
+      {/* Team Activities Section */}
+      <div className="grid grid-cols-1 gap-6">
         <TeamActivitiesWidget
           activities={teamActivities}
           isLoading={isLoadingActivities}
