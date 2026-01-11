@@ -18,6 +18,7 @@ import ErrorState from "../components/ErrorState";
 import {
   PointTransaction,
   TransactionFilter,
+  TransactionType,
   UserWallet,
 } from "modules/reward/types/reward.types";
 
@@ -63,7 +64,6 @@ const BudgetSummaryCard: React.FC<{
 
 type FiltersValue = {
   month: string;
-  keyword: string;
 };
 
 const FiltersBar: React.FC<{
@@ -96,16 +96,6 @@ const FiltersBar: React.FC<{
               <ChevronDown className="w-4 h-4 text-gray-400" />
             </div>
           </div>
-        </div>
-
-        <div className="relative flex-1 max-w-[360px]">
-          <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
-          <input
-            value={value.keyword}
-            onChange={(e) => onChange({ ...value, keyword: e.target.value })}
-            placeholder="Tìm kiếm..."
-            className="w-full h-10 pl-9 pr-3 border border-gray-200 rounded-lg text-sm text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
         </div>
       </div>
     </div>
@@ -225,19 +215,27 @@ const GiftedPointTransactionPage: React.FC = () => {
     return { FromDate: fromDate, ToDate: toDate };
   }, []);
 
-  const { query, updateQuery } = useQuery<TransactionFilter & { month?: string; keyword?: string }>({
-    month: nowMonth,
-    keyword: "",
+  const { query, updateQuery } = useQuery<TransactionFilter & { month?: string }>({
     PageNumber: 1,
     PageSize: PAGE_SIZE,
     ...buildDateFilter(nowMonth),
+    TransactionType: TransactionType.GIFT,
   });
 
   // Fetch GIFT transactions using new API method
   const fetchGiftTransactions = useMemo(
-    () => rewardApi.getMyGiftTransactions.bind(rewardApi),
+    () => (filter: TransactionFilter) => rewardApi.getMyGiftTransactions({
+      ...filter,
+    }),
     [rewardApi]
   );
+
+  // Trigger refetch when wallet is loaded (wallet?.userWalletId changes from undefined to value)
+  useEffect(() => {
+    if (wallet?.userWalletId) {
+      updateQuery({ SourceWalletId: wallet.userWalletId });
+    }
+  }, [wallet?.userWalletId, updateQuery]);
 
   const {
     data: transactions,
@@ -254,7 +252,6 @@ const GiftedPointTransactionPage: React.FC = () => {
       updateQuery({
         PageNumber: 1,
         month: next.month,
-        keyword: next.keyword,
         ...buildDateFilter(next.month),
       });
     },
@@ -275,7 +272,7 @@ const GiftedPointTransactionPage: React.FC = () => {
           Thống kê điểm đã tặng cho đội
         </h1>
         <p className="text-gray-500 mt-1">
-          Xem chi tiết các giao dịch tặng điểm cho nhân viên trong tháng.
+          Xem chi tiết các giao dịch tặng điểm cho nhân viên trong đợt khen thưởng hiện tại
         </p>
       </div>
 
@@ -290,7 +287,6 @@ const GiftedPointTransactionPage: React.FC = () => {
         <FiltersBar
           value={{
             month: query.month || nowMonth,
-            keyword: query.keyword || "",
           }}
           months={months}
           nowMonth={nowMonth}

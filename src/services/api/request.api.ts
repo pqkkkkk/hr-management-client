@@ -13,6 +13,8 @@ import {
   CreateCheckOutRequestDTO,
   CreateCheckInRequestDTO,
   CreateTimesheetUpdateRequestDTO,
+  BulkApproveRequest,
+  BulkApproveResponse,
 } from "modules/request/types/request.types";
 import { mockRequests } from "shared/data/request.data";
 import { springApiClient } from "./api.client";
@@ -52,6 +54,11 @@ export interface RequestApi {
   createTimesheetUpdateRequest(
     data: CreateTimesheetUpdateRequestDTO
   ): Promise<ApiResponse<any>>;
+
+  // Bulk operations
+  bulkApprove(
+    request: BulkApproveRequest
+  ): Promise<ApiResponse<BulkApproveResponse>>;
 }
 
 export class MockRequestApi implements RequestApi {
@@ -621,12 +628,41 @@ export class MockRequestApi implements RequestApi {
           currentCheckInTime: data.currentCheckInTime,
         };
 
-
         resolve({
           data: newRequest,
           success: true,
           statusCode: 201,
           message: "Timesheet update request created successfully",
+        });
+      }, 800);
+    });
+  }
+
+  async bulkApprove(
+    request: BulkApproveRequest
+  ): Promise<ApiResponse<BulkApproveResponse>> {
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        const pendingRequests = mockRequests.filter(
+          (r) => r.status === RequestStatus.PENDING
+        );
+        const toApprove = pendingRequests.slice(0, 10);
+        const approvedIds = toApprove.map((r) => {
+          r.status = RequestStatus.APPROVED;
+          return r.requestId;
+        });
+
+        resolve({
+          data: {
+            totalProcessed: approvedIds.length,
+            successCount: approvedIds.length,
+            failedCount: 0,
+            approvedRequestIds: approvedIds,
+            failedRequests: [],
+          },
+          success: true,
+          statusCode: 200,
+          message: `Bulk approve completed. ${approvedIds.length} approved.`,
         });
       }, 800);
     });
@@ -772,6 +808,12 @@ export class RestRequestApi implements RequestApi {
     data: CreateTimesheetUpdateRequestDTO
   ): Promise<ApiResponse<Request>> {
     return springApiClient.post<ApiResponse<Request>>(`/requests/timesheet`, data);
+  }
+
+  async bulkApprove(
+    request: BulkApproveRequest
+  ): Promise<ApiResponse<BulkApproveResponse>> {
+    return springApiClient.post<ApiResponse<BulkApproveResponse>>(`/requests/bulk-approve`, request);
   }
 }
 

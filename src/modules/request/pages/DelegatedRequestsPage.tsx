@@ -3,6 +3,8 @@ import { toast } from "react-toastify";
 import Pagination from "../components/Pagination";
 import ConfirmationApprove from "../components/ConfirmationApprove";
 import ConfirmationReject from "../components/ConfirmationReject";
+import ConfirmationBulkApprove from "../components/ConfirmationBulkApprove";
+import BulkApproveResultDialog from "../components/BulkApproveResultDialog";
 import SearchAndFilter, { Filters } from "../components/SearchAndFilter";
 import RequestRow from "../components/RequestRow";
 import { useApi } from "contexts/ApiContext";
@@ -12,6 +14,8 @@ import {
     RequestStatus,
     RequestType,
     RequestFilter,
+    BulkApproveRequest,
+    BulkApproveResponse,
 } from "../types/request.types";
 import EmptyState from "../components/EmptyState";
 import ErrorState from "../components/ErrorState";
@@ -27,6 +31,9 @@ const DelegatedRequestsPage: React.FC = () => {
         currentPage: 1,
         pageSize: PAGE_SIZE,
         processorId: user?.userId,
+        status: RequestStatus.PENDING,
+        sortBy: "createdAt",
+        sortDirection: "DESC",
     });
 
     const fetchTeamRequests = useMemo(
@@ -45,10 +52,12 @@ const DelegatedRequestsPage: React.FC = () => {
     const [selectedRequestId, setSelectedRequestId] = useState<string | null>(null);
     const [showApproveModal, setShowApproveModal] = useState(false);
     const [showRejectModal, setShowRejectModal] = useState(false);
+    const [showBulkApproveModal, setShowBulkApproveModal] = useState(false);
+    const [bulkApproveLoading, setBulkApproveLoading] = useState(false);
+    const [bulkApproveResult, setBulkApproveResult] = useState<BulkApproveResponse | null>(null);
+    const [showResultDialog, setShowResultDialog] = useState(false);
 
-    const pendingCount = requests.filter(
-        (r) => r.status === RequestStatus.PENDING
-    ).length;
+    const pendingCount = pageData?.totalElements || 0;
 
     const handleFilterChange = useCallback(
         (newFilters: Filters) => {
@@ -128,6 +137,31 @@ const DelegatedRequestsPage: React.FC = () => {
         }
     };
 
+    const doBulkApprove = async () => {
+        if (!user) return;
+        setBulkApproveLoading(true);
+        try {
+            const bulkRequest: BulkApproveRequest = {
+                processorId: user.userId,
+                type: query.type,
+                startDate: query.startDate,
+                endDate: query.endDate,
+            };
+            const res = await requestApi.bulkApprove(bulkRequest);
+            if (res && res.success) {
+                setBulkApproveResult(res.data);
+                setShowResultDialog(true);
+                await refetch();
+            }
+        } catch (err: any) {
+            console.error("Bulk approve failed", err);
+            toast.error(err?.response?.data?.message || "Phê duyệt thất bại");
+        } finally {
+            setBulkApproveLoading(false);
+            setShowBulkApproveModal(false);
+        }
+    };
+
     return (
         <div className="min-h-screen bg-gray-50 py-5 px-8">
             <div className="max-w-7xl mx-auto">
@@ -160,6 +194,17 @@ const DelegatedRequestsPage: React.FC = () => {
                         />
                         {pendingCount} yêu cầu chưa xử lý
                     </div>
+                    {pendingCount > 0 && query.status === RequestStatus.PENDING && (
+                        <button
+                            onClick={() => setShowBulkApproveModal(true)}
+                            className="ml-3 px-4 py-2 bg-green-500 text-white text-sm rounded-lg hover:bg-green-600 flex items-center gap-2"
+                        >
+                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                            </svg>
+                            Phê duyệt tất cả
+                        </button>
+                    )}
                 </div>
 
                 {/* Main card */}
@@ -268,6 +313,18 @@ const DelegatedRequestsPage: React.FC = () => {
                 open={showRejectModal}
                 onClose={() => setShowRejectModal(false)}
                 onConfirm={(reason: string) => doReject(reason)}
+            />
+            <ConfirmationBulkApprove
+                open={showBulkApproveModal}
+                onClose={() => setShowBulkApproveModal(false)}
+                onConfirm={doBulkApprove}
+                pendingCount={pendingCount}
+                isLoading={bulkApproveLoading}
+            />
+            <BulkApproveResultDialog
+                open={showResultDialog}
+                onClose={() => setShowResultDialog(false)}
+                result={bulkApproveResult}
             />
         </div>
     );

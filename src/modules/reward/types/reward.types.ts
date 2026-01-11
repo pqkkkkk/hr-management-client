@@ -18,6 +18,8 @@ export interface TransactionFilter {
   PageNumber?: number;
   PageSize?: number;
   EmployeeId?: string;
+  SourceWalletId?: string;
+  DestinationWalletId?: string;
   sortBy?: string;
   sortDirection?: string;
 }

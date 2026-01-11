@@ -175,6 +175,32 @@ export interface RequestFilter {
   sortDirection?: "ASC" | "DESC";
 }
 
+// Bulk Approve Types
+export interface BulkApproveRequest {
+  approverId?: string;
+  processorId?: string;
+  employeeId?: string;
+  departmentId?: string;
+  nameTerm?: string;
+  type?: RequestType;
+  startDate?: string;
+  endDate?: string;
+}
+
+export interface BulkApproveFailedItem {
+  requestId: string;
+  employeeName: string;
+  reason: string;
+}
+
+export interface BulkApproveResponse {
+  totalProcessed: number;
+  successCount: number;
+  failedCount: number;
+  approvedRequestIds: string[];
+  failedRequests: BulkApproveFailedItem[];
+}
+
 export interface RemainingLeaveDays {
   totalAnnualLeave: number;
   usedAnnualLeave: number;

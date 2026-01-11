@@ -32,10 +32,10 @@ const getStatusText = (status: ActivityStatus) => {
 
 const formatDate = (dateString: string) => {
   const date = new Date(dateString);
-  return date.toLocaleDateString('vi-VN', { 
-    day: '2-digit', 
-    month: '2-digit', 
-    year: 'numeric' 
+  return date.toLocaleDateString('vi-VN', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric'
   });
 };
 
@@ -76,7 +76,7 @@ const UpcomingActivities: React.FC<UpcomingActivitiesProps> = ({ activities, isL
   return (
     <div className="bg-white rounded-lg shadow p-6">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-semibold text-gray-900">Hoạt động sắp tới</h3>
+        <h3 className="text-lg font-semibold text-gray-900">Hoạt động đang diễn ra</h3>
         <button
           onClick={() => navigate('/activities')}
           className="text-sm text-blue-600 hover:text-blue-700 font-medium"
@@ -84,7 +84,7 @@ const UpcomingActivities: React.FC<UpcomingActivitiesProps> = ({ activities, isL
           Xem tất cả
         </button>
       </div>
-      
+
       <div className="space-y-3">
         {activities.map((activity) => (
           <div
@@ -103,7 +103,7 @@ const UpcomingActivities: React.FC<UpcomingActivitiesProps> = ({ activities, isL
                 {getStatusText(activity.status)}
               </span>
             </div>
-            
+
             <div className="flex items-center text-xs text-gray-500 mb-2">
               <Calendar className="w-3 h-3 mr-1" />
               <span>

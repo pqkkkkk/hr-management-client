@@ -17,6 +17,7 @@ import {
     ActivityLogStatus,
     ActivityDetailResponse,
     ConfigSchemaResponse,
+    RegisterActivityRequest,
 } from "modules/activity/types/activity.types";
 import {
     mockActivities,
@@ -38,7 +39,7 @@ export interface ActivityApi {
     deleteActivity(id: string): Promise<ApiResponse<void>>;
 
     // Registration
-    registerForActivity(activityId: string, employeeId: string): Promise<ApiResponse<void>>;
+    registerForActivity(activityId: string, req: RegisterActivityRequest): Promise<ApiResponse<void>>;
     unregisterFromActivity(activityId: string, employeeId: string): Promise<ApiResponse<void>>;
 
     // Status management
@@ -205,7 +206,7 @@ export class MockActivityApi implements ActivityApi {
     }
 
     // POST /api/v1/activities/:id/register
-    async registerForActivity(activityId: string, employeeId: string): Promise<ApiResponse<void>> {
+    async registerForActivity(activityId: string, req: RegisterActivityRequest): Promise<ApiResponse<void>> {
         return new Promise((resolve) => {
             setTimeout(() => {
                 resolve({
@@ -477,8 +478,8 @@ export class RestActivityApi implements ActivityApi {
         return dotnetApiClient.delete(`/activities/${id}`);
     }
 
-    async registerForActivity(activityId: string, employeeId: string): Promise<ApiResponse<void>> {
-        return dotnetApiClient.post(`/activities/${activityId}/register?employeeId=${employeeId}`);
+    async registerForActivity(activityId: string, req: RegisterActivityRequest): Promise<ApiResponse<void>> {
+        return dotnetApiClient.post(`/activities/${activityId}/register`, req);
     }
 
     async unregisterFromActivity(activityId: string, employeeId: string): Promise<ApiResponse<void>> {

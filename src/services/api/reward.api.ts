@@ -106,8 +106,10 @@ export class MockRewardApi implements RewardApi {
   async getMyGiftTransactions(filter?: TransactionFilter): Promise<ApiResponse<Page<PointTransaction>>> {
     return new Promise((resolve) => {
       setTimeout(() => {
-        // Filter only GIFT transactions
-        const giftTransactions = mockTransactions.filter(t => t.type === TransactionType.GIFT);
+        // Filter only GIFT transactions where user is sender
+        const giftTransactions = mockTransactions.filter(
+          t => t.type === TransactionType.GIFT
+        );
 
         // Apply pagination
         const pageNumber = filter?.PageNumber || 1;
@@ -373,7 +375,7 @@ export class RestRewardApi implements RewardApi {
 
   // GET GIFT transactions sent by current user
   async getMyGiftTransactions(filter?: TransactionFilter): Promise<ApiResponse<Page<PointTransaction>>> {
-    // Use transaction filter with GIFT type
+    // Use transaction filter with GIFT type and SourceUserId
     const giftFilter: TransactionFilter = {
       ...filter,
       TransactionType: TransactionType.GIFT,
