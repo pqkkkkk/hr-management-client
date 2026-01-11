@@ -10,6 +10,7 @@ import { RequestStatus, RequestType } from 'modules/request/types/request.types'
 import { toast } from 'react-toastify';
 import { Request } from 'modules/request/types/request.types';
 import { Activity, ActivityStatus } from 'modules/activity/types/activity.types';
+import { RewardProgramDetail } from 'modules/reward/types/reward.types';
 
 // Dashboard stats interface
 interface DashboardStats {
@@ -17,7 +18,7 @@ interface DashboardStats {
   totalLeaveDays: number;
   rewardPoints: number;
   pendingRequests: number;
-  ongoingActivities: number;
+  registeredActivities: number;
 }
 
 // Loading states interface
@@ -38,14 +39,14 @@ const EmployeeDashboard: React.FC = () => {
   const { user } = useAuth();
   const { requestApi, rewardApi, activityApi } = useApi();
   const navigate = useNavigate();
-  
+
   // Stats state
   const [stats, setStats] = useState<DashboardStats>({
-    remainingLeaveDays: 0,
-    totalLeaveDays: 15,
+    remainingLeaveDays: user?.remainingAnnualLeaveDays || 0,
+    totalLeaveDays: user?.maxAnnualLeaveDays || 0,
     rewardPoints: 0,
     pendingRequests: 0,
-    ongoingActivities: 0,
+    registeredActivities: 0,
   });
 
   // Loading states
@@ -72,16 +73,19 @@ const EmployeeDashboard: React.FC = () => {
 
   // Upcoming activities state
   const [upcomingActivities, setUpcomingActivities] = useState<Activity[]>([]);
+  const [registeredActivities, setRegisteredActivities] = useState<Activity[]>([]);
+
+  const [activeRewardProgram, setActiveRewardProgram] = useState<RewardProgramDetail | null>(null);
 
   // Fetch reward points
   const fetchRewardPoints = useCallback(async () => {
     if (!user?.userId) return 0;
-    
+
     try {
       // First get active reward program
       const programResponse = await rewardApi.getActiveRewardProgram();
+      setActiveRewardProgram(programResponse.data);
 
-      console.log('Active Reward Program Response:', programResponse);
       if (programResponse.success && programResponse.data?.rewardProgramId) {
         // Then get wallet for the user
         const walletResponse = await rewardApi.getWallet(
@@ -99,70 +103,21 @@ const EmployeeDashboard: React.FC = () => {
     }
   }, [user?.userId, rewardApi]);
 
-  // Fetch pending requests count
-  const fetchPendingRequestsCount = useCallback(async () => {
-    if (!user?.userId) return 0;
-    
-    try {
-      const response = await requestApi.getMyRequests({
-        employeeId: user.userId,
-        status: RequestStatus.PENDING,
-        pageSize: 1,
-        currentPage: 1,
-      });
-      if (response.success && response.data) {
-        return response.data.totalElements || 0;
-      }
-      return 0;
-    } catch (error) {
-      console.error('Error fetching pending requests:', error);
-      return 0;
-    }
-  }, [user?.userId, requestApi]);
-
-  // Fetch ongoing activities count
-  const fetchOngoingActivitiesCount = useCallback(async () => {
-    if (!user?.userId) return 0;
-    
-    try {
-      const response = await activityApi.getMyActivities(user.userId, {
-        status: ActivityStatus.IN_PROGRESS,
-        pageSize: 1,
-        pageNumber: 1,
-      });
-      
-      if (response.success && response.data) {
-        return response.data.totalElements || 0;
-      }
-      return 0;
-    } catch (error) {
-      console.error('Error fetching ongoing activities:', error);
-      return 0;
-    }
-  }, [user?.userId, activityApi]);
-
+  // Fetch reward points and remaining leave days
   useEffect(() => {
-    const fetchStats = async () => {
+    const fetchInitialStats = async () => {
       if (!user?.userId) return;
 
       setLoading(prev => ({ ...prev, stats: true }));
       setErrors(prev => ({ ...prev, stats: null }));
 
       try {
-        // Fetch all stats in parallel
-        const [rewardPoints, pendingRequests, ongoingActivities] = await Promise.all([
-          fetchRewardPoints(),
-          fetchPendingRequestsCount(),
-          fetchOngoingActivitiesCount(),
-        ]);
+        const rewardPoints = await fetchRewardPoints();
 
-        setStats({
-          remainingLeaveDays: user.remainingAnnualLeaveDays || 0,
-          totalLeaveDays: 15, // This could also come from user context or API
+        setStats(prev => ({
+          ...prev,
           rewardPoints,
-          pendingRequests,
-          ongoingActivities,
-        });
+        }));
       } catch (error) {
         console.error('Error fetching dashboard stats:', error);
         setErrors(prev => ({ ...prev, stats: 'Không thể tải thông tin thống kê' }));
@@ -171,10 +126,10 @@ const EmployeeDashboard: React.FC = () => {
       }
     };
 
-    fetchStats();
-  }, [user, fetchRewardPoints, fetchPendingRequestsCount, fetchOngoingActivitiesCount]);
+    fetchInitialStats();
+  }, [user, fetchRewardPoints]);
 
-  // Fetch recent requests (5 items)
+  // Fetch recent requests (5 items) and pending count
   useEffect(() => {
     const fetchRecentRequests = async () => {
       if (!user?.userId) return;
@@ -183,16 +138,34 @@ const EmployeeDashboard: React.FC = () => {
       setErrors(prev => ({ ...prev, requests: null }));
 
       try {
-        const response = await requestApi.getMyRequests({
-          employeeId: user.userId,
-          pageSize: 5,
-          currentPage: 1,
-          sortBy: 'createdAt',
-          sortDirection: 'DESC',
-        });
-        if (response.success && response.data?.content) {
-          console.log('Recent Requests Response:', response);
-          setRecentRequests(response.data.content);
+        // Fetch pending requests (for count) and recent requests in parallel
+        const [pendingResponse, recentResponse] = await Promise.all([
+          requestApi.getMyRequests({
+            employeeId: user.userId,
+            status: RequestStatus.PENDING,
+            pageSize: 5,
+            currentPage: 1,
+          }),
+          requestApi.getMyRequests({
+            employeeId: user.userId,
+            pageSize: 5,
+            currentPage: 1,
+            sortBy: 'createdAt',
+            sortDirection: 'DESC',
+          }),
+        ]);
+
+        // Update pending requests count from the response
+        if (pendingResponse.success && pendingResponse.data) {
+          setStats(prev => ({
+            ...prev,
+            pendingRequests: pendingResponse.data?.totalElements || 0,
+          }));
+        }
+
+        // Update recent requests list
+        if (recentResponse.success && recentResponse.data?.content) {
+          setRecentRequests(recentResponse.data.content);
         } else {
           setRecentRequests([]);
         }
@@ -208,7 +181,7 @@ const EmployeeDashboard: React.FC = () => {
     fetchRecentRequests();
   }, [user?.userId, requestApi]);
 
-  // Fetch upcoming activities (5 items)
+  // Fetch upcoming activities and registered activities
   useEffect(() => {
     const fetchUpcomingActivities = async () => {
       if (!user?.userId) return;
@@ -217,26 +190,34 @@ const EmployeeDashboard: React.FC = () => {
       setErrors(prev => ({ ...prev, activities: null }));
 
       try {
-        // Fetch both ongoing and upcoming activities
-        const [ongoingResponse, upcomingResponse] = await Promise.all([
+        const [ongoingActivityResponse, registeredActivityResponse] = await Promise.all([
           activityApi.getMyActivities(user.userId, {
             status: ActivityStatus.IN_PROGRESS,
             pageSize: 5,
             pageNumber: 1,
           }),
           activityApi.getMyActivities(user.userId, {
-            status: ActivityStatus.OPEN,
             pageSize: 5,
             pageNumber: 1,
           }),
         ]);
 
-        const ongoing = ongoingResponse.success ? ongoingResponse.data?.content || [] : [];
-        const upcoming = upcomingResponse.success ? upcomingResponse.data?.content || [] : [];
-        
-        // Combine and take first 5
-        const combined = [...ongoing, ...upcoming].slice(0, 5);
-        setUpcomingActivities(combined);
+        if (ongoingActivityResponse.success && ongoingActivityResponse.data) {
+          // Update ongoing activities count from the response
+          setStats(prev => ({
+            ...prev,
+            ongoingActivities: ongoingActivityResponse.data?.totalElements || 0,
+          }));
+          setUpcomingActivities(ongoingActivityResponse.data.content || []);
+        } else {
+          setUpcomingActivities([]);
+        }
+
+        if (registeredActivityResponse.success && registeredActivityResponse.data) {
+          setRegisteredActivities(registeredActivityResponse.data.content || []);
+        } else {
+          setRegisteredActivities([]);
+        }
       } catch (error) {
         console.error('Error fetching upcoming activities:', error);
         setErrors(prev => ({ ...prev, activities: 'Không thể tải danh sách hoạt động' }));
@@ -254,20 +235,20 @@ const EmployeeDashboard: React.FC = () => {
     try {
       // TODO: Call actual API
       // await checkInApi.checkIn();
-      
+
       // Mock API call
       await new Promise(resolve => setTimeout(resolve, 1000));
-      
+
       const now = new Date();
-      const timeString = now.toLocaleTimeString('vi-VN', { 
-        hour: '2-digit', 
-        minute: '2-digit' 
+      const timeString = now.toLocaleTimeString('vi-VN', {
+        hour: '2-digit',
+        minute: '2-digit'
       });
-      
+
       setHasCheckedInToday(true);
       setCheckInTime(timeString);
       setStats(prev => ({ ...prev, pendingRequests: prev.pendingRequests + 1 }));
-      
+
       toast.success(`Check-in thành công lúc ${timeString}!`);
     } catch (error) {
       console.error('Error checking in:', error);
@@ -282,16 +263,16 @@ const EmployeeDashboard: React.FC = () => {
     try {
       // TODO: Call actual API
       // await checkInApi.checkOut();
-      
+
       // Mock API call
       await new Promise(resolve => setTimeout(resolve, 1000));
-      
+
       const now = new Date();
-      const timeString = now.toLocaleTimeString('vi-VN', { 
-        hour: '2-digit', 
-        minute: '2-digit' 
+      const timeString = now.toLocaleTimeString('vi-VN', {
+        hour: '2-digit',
+        minute: '2-digit'
       });
-      
+
       toast.success(`Check-out thành công lúc ${timeString}!`);
     } catch (error) {
       console.error('Error checking out:', error);
@@ -300,7 +281,7 @@ const EmployeeDashboard: React.FC = () => {
       setIsCheckingIn(false);
     }
   };
-  console.log("hdhdhhd", recentRequests);
+
   return (
     <div>
       {/* Header */}
@@ -315,11 +296,11 @@ const EmployeeDashboard: React.FC = () => {
         totalLeaveDays={stats.totalLeaveDays}
         rewardPoints={stats.rewardPoints}
         pendingRequests={stats.pendingRequests}
-        ongoingActivities={stats.ongoingActivities}
-        onLeaveCardClick={() => navigate('/requests/create/leave')}
-        onRewardCardClick={() => navigate('/rewards')}
-        onRequestCardClick={() => navigate('/requests')}
-        onActivityCardClick={() => navigate('/activities')}
+        registeredActivities={stats.registeredActivities}
+        onLeaveCardClick={() => navigate('/requests/create')}
+        onRewardCardClick={() => navigate(`/rewards/programs/${activeRewardProgram?.rewardProgramId}`)}
+        onRequestCardClick={() => navigate('/requests/my-requests')}
+        onActivityCardClick={() => navigate('/activities/me')}
       />
 
       {/* Quick Actions */}
@@ -329,16 +310,17 @@ const EmployeeDashboard: React.FC = () => {
         onCheckIn={handleCheckIn}
         onCheckOut={handleCheckOut}
         isCheckingIn={isCheckingIn}
+        activeRewardProgramId={activeRewardProgram?.rewardProgramId}
       />
 
       {/* Recent Activity Section */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <RecentRequests 
-          requests={recentRequests} 
+        <RecentRequests
+          requests={recentRequests}
           isLoading={loading.requests}
         />
-        <UpcomingActivities 
-          activities={upcomingActivities} 
+        <UpcomingActivities
+          activities={upcomingActivities}
           isLoading={loading.activities}
         />
       </div>

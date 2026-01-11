@@ -1,198 +1,193 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from 'contexts/AuthContext';
+import { useApi } from 'contexts/ApiContext';
 import ManagerStatsCards from './components/ManagerStatsCards';
 import PendingRequestsTable from './components/PendingRequestsTable';
-import TeamAttendanceChart from './components/TeamAttendanceChart';
 import TeamActivitiesWidget from './components/TeamActivitiesWidget';
-import { RequestStatus, RequestType } from 'modules/request/types/request.types';
-import { ActivityStatus } from 'shared/types/common.types';
+import { RequestStatus, Request } from 'modules/request/types/request.types';
+import { Activity, ActivityStatus } from 'modules/activity/types/activity.types';
 
-// Mock data interfaces
-interface PendingRequest {
-  requestId: string;
-  employeeName: string;
-  employeeAvatar?: string;
-  type: RequestType;
-  status: RequestStatus;
-  submittedDate: string;
-  createdAt: string;
+// Loading states interface
+interface LoadingStates {
+  requests: boolean;
+  stats: boolean;
+  activities: boolean;
 }
 
-interface AttendanceData {
-  day: string;
-  date: string;
-  onTimeRate: number;
-  lateCount: number;
-  absentCount: number;
-}
-
-interface TopPerformer {
-  employeeId: string;
-  employeeName: string;
-  employeeAvatar?: string;
-  score: number;
-  rank: number;
-}
-
-interface TeamActivity {
-  activityId: string;
-  name: string;
-  status: ActivityStatus;
-  participantsCount: number;
-  totalTeamMembers: number;
-  progress: number;
-  topPerformers: TopPerformer[];
+// Error states interface
+interface ErrorStates {
+  requests: string | null;
+  stats: string | null;
+  activities: string | null;
 }
 
 const ManagerDashboard: React.FC = () => {
   const { user } = useAuth();
+  const { requestApi, profileApi, rewardApi, activityApi } = useApi();
   const navigate = useNavigate();
 
   // Stats state
-  const [pendingRequests, setPendingRequests] = useState(8);
-  const [teamMembers, setTeamMembers] = useState(15);
-  const [activeTeamMembers, setActiveTeamMembers] = useState(14);
-  const [onLeaveToday, setOnLeaveToday] = useState(2);
-  const [giftedPointsThisMonth, setGiftedPointsThisMonth] = useState(450);
-  const [budgetRemaining] = useState(550);
+  const [pendingRequestsCount, setPendingRequestsCount] = useState(0);
+  const [teamMembersCount, setTeamMembersCount] = useState(0);
+  const [giftedPointsThisMonth, setGiftedPointsThisMonth] = useState(0);
+  const [budgetRemaining, setBudgetRemaining] = useState(0);
 
   // Pending requests state
-  const [requests, setRequests] = useState<PendingRequest[]>([]);
-  const [isLoadingRequests, setIsLoadingRequests] = useState(true);
-  const [isApproving, setIsApproving] = useState(false);
-  const [isRejecting, setIsRejecting] = useState(false);
-
-  // Attendance data state
-  const [attendanceData, setAttendanceData] = useState<AttendanceData[]>([]);
-  const [isLoadingAttendance, setIsLoadingAttendance] = useState(true);
-  const [weeklyAverage, setWeeklyAverage] = useState(88);
-  const [onTimeToday, setOnTimeToday] = useState(12);
-  const [notCheckedInToday, setNotCheckedInToday] = useState(3);
+  const [requests, setRequests] = useState<Request[]>([]);
 
   // Team activities state
-  const [teamActivities, setTeamActivities] = useState<TeamActivity[]>([]);
-  const [isLoadingActivities, setIsLoadingActivities] = useState(true);
+  const [teamActivities, setTeamActivities] = useState<Activity[]>([]);
 
-  // Fetch dashboard data
+  // Loading states
+  const [loading, setLoading] = useState<LoadingStates>({
+    requests: true,
+    stats: true,
+    activities: true,
+  });
+
+  // Error states
+  const [errors, setErrors] = useState<ErrorStates>({
+    requests: null,
+    stats: null,
+    activities: null,
+  });
+
+
+  // Get current month date range for filtering gift transactions
+  const getMonthDateRange = useCallback(() => {
+    const now = new Date();
+    const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+    const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+    return {
+      fromDate: firstDay.toISOString().split('T')[0],
+      toDate: lastDay.toISOString().split('T')[0],
+    };
+  }, []);
+
+  // Fetch pending requests
   useEffect(() => {
-    const fetchDashboardData = async () => {
+    const fetchPendingRequests = async () => {
+      if (!user?.userId) return;
+
+      setLoading(prev => ({ ...prev, requests: true }));
+      setErrors(prev => ({ ...prev, requests: null }));
+
       try {
-        // TODO: Replace with actual API calls when backend is ready
-        setTimeout(() => {
-          // Mock pending requests, use mock profile api instead of hardcoded data in the component
-          setRequests([
-            {
-              requestId: '1',
-              employeeName: 'Nguyễn Văn A',
-              type: RequestType.LEAVE,
-              status: RequestStatus.PENDING,
-              submittedDate: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-              createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-            },
-            {
-              requestId: '2',
-              employeeName: 'Trần Thị B',
-              type: RequestType.TIMESHEET,
-              status: RequestStatus.PENDING,
-              submittedDate: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(),
-              createdAt: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(),
-            },
-            {
-              requestId: '3',
-              employeeName: 'Lê Văn C',
-              type: RequestType.WFH,
-              status: RequestStatus.PENDING,
-              submittedDate: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString(),
-              createdAt: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString(),
-            },
-            {
-              requestId: '4',
-              employeeName: 'Phạm Thị D',
-              type: RequestType.LEAVE,
-              status: RequestStatus.PENDING,
-              submittedDate: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
-              createdAt: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
-            },
-            {
-              requestId: '5',
-              employeeName: 'Hoàng Văn E',
-              type: RequestType.CHECK_IN,
-              status: RequestStatus.PENDING,
-              submittedDate: new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString(),
-              createdAt: new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString(),
-            },
-          ]);
-          setIsLoadingRequests(false);
+        const response = await requestApi.getTeamRequests({
+          status: RequestStatus.PENDING,
+          pageSize: 5,
+          currentPage: 1,
+          sortBy: 'createdAt',
+          sortDirection: 'DESC',
+        });
 
-          // Mock attendance data (last 7 days), use mock attendance api instead of hardcoded data in the component
-          const days = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];
-          const mockAttendance: AttendanceData[] = days.map((day, index) => {
-            const date = new Date();
-            date.setDate(date.getDate() - (6 - index));
-            return {
-              day,
-              date: date.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' }),
-              onTimeRate: 75 + Math.floor(Math.random() * 20),
-              lateCount: Math.floor(Math.random() * 3),
-              absentCount: Math.floor(Math.random() * 2),
-            };
-          });
-          setAttendanceData(mockAttendance);
-          setIsLoadingAttendance(false);
-
-          // Mock team activities, use mock activities api instead of hardcoded data in the component
-          setTeamActivities([
-            {
-              activityId: '1',
-              name: 'Chạy bộ Marathon 2025',
-              status: 'ONGOING' as ActivityStatus,
-              participantsCount: 12,
-              totalTeamMembers: 15,
-              progress: 45,
-              topPerformers: [
-                { employeeId: '1', employeeName: 'Nguyễn Văn A', score: 125, rank: 1 },
-                { employeeId: '2', employeeName: 'Trần Thị B', score: 98, rank: 2 },
-                { employeeId: '3', employeeName: 'Lê Văn C', score: 87, rank: 3 },
-              ],
-            },
-            {
-              activityId: '2',
-              name: 'Giải Cầu lông nội bộ',
-              status: 'UPCOMING' as ActivityStatus,
-              participantsCount: 8,
-              totalTeamMembers: 15,
-              progress: 0,
-              topPerformers: [],
-            },
-            {
-              activityId: '3',
-              name: 'Yoga buổi sáng',
-              status: 'ONGOING' as ActivityStatus,
-              participantsCount: 10,
-              totalTeamMembers: 15,
-              progress: 60,
-              topPerformers: [
-                { employeeId: '4', employeeName: 'Phạm Thị D', score: 156, rank: 1 },
-                { employeeId: '5', employeeName: 'Hoàng Văn E', score: 142, rank: 2 },
-                { employeeId: '1', employeeName: 'Nguyễn Văn A', score: 138, rank: 3 },
-              ],
-            },
-          ]);
-          setIsLoadingActivities(false);
-        }, 1000);
+        if (response.success && response.data) {
+          setRequests(response.data.content || []);
+          setPendingRequestsCount(response.data.totalElements || 0);
+        }
       } catch (error) {
-        console.error('Error fetching dashboard data:', error);
-        setIsLoadingRequests(false);
-        setIsLoadingAttendance(false);
-        setIsLoadingActivities(false);
+        console.error('Error fetching pending requests:', error);
+        setErrors(prev => ({ ...prev, requests: 'Không thể tải danh sách yêu cầu' }));
+      } finally {
+        setLoading(prev => ({ ...prev, requests: false }));
       }
     };
 
-    fetchDashboardData();
-  }, []);
+    fetchPendingRequests();
+  }, [user?.userId, requestApi]);
 
+  // Fetch team members and stats
+  useEffect(() => {
+    const fetchStats = async () => {
+      if (!user?.userId || !user?.departmentId) return;
 
+      setLoading(prev => ({ ...prev, stats: true }));
+      setErrors(prev => ({ ...prev, stats: null }));
+
+      try {
+        const { fromDate, toDate } = getMonthDateRange();
+
+        // Fetch team members, gift transactions and wallet in parallel
+        const [profilesResponse, giftTransactionsResponse, activeRewardProgramResponse] = await Promise.all([
+          profileApi.getProfiles({
+            departmentId: user.departmentId,
+            pageSize: 100, // Get count
+            currentPage: 1,
+          }),
+          rewardApi.getMyGiftTransactions({
+            FromDate: fromDate,
+            ToDate: toDate,
+            PageSize: 100,
+          }),
+          rewardApi.getActiveRewardProgram(),
+        ]);
+
+        // Set team members count
+        if (profilesResponse.success && profilesResponse.data) {
+          const total = profilesResponse.data.totalElements || 0;
+          setTeamMembersCount(total);
+        }
+
+        // Calculate gifted points this month
+        if (giftTransactionsResponse.success && giftTransactionsResponse.data?.content) {
+          const totalGifted = giftTransactionsResponse.data.content.reduce(
+            (sum, transaction) => sum + (transaction.amount || 0),
+            0
+          );
+          setGiftedPointsThisMonth(totalGifted);
+        }
+
+        // Get budget remaining from wallet
+        if (activeRewardProgramResponse.success && activeRewardProgramResponse.data?.rewardProgramId) {
+          const walletResponse = await rewardApi.getWallet(
+            user.userId,
+            activeRewardProgramResponse.data.rewardProgramId
+          );
+          if (walletResponse.success && walletResponse.data) {
+            setBudgetRemaining(walletResponse.data.givingBudget || 0);
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching stats:', error);
+        setErrors(prev => ({ ...prev, stats: 'Không thể tải thông tin thống kê' }));
+      } finally {
+        setLoading(prev => ({ ...prev, stats: false }));
+      }
+    };
+
+    fetchStats();
+  }, [user?.userId, user?.departmentId, profileApi, rewardApi, getMonthDateRange]);
+
+  // Fetch team activities
+  useEffect(() => {
+    const fetchActivities = async () => {
+      if (!user?.userId) return;
+
+      setLoading(prev => ({ ...prev, activities: true }));
+      setErrors(prev => ({ ...prev, activities: null }));
+
+      try {
+        // Fetch ongoing activities
+        const response = await activityApi.getActivities(user.userId, {
+          status: ActivityStatus.IN_PROGRESS,
+          pageSize: 5,
+          pageNumber: 1,
+        });
+
+        if (response.success && response.data?.content) {
+          setTeamActivities(response.data.content);
+        }
+      } catch (error) {
+        console.error('Error fetching activities:', error);
+        setErrors(prev => ({ ...prev, activities: 'Không thể tải danh sách hoạt động' }));
+      } finally {
+        setLoading(prev => ({ ...prev, activities: false }));
+      }
+    };
+
+    fetchActivities();
+  }, [user?.userId, activityApi]);
 
   return (
     <div>
@@ -204,15 +199,12 @@ const ManagerDashboard: React.FC = () => {
 
       {/* Stats Cards */}
       <ManagerStatsCards
-        pendingRequests={pendingRequests}
-        teamMembers={teamMembers}
-        activeTeamMembers={activeTeamMembers}
-        onLeaveToday={onLeaveToday}
+        pendingRequests={pendingRequestsCount}
+        teamMembers={teamMembersCount}
         giftedPointsThisMonth={giftedPointsThisMonth}
         budgetRemaining={budgetRemaining}
-        onPendingRequestsClick={() => navigate('/requests/manage')}
-        onTeamMembersClick={() => navigate('/profile/employees')}
-        onLeaveClick={() => navigate('/requests/attendance')}
+        onPendingRequestsClick={() => navigate('/requests/team-requests')}
+        onTeamMembersClick={() => navigate('/profile/users')}
         onGiftedPointsClick={() => navigate('/rewards/gift')}
       />
 
@@ -220,26 +212,15 @@ const ManagerDashboard: React.FC = () => {
       <div className="mb-8">
         <PendingRequestsTable
           requests={requests}
-          isLoading={isLoadingRequests}
-          isApproving={isApproving}
-          isRejecting={isRejecting}
+          isLoading={loading.requests}
         />
       </div>
 
-      {/* Team Performance Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <TeamAttendanceChart
-          data={attendanceData}
-          isLoading={isLoadingAttendance}
-          weeklyAverage={weeklyAverage}
-          onTimeToday={onTimeToday}
-          notCheckedInToday={notCheckedInToday}
-        />
-        <TeamActivitiesWidget
-          activities={teamActivities}
-          isLoading={isLoadingActivities}
-        />
-      </div>
+      {/* Team Activities Section - Full width */}
+      <TeamActivitiesWidget
+        activities={teamActivities}
+        isLoading={loading.activities}
+      />
     </div>
   );
 };

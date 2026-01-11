@@ -1,25 +1,11 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Clock, User, CheckCircle, XCircle, FileText } from 'lucide-react';
-import { RequestStatus, RequestType } from 'modules/request/types/request.types';
-
-interface PendingRequest {
-  requestId: string;
-  employeeName: string;
-  employeeAvatar?: string;
-  type: RequestType;
-  status: RequestStatus;
-  submittedDate: string;
-  createdAt: string;
-}
+import { Clock, User, CheckCircle } from 'lucide-react';
+import { RequestType, Request } from 'modules/request/types/request.types';
 
 interface PendingRequestsTableProps {
-  requests: PendingRequest[];
+  requests: Request[];
   isLoading?: boolean;
-  onApprove?: (requestId: string) => void;
-  onReject?: (requestId: string) => void;
-  isApproving?: boolean;
-  isRejecting?: boolean;
 }
 
 const getRequestTypeText = (type: RequestType) => {
@@ -63,37 +49,18 @@ const getTimeAgo = (dateString: string) => {
 
 const formatDate = (dateString: string) => {
   const date = new Date(dateString);
-  return date.toLocaleDateString('vi-VN', { 
-    day: '2-digit', 
-    month: '2-digit', 
-    year: 'numeric' 
+  return date.toLocaleDateString('vi-VN', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric'
   });
 };
 
-const PendingRequestsTable: React.FC<PendingRequestsTableProps> = ({ 
-  requests, 
+const PendingRequestsTable: React.FC<PendingRequestsTableProps> = ({
+  requests,
   isLoading = false,
-  onApprove,
-  onReject,
-  isApproving = false,
-  isRejecting = false,
 }) => {
   const navigate = useNavigate();
-  const [processingId, setProcessingId] = useState<string | null>(null);
-
-  const handleApprove = async (e: React.MouseEvent, requestId: string) => {
-    e.stopPropagation();
-    setProcessingId(requestId);
-    await onApprove?.(requestId);
-    setProcessingId(null);
-  };
-
-  const handleReject = async (e: React.MouseEvent, requestId: string) => {
-    e.stopPropagation();
-    setProcessingId(requestId);
-    await onReject?.(requestId);
-    setProcessingId(null);
-  };
 
   if (isLoading) {
     return (
@@ -144,7 +111,7 @@ const PendingRequestsTable: React.FC<PendingRequestsTableProps> = ({
           </button>
         </div>
       </div>
-      
+
       <div className="overflow-x-auto">
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
@@ -161,72 +128,41 @@ const PendingRequestsTable: React.FC<PendingRequestsTableProps> = ({
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Thời gian chờ
               </th>
-              <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Hành động
-              </th>
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
             {requests.map((request) => (
-              <tr 
+              <tr
                 key={request.requestId}
-                onClick={() => navigate(`/requests/${request.requestId}`)}
+                onClick={() => navigate(`/requests/${request.requestId}?requestType=${request.requestType}`)}
                 className="hover:bg-gray-50 cursor-pointer transition-colors"
               >
                 <td className="px-4 py-4 whitespace-nowrap">
                   <div className="flex items-center">
                     <div className="flex-shrink-0 h-8 w-8">
-                      {request.employeeAvatar ? (
-                        <img 
-                          className="h-8 w-8 rounded-full" 
-                          src={request.employeeAvatar} 
-                          alt={request.employeeName} 
-                        />
-                      ) : (
-                        <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center">
-                          <User className="w-4 h-4 text-blue-600" />
-                        </div>
-                      )}
+                      <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center">
+                        <User className="w-4 h-4 text-blue-600" />
+                      </div>
                     </div>
                     <div className="ml-3">
                       <p className="text-sm font-medium text-gray-900">
-                        {request.employeeName}
+                        {request.employeeFullName}
                       </p>
                     </div>
                   </div>
                 </td>
                 <td className="px-4 py-4 whitespace-nowrap">
-                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getRequestTypeColor(request.type)}`}>
-                    {getRequestTypeText(request.type)}
+                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getRequestTypeColor(request.requestType)}`}>
+                    {getRequestTypeText(request.requestType)}
                   </span>
                 </td>
                 <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500">
-                  {formatDate(request.submittedDate)}
+                  {formatDate(request.createdAt)}
                 </td>
                 <td className="px-4 py-4 whitespace-nowrap">
                   <div className="flex items-center text-sm text-gray-500">
                     <Clock className="w-4 h-4 mr-1" />
-                    {getTimeAgo(request.submittedDate)}
-                  </div>
-                </td>
-                <td className="px-4 py-4 whitespace-nowrap text-right text-sm font-medium">
-                  <div className="flex items-center justify-end space-x-2">
-                    <button
-                      onClick={(e) => handleApprove(e, request.requestId)}
-                      disabled={isApproving || isRejecting || processingId === request.requestId}
-                      className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                    >
-                      <CheckCircle className="w-4 h-4 mr-1" />
-                      Duyệt
-                    </button>
-                    <button
-                      onClick={(e) => handleReject(e, request.requestId)}
-                      disabled={isApproving || isRejecting || processingId === request.requestId}
-                      className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                    >
-                      <XCircle className="w-4 h-4 mr-1" />
-                      Từ chối
-                    </button>
+                    {getTimeAgo(request.createdAt)}
                   </div>
                 </td>
               </tr>

@@ -28,6 +28,9 @@ const RequestManagementPage: React.FC = () => {
     currentPage: 1,
     pageSize: PAGE_SIZE,
     approverId: user?.userId,
+    status: RequestStatus.PENDING,
+    sortBy: "createdAt",
+    sortDirection: "DESC",
   });
 
   const fetchTeamRequests = useMemo(

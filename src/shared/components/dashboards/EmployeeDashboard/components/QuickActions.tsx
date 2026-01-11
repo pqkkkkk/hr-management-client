@@ -8,6 +8,7 @@ interface QuickActionsProps {
   onCheckIn?: () => void;
   onCheckOut?: () => void;
   isCheckingIn?: boolean;
+  activeRewardProgramId?: string;
 }
 
 const QuickActions: React.FC<QuickActionsProps> = ({
@@ -16,6 +17,7 @@ const QuickActions: React.FC<QuickActionsProps> = ({
   onCheckIn,
   onCheckOut,
   isCheckingIn = false,
+  activeRewardProgramId,
 }) => {
   const navigate = useNavigate();
 
@@ -35,11 +37,10 @@ const QuickActions: React.FC<QuickActionsProps> = ({
         <button
           onClick={handleCheckInOut}
           disabled={isCheckingIn}
-          className={`p-4 border-2 rounded-lg transition duration-200 text-left ${
-            hasCheckedInToday
-              ? 'border-orange-500 bg-orange-50 hover:bg-orange-100'
-              : 'border-green-500 bg-green-50 hover:bg-green-100'
-          } ${isCheckingIn ? 'opacity-50 cursor-not-allowed' : ''}`}
+          className={`p-4 border-2 rounded-lg transition duration-200 text-left ${hasCheckedInToday
+            ? 'border-orange-500 bg-orange-50 hover:bg-orange-100'
+            : 'border-green-500 bg-green-50 hover:bg-green-100'
+            } ${isCheckingIn ? 'opacity-50 cursor-not-allowed' : ''}`}
         >
           <div className="flex items-center mb-2">
             <Clock className={`w-5 h-5 mr-2 ${hasCheckedInToday ? 'text-orange-600' : 'text-green-600'}`} />
@@ -54,16 +55,16 @@ const QuickActions: React.FC<QuickActionsProps> = ({
           </div>
         </button>
 
-        {/* Create Leave Request */}
+        {/* Create Request */}
         <button
-          onClick={() => navigate('/requests/leave/create')}
+          onClick={() => navigate('/requests/create')}
           className="p-4 border-2 border-gray-200 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition duration-200 text-left"
         >
           <div className="flex items-center mb-2">
             <Calendar className="w-5 h-5 mr-2 text-blue-600" />
-            <div className="font-medium text-gray-900">Tạo yêu cầu nghỉ phép</div>
+            <div className="font-medium text-gray-900">Tạo yêu cầu</div>
           </div>
-          <div className="text-sm text-gray-600">Gửi yêu cầu nghỉ phép cho quản lý</div>
+          <div className="text-sm text-gray-600">Gửi yêu cầu cho quản lý</div>
         </button>
 
         {/* Register Activity */}
@@ -80,7 +81,7 @@ const QuickActions: React.FC<QuickActionsProps> = ({
 
         {/* Redeem Rewards */}
         <button
-          onClick={() => navigate('/rewards/redeem')}
+          onClick={() => navigate(`/rewards/programs/${activeRewardProgramId}`)}
           className="p-4 border-2 border-gray-200 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition duration-200 text-left"
         >
           <div className="flex items-center mb-2">

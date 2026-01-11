@@ -12,7 +12,7 @@ interface StatsCardProps {
 
 const StatsCard: React.FC<StatsCardProps> = ({ title, value, icon, bgColor, iconColor, onClick }) => {
   return (
-    <div 
+    <div
       className={`bg-white rounded-lg shadow p-6 ${onClick ? 'cursor-pointer hover:shadow-lg transition-shadow' : ''}`}
       onClick={onClick}
     >
@@ -36,7 +36,7 @@ interface EmployeeStatsCardsProps {
   totalLeaveDays: number;
   rewardPoints: number;
   pendingRequests: number;
-  ongoingActivities: number;
+  registeredActivities: number;
   onLeaveCardClick?: () => void;
   onRewardCardClick?: () => void;
   onRequestCardClick?: () => void;
@@ -48,7 +48,7 @@ const EmployeeStatsCards: React.FC<EmployeeStatsCardsProps> = ({
   totalLeaveDays,
   rewardPoints,
   pendingRequests,
-  ongoingActivities,
+  registeredActivities,
   onLeaveCardClick,
   onRewardCardClick,
   onRequestCardClick,
@@ -64,7 +64,7 @@ const EmployeeStatsCards: React.FC<EmployeeStatsCardsProps> = ({
         iconColor="text-purple-600"
         onClick={onLeaveCardClick}
       />
-      
+
       <StatsCard
         title="Điểm thưởng"
         value={rewardPoints}
@@ -73,7 +73,7 @@ const EmployeeStatsCards: React.FC<EmployeeStatsCardsProps> = ({
         iconColor="text-yellow-600"
         onClick={onRewardCardClick}
       />
-      
+
       <StatsCard
         title="Yêu cầu chờ duyệt"
         value={pendingRequests}
@@ -82,10 +82,10 @@ const EmployeeStatsCards: React.FC<EmployeeStatsCardsProps> = ({
         iconColor="text-blue-600"
         onClick={onRequestCardClick}
       />
-      
+
       <StatsCard
         title="Hoạt động đang tham gia"
-        value={ongoingActivities}
+        value={registeredActivities}
         icon={<Activity className="w-6 h-6" />}
         bgColor="bg-green-100"
         iconColor="text-green-600"

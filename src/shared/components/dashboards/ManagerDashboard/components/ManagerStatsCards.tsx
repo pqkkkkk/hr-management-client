@@ -1,5 +1,5 @@
 import React from 'react';
-import { Bell, Users, Calendar, Gift } from 'lucide-react';
+import { Bell, Users, Gift } from 'lucide-react';
 
 interface StatsCardProps {
   title: string;
@@ -12,18 +12,18 @@ interface StatsCardProps {
   hasAlert?: boolean;
 }
 
-const StatsCard: React.FC<StatsCardProps> = ({ 
-  title, 
-  value, 
-  subText, 
-  icon, 
-  bgColor, 
-  iconColor, 
+const StatsCard: React.FC<StatsCardProps> = ({
+  title,
+  value,
+  subText,
+  icon,
+  bgColor,
+  iconColor,
   onClick,
-  hasAlert = false 
+  hasAlert = false
 }) => {
   return (
-    <div 
+    <div
       className={`bg-white rounded-lg shadow p-6 ${onClick ? 'cursor-pointer hover:shadow-lg transition-shadow' : ''}`}
       onClick={onClick}
     >
@@ -51,33 +51,24 @@ const StatsCard: React.FC<StatsCardProps> = ({
 interface ManagerStatsCardsProps {
   pendingRequests: number;
   teamMembers: number;
-  activeTeamMembers: number;
-  onLeaveToday: number;
   giftedPointsThisMonth: number;
   budgetRemaining?: number;
   onPendingRequestsClick?: () => void;
   onTeamMembersClick?: () => void;
-  onLeaveClick?: () => void;
   onGiftedPointsClick?: () => void;
 }
 
 const ManagerStatsCards: React.FC<ManagerStatsCardsProps> = ({
   pendingRequests,
   teamMembers,
-  activeTeamMembers,
-  onLeaveToday,
   giftedPointsThisMonth,
   budgetRemaining,
   onPendingRequestsClick,
   onTeamMembersClick,
-  onLeaveClick,
   onGiftedPointsClick,
 }) => {
-  const leavePercentage = teamMembers > 0 ? Math.round((onLeaveToday / teamMembers) * 100) : 0;
-  const hasHighLeaveRate = leavePercentage > 20;
-
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
       <StatsCard
         title="Yêu cầu chờ duyệt"
         value={pendingRequests}
@@ -87,32 +78,20 @@ const ManagerStatsCards: React.FC<ManagerStatsCardsProps> = ({
         onClick={onPendingRequestsClick}
         hasAlert={pendingRequests > 5}
       />
-      
+
       <StatsCard
         title="Nhân viên trong team"
         value={teamMembers}
-        subText={`${activeTeamMembers} đang hoạt động`}
         icon={<Users className="w-6 h-6" />}
         bgColor="bg-green-100"
         iconColor="text-green-600"
         onClick={onTeamMembersClick}
       />
-      
-      <StatsCard
-        title="Nhân viên nghỉ hôm nay"
-        value={onLeaveToday}
-        subText={`${leavePercentage}% team`}
-        icon={<Calendar className="w-6 h-6" />}
-        bgColor={hasHighLeaveRate ? "bg-orange-100" : "bg-purple-100"}
-        iconColor={hasHighLeaveRate ? "text-orange-600" : "text-purple-600"}
-        onClick={onLeaveClick}
-        hasAlert={hasHighLeaveRate}
-      />
-      
+
       <StatsCard
         title="Điểm đã tặng (tháng này)"
         value={giftedPointsThisMonth}
-        subText={budgetRemaining ? `Còn lại: ${budgetRemaining}` : undefined}
+        subText={budgetRemaining !== undefined ? `Còn lại: ${budgetRemaining}` : undefined}
         icon={<Gift className="w-6 h-6" />}
         bgColor="bg-yellow-100"
         iconColor="text-yellow-600"
