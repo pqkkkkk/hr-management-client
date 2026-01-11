@@ -175,6 +175,11 @@ export interface RejectActivityLogRequest {
     reason: string;
 }
 
+export interface RegisterActivityRequest {
+    employeeId: string;
+    employeeName: string;
+}
+
 // ========== RESPONSE TYPES ==========
 
 export interface ActivityDetailResponse extends Activity {

@@ -191,7 +191,7 @@ const EmployeeDashboard: React.FC = () => {
 
       try {
         const [ongoingActivityResponse, registeredActivityResponse] = await Promise.all([
-          activityApi.getMyActivities(user.userId, {
+          activityApi.getActivities(user.userId, {
             status: ActivityStatus.IN_PROGRESS,
             pageSize: 5,
             pageNumber: 1,
@@ -207,6 +207,7 @@ const EmployeeDashboard: React.FC = () => {
           setStats(prev => ({
             ...prev,
             ongoingActivities: ongoingActivityResponse.data?.totalElements || 0,
+            registeredActivities: registeredActivityResponse.data?.totalElements || 0,
           }));
           setUpcomingActivities(ongoingActivityResponse.data.content || []);
         } else {

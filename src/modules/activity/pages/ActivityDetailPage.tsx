@@ -8,6 +8,7 @@ import {
     LeaderboardEntry,
     ActivityLog,
     ActivityLogStatus,
+    RegisterActivityRequest,
 } from "../types/activity.types";
 import { LeaderboardTable, ActivityLogCard, EmptyState } from "../components";
 import {
@@ -445,7 +446,11 @@ const ActivityDetailPage: React.FC = () => {
                     setActivity({ ...activity, isRegistered: false });
                 }
             } else {
-                const response = await activityApi.registerForActivity(id, user?.userId);
+                const req: RegisterActivityRequest = {
+                    employeeId: user?.userId,
+                    employeeName: user?.fullName,
+                };
+                const response = await activityApi.registerForActivity(id, req);
                 if (response.success) {
                     toast.success("Đăng ký thành công");
                     setActivity({ ...activity, isRegistered: true });

@@ -2,7 +2,7 @@ import React, { useMemo, useCallback, useState } from "react";
 import { useApi } from "contexts/ApiContext";
 import { useQuery } from "shared/hooks/use-query";
 import { useFetchList } from "shared/hooks/use-fetch-list";
-import { ActivityFilter as ActivityFilterType, ActivityStatus } from "../types/activity.types";
+import { ActivityFilter as ActivityFilterType, ActivityStatus, RegisterActivityRequest } from "../types/activity.types";
 import { Activity } from "../types/activity.types";
 import {
     ActivityCard,
@@ -100,7 +100,11 @@ const ActivityListPage: React.FC<ActivityListPageProps> = ({
     const handleRegister = async (activityId: string) => {
         setRegisteringId(activityId);
         try {
-            const response = await activityApi.registerForActivity(activityId, user?.userId);
+            const req: RegisterActivityRequest = {
+                employeeId: user?.userId,
+                employeeName: user?.fullName,
+            };
+            const response = await activityApi.registerForActivity(activityId, req);
             if (response.success) {
                 toast.success("Đăng ký thành công!");
                 refetch();

@@ -286,16 +286,23 @@ const TransactionHistoryPage: React.FC = () => {
   }, [rewardApi, user?.userId]);
 
   const { query, updateQuery, resetQuery } = useQuery<TransactionFilter>({
-    FromDate: `${defaultStart}T00:00:00.000Z`,
-    ToDate: `${defaultEnd}T23:59:59.999Z`,
     PageNumber: 1,
     PageSize: PAGE_SIZE,
   });
 
   const fetchPointTransactions = useMemo(
-    () => rewardApi.getPointTransactions.bind(rewardApi),
+    () => (filter: TransactionFilter) => rewardApi.getPointTransactions({
+      ...filter,
+    }),
     [rewardApi]
   );
+
+  // Trigger refetch when wallet is loaded
+  useEffect(() => {
+    if (wallet?.userWalletId) {
+      updateQuery({ DestinationWalletId: wallet.userWalletId });
+    }
+  }, [wallet?.userWalletId, updateQuery]);
 
   const {
     data: transactions,
@@ -332,8 +339,15 @@ const TransactionHistoryPage: React.FC = () => {
   );
 
   const handleClearFilters = useCallback(() => {
-    resetQuery();
-  }, [resetQuery]);
+    updateQuery({
+      PageNumber: 1,
+      PageSize: PAGE_SIZE,
+      DestinationWalletId: wallet?.userWalletId,
+      FromDate: undefined,
+      ToDate: undefined,
+      TransactionType: undefined,
+    })
+  }, [updateQuery, wallet]);
 
   return (
     <div className="p-6">
@@ -343,7 +357,7 @@ const TransactionHistoryPage: React.FC = () => {
             Lịch sử Giao dịch Điểm
           </h1>
           <p className="text-gray-500 mt-1">
-            Theo dõi chi tiết quá trình tích lũy và sử dụng điểm thưởng của bạn.
+            Theo dõi chi tiết quá trình tích lũy và sử dụng điểm thưởng của bạn trong đợt khen thưởng hiện tại
           </p>
         </div>
         <SummaryCard points={currentPoints} />

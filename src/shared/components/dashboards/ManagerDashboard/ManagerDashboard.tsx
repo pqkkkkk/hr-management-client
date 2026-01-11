@@ -7,6 +7,7 @@ import PendingRequestsTable from './components/PendingRequestsTable';
 import TeamActivitiesWidget from './components/TeamActivitiesWidget';
 import { RequestStatus, Request } from 'modules/request/types/request.types';
 import { Activity, ActivityStatus } from 'modules/activity/types/activity.types';
+import { UserWallet } from 'modules/reward/types/reward.types';
 
 // Loading states interface
 interface LoadingStates {
@@ -32,6 +33,7 @@ const ManagerDashboard: React.FC = () => {
   const [teamMembersCount, setTeamMembersCount] = useState(0);
   const [giftedPointsThisMonth, setGiftedPointsThisMonth] = useState(0);
   const [budgetRemaining, setBudgetRemaining] = useState(0);
+  const [userWallet, setUserWallet] = useState<UserWallet | null>(null);
 
   // Pending requests state
   const [requests, setRequests] = useState<Request[]>([]);
@@ -57,11 +59,11 @@ const ManagerDashboard: React.FC = () => {
   // Get current month date range for filtering gift transactions
   const getMonthDateRange = useCallback(() => {
     const now = new Date();
-    const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
-    const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+    const firstDay = new Date(Date.UTC(now.getFullYear(), now.getMonth(), 1));
+    const lastDay = new Date(Date.UTC(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999));
     return {
-      fromDate: firstDay.toISOString().split('T')[0],
-      toDate: lastDay.toISOString().split('T')[0],
+      fromDate: firstDay.toISOString(),
+      toDate: lastDay.toISOString(),
     };
   }, []);
 
@@ -75,6 +77,7 @@ const ManagerDashboard: React.FC = () => {
 
       try {
         const response = await requestApi.getTeamRequests({
+          approverId: user?.userId,
           status: RequestStatus.PENDING,
           pageSize: 5,
           currentPage: 1,
@@ -97,67 +100,87 @@ const ManagerDashboard: React.FC = () => {
     fetchPendingRequests();
   }, [user?.userId, requestApi]);
 
-  // Fetch team members and stats
+  // Fetch team members count
   useEffect(() => {
-    const fetchStats = async () => {
+    const fetchTeamMembers = async () => {
       if (!user?.userId || !user?.departmentId) return;
 
       setLoading(prev => ({ ...prev, stats: true }));
       setErrors(prev => ({ ...prev, stats: null }));
 
       try {
-        const { fromDate, toDate } = getMonthDateRange();
+        const profilesResponse = await profileApi.getProfiles({
+          pageSize: 100,
+          currentPage: 1,
+        });
 
-        // Fetch team members, gift transactions and wallet in parallel
-        const [profilesResponse, giftTransactionsResponse, activeRewardProgramResponse] = await Promise.all([
-          profileApi.getProfiles({
-            departmentId: user.departmentId,
-            pageSize: 100, // Get count
-            currentPage: 1,
-          }),
-          rewardApi.getMyGiftTransactions({
-            FromDate: fromDate,
-            ToDate: toDate,
-            PageSize: 100,
-          }),
-          rewardApi.getActiveRewardProgram(),
-        ]);
-
-        // Set team members count
         if (profilesResponse.success && profilesResponse.data) {
           const total = profilesResponse.data.totalElements || 0;
           setTeamMembersCount(total);
         }
-
-        // Calculate gifted points this month
-        if (giftTransactionsResponse.success && giftTransactionsResponse.data?.content) {
-          const totalGifted = giftTransactionsResponse.data.content.reduce(
-            (sum, transaction) => sum + (transaction.amount || 0),
-            0
-          );
-          setGiftedPointsThisMonth(totalGifted);
-        }
-
-        // Get budget remaining from wallet
-        if (activeRewardProgramResponse.success && activeRewardProgramResponse.data?.rewardProgramId) {
-          const walletResponse = await rewardApi.getWallet(
-            user.userId,
-            activeRewardProgramResponse.data.rewardProgramId
-          );
-          if (walletResponse.success && walletResponse.data) {
-            setBudgetRemaining(walletResponse.data.givingBudget || 0);
-          }
-        }
       } catch (error) {
-        console.error('Error fetching stats:', error);
+        console.error('Error fetching team members:', error);
         setErrors(prev => ({ ...prev, stats: 'Không thể tải thông tin thống kê' }));
       } finally {
         setLoading(prev => ({ ...prev, stats: false }));
       }
     };
 
-    fetchStats();
-  }, [user?.userId, user?.departmentId, profileApi, rewardApi, getMonthDateRange]);
+    fetchTeamMembers();
+  }, [user?.userId, user?.departmentId, profileApi]);
+
+  // Fetch active reward program and user wallet
+  useEffect(() => {
+    const fetchWallet = async () => {
+      if (!user?.userId) return;
+
+      try {
+        const activeRewardProgramResponse = await rewardApi.getActiveRewardProgram();
+
+        if (activeRewardProgramResponse.success && activeRewardProgramResponse.data?.rewardProgramId) {
+          const walletResponse = await rewardApi.getWallet(
+            user.userId,
+            activeRewardProgramResponse.data.rewardProgramId
+          );
+          if (walletResponse.success && walletResponse.data) {
+            setUserWallet(walletResponse.data);
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching wallet:', error);
+      }
+    };
+
+    fetchWallet();
+  }, [user?.userId, rewardApi]);
+
+  // Fetch gift transactions when userWallet is loaded
+  useEffect(() => {
+    const fetchGiftTransactions = async () => {
+      if (!userWallet?.userWalletId) return;
+
+      try {
+        const giftTransactionsResponse = await rewardApi.getMyGiftTransactions({
+          SourceWalletId: userWallet.userWalletId,
+          PageSize: 100,
+        });
+
+        // Calculate gifted points
+        const totalGiftedPoint = giftTransactionsResponse.data?.content?.reduce((total, transaction) => {
+          return total + transaction.amount;
+        }, 0) || 0;
+        setGiftedPointsThisMonth(totalGiftedPoint);
+
+        // Calculate budget remaining
+        const remaining = (userWallet.givingBudget || 0);
+        setBudgetRemaining(remaining);
+      } catch (error) {
+        console.error('Error fetching gift transactions:', error);
+      }
+    };
+
+    fetchGiftTransactions();
+  }, [userWallet?.userWalletId, userWallet?.givingBudget, rewardApi]);
 
   // Fetch team activities
   useEffect(() => {
