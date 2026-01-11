@@ -1,16 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Activity as ActivityIcon, Calendar } from 'lucide-react';
-import { ActivityStatus } from 'shared/types/common.types';
-
-interface Activity {
-  activityId: string;
-  name: string;
-  status: ActivityStatus;
-  startDate: string;
-  endDate: string;
-  progress?: number;
-}
+import { Activity, ActivityStatus } from 'modules/activity/types/activity.types';
 
 interface UpcomingActivitiesProps {
   activities: Activity[];
@@ -18,19 +9,23 @@ interface UpcomingActivitiesProps {
 }
 
 const getStatusBadge = (status: ActivityStatus) => {
-  const badges = {
-    'UPCOMING': 'bg-blue-100 text-blue-800',
-    'ONGOING': 'bg-green-100 text-green-800',
-    'COMPLETED': 'bg-gray-100 text-gray-800',
+  const badges: Record<ActivityStatus, string> = {
+    [ActivityStatus.DRAFT]: 'bg-gray-100 text-gray-800',
+    [ActivityStatus.OPEN]: 'bg-blue-100 text-blue-800',
+    [ActivityStatus.IN_PROGRESS]: 'bg-green-100 text-green-800',
+    [ActivityStatus.CLOSED]: 'bg-orange-100 text-orange-800',
+    [ActivityStatus.COMPLETED]: 'bg-gray-100 text-gray-800',
   };
   return badges[status] || 'bg-gray-100 text-gray-800';
 };
 
 const getStatusText = (status: ActivityStatus) => {
-  const texts = {
-    UPCOMING: 'Sắp diễn ra',
-    ONGOING: 'Đang diễn ra',
-    COMPLETED: 'Đã kết thúc',
+  const texts: Record<ActivityStatus, string> = {
+    [ActivityStatus.DRAFT]: 'Nháp',
+    [ActivityStatus.OPEN]: 'Sắp diễn ra',
+    [ActivityStatus.IN_PROGRESS]: 'Đang diễn ra',
+    [ActivityStatus.CLOSED]: 'Đã đóng',
+    [ActivityStatus.COMPLETED]: 'Đã kết thúc',
   };
   return texts[status] || status;
 };
@@ -116,7 +111,7 @@ const UpcomingActivities: React.FC<UpcomingActivitiesProps> = ({ activities, isL
               </span>
             </div>
 
-            {activity.status === 'ONGOING' && activity.progress !== undefined && (
+            {/* {activity.status === 'ONGOING' && activity.progress !== undefined && (
               <div className="mt-2">
                 <div className="flex items-center justify-between text-xs text-gray-600 mb-1">
                   <span>Tiến độ</span>
@@ -129,7 +124,7 @@ const UpcomingActivities: React.FC<UpcomingActivitiesProps> = ({ activities, isL
                   ></div>
                 </div>
               </div>
-            )}
+            )} */}
           </div>
         ))}
       </div>

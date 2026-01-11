@@ -1,15 +1,17 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from 'contexts/AuthContext';
+import { useApi } from 'contexts/ApiContext';
 import EmployeeStatsCards from './components/EmployeeStatsCards';
 import QuickActions from './components/QuickActions';
 import RecentRequests from './components/RecentRequests';
 import UpcomingActivities from './components/UpcomingActivities';
 import { RequestStatus, RequestType } from 'modules/request/types/request.types';
-import { ActivityStatus } from 'shared/types/common.types';
 import { toast } from 'react-toastify';
+import { Request } from 'modules/request/types/request.types';
+import { Activity, ActivityStatus } from 'modules/activity/types/activity.types';
 
-// Mock data interfaces
+// Dashboard stats interface
 interface DashboardStats {
   remainingLeaveDays: number;
   totalLeaveDays: number;
@@ -18,34 +20,46 @@ interface DashboardStats {
   ongoingActivities: number;
 }
 
-interface Request {
-  requestId: string;
-  type: RequestType;
-  status: RequestStatus;
-  createdAt: string;
-  submittedDate?: string;
+// Loading states interface
+interface LoadingStates {
+  stats: boolean;
+  requests: boolean;
+  activities: boolean;
 }
 
-interface Activity {
-  activityId: string;
-  name: string;
-  status: ActivityStatus;
-  startDate: string;
-  endDate: string;
-  progress?: number;
+// Error states interface
+interface ErrorStates {
+  stats: string | null;
+  requests: string | null;
+  activities: string | null;
 }
 
 const EmployeeDashboard: React.FC = () => {
   const { user } = useAuth();
+  const { requestApi, rewardApi, activityApi } = useApi();
   const navigate = useNavigate();
   
   // Stats state
   const [stats, setStats] = useState<DashboardStats>({
-    remainingLeaveDays: 12,
+    remainingLeaveDays: 0,
     totalLeaveDays: 15,
-    rewardPoints: 250,
-    pendingRequests: 2,
-    ongoingActivities: 3,
+    rewardPoints: 0,
+    pendingRequests: 0,
+    ongoingActivities: 0,
+  });
+
+  // Loading states
+  const [loading, setLoading] = useState<LoadingStates>({
+    stats: true,
+    requests: true,
+    activities: true,
+  });
+
+  // Error states
+  const [errors, setErrors] = useState<ErrorStates>({
+    stats: null,
+    requests: null,
+    activities: null,
   });
 
   // Check-in/out state
@@ -55,122 +69,185 @@ const EmployeeDashboard: React.FC = () => {
 
   // Recent requests state
   const [recentRequests, setRecentRequests] = useState<Request[]>([]);
-  const [isLoadingRequests, setIsLoadingRequests] = useState(true);
 
   // Upcoming activities state
   const [upcomingActivities, setUpcomingActivities] = useState<Activity[]>([]);
-  const [isLoadingActivities, setIsLoadingActivities] = useState(true);
 
-  // Fetch dashboard data
+  // Fetch reward points
+  const fetchRewardPoints = useCallback(async () => {
+    if (!user?.userId) return 0;
+    
+    try {
+      // First get active reward program
+      const programResponse = await rewardApi.getActiveRewardProgram();
+
+      console.log('Active Reward Program Response:', programResponse);
+      if (programResponse.success && programResponse.data?.rewardProgramId) {
+        // Then get wallet for the user
+        const walletResponse = await rewardApi.getWallet(
+          user.userId,
+          programResponse.data.rewardProgramId
+        );
+        if (walletResponse.success && walletResponse.data) {
+          return walletResponse.data.personalPoint || 0;
+        }
+      }
+      return 0;
+    } catch (error) {
+      console.error('Error fetching reward points:', error);
+      return 0;
+    }
+  }, [user?.userId, rewardApi]);
+
+  // Fetch pending requests count
+  const fetchPendingRequestsCount = useCallback(async () => {
+    if (!user?.userId) return 0;
+    
+    try {
+      const response = await requestApi.getMyRequests({
+        employeeId: user.userId,
+        status: RequestStatus.PENDING,
+        pageSize: 1,
+        currentPage: 1,
+      });
+      if (response.success && response.data) {
+        return response.data.totalElements || 0;
+      }
+      return 0;
+    } catch (error) {
+      console.error('Error fetching pending requests:', error);
+      return 0;
+    }
+  }, [user?.userId, requestApi]);
+
+  // Fetch ongoing activities count
+  const fetchOngoingActivitiesCount = useCallback(async () => {
+    if (!user?.userId) return 0;
+    
+    try {
+      const response = await activityApi.getMyActivities(user.userId, {
+        status: ActivityStatus.IN_PROGRESS,
+        pageSize: 1,
+        pageNumber: 1,
+      });
+      
+      if (response.success && response.data) {
+        return response.data.totalElements || 0;
+      }
+      return 0;
+    } catch (error) {
+      console.error('Error fetching ongoing activities:', error);
+      return 0;
+    }
+  }, [user?.userId, activityApi]);
+
   useEffect(() => {
-    const fetchDashboardData = async () => {
+    const fetchStats = async () => {
+      if (!user?.userId) return;
+
+      setLoading(prev => ({ ...prev, stats: true }));
+      setErrors(prev => ({ ...prev, stats: null }));
+
       try {
-        // TODO: Replace with actual API calls when backend is ready
-        // Simulate API call with setTimeout
-        setTimeout(() => {
-          // Mock recent requests
-          setRecentRequests([
-            {
-              requestId: '1',
-              type: RequestType.LEAVE,
-              status: RequestStatus.PENDING,
-              createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-              submittedDate: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-            },
-            {
-              requestId: '2',
-              type: RequestType.TIMESHEET,
-              status: RequestStatus.APPROVED,
-              createdAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
-              submittedDate: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
-            },
-            {
-              requestId: '3',
-              type: RequestType.WFH,
-              status: RequestStatus.PENDING,
-              createdAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
-              submittedDate: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
-            },
-            {
-              requestId: '4',
-              type: RequestType.LEAVE,
-              status: RequestStatus.REJECTED,
-              createdAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
-              submittedDate: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
-            },
-            {
-              requestId: '5',
-              type: RequestType.CHECK_IN,
-              status: RequestStatus.APPROVED,
-              createdAt: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(),
-              submittedDate: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(),
-            },
-          ]);
-          setIsLoadingRequests(false);
+        // Fetch all stats in parallel
+        const [rewardPoints, pendingRequests, ongoingActivities] = await Promise.all([
+          fetchRewardPoints(),
+          fetchPendingRequestsCount(),
+          fetchOngoingActivitiesCount(),
+        ]);
 
-          // Mock upcoming activities
-          setUpcomingActivities([
-            {
-              activityId: '1',
-              name: 'Chạy bộ Marathon 2025',
-              status: 'ONGOING' as ActivityStatus,
-              startDate: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
-              endDate: new Date(Date.now() + 25 * 24 * 60 * 60 * 1000).toISOString(),
-              progress: 35,
-            },
-            {
-              activityId: '2',
-              name: 'Giải Cầu lông nội bộ',
-              status: 'UPCOMING' as ActivityStatus,
-              startDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
-              endDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(),
-            },
-            {
-              activityId: '3',
-              name: 'Team Building Q4',
-              status: 'UPCOMING' as ActivityStatus,
-              startDate: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000).toISOString(),
-              endDate: new Date(Date.now() + 16 * 24 * 60 * 60 * 1000).toISOString(),
-            },
-            {
-              activityId: '4',
-              name: 'Yoga buổi sáng',
-              status: 'ONGOING' as ActivityStatus,
-              startDate: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(),
-              endDate: new Date(Date.now() + 20 * 24 * 60 * 60 * 1000).toISOString(),
-              progress: 60,
-            },
-            {
-              activityId: '5',
-              name: 'Học tiếng Anh online',
-              status: 'ONGOING' as ActivityStatus,
-              startDate: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000).toISOString(),
-              endDate: new Date(Date.now() + 45 * 24 * 60 * 60 * 1000).toISOString(),
-              progress: 25,
-            },
-          ]);
-          setIsLoadingActivities(false);
-
-          // Mock check-in status
-          const now = new Date();
-          const isWorkingHours = now.getHours() >= 8 && now.getHours() < 18;
-          if (isWorkingHours) {
-            const shouldBeCheckedIn = Math.random() > 0.5;
-            setHasCheckedInToday(shouldBeCheckedIn);
-            if (shouldBeCheckedIn) {
-              setCheckInTime('08:30');
-            }
-          }
-        }, 1000);
+        setStats({
+          remainingLeaveDays: user.remainingAnnualLeaveDays || 0,
+          totalLeaveDays: 15, // This could also come from user context or API
+          rewardPoints,
+          pendingRequests,
+          ongoingActivities,
+        });
       } catch (error) {
-        console.error('Error fetching dashboard data:', error);
-        setIsLoadingRequests(false);
-        setIsLoadingActivities(false);
+        console.error('Error fetching dashboard stats:', error);
+        setErrors(prev => ({ ...prev, stats: 'Không thể tải thông tin thống kê' }));
+      } finally {
+        setLoading(prev => ({ ...prev, stats: false }));
       }
     };
 
-    fetchDashboardData();
-  }, []);
+    fetchStats();
+  }, [user, fetchRewardPoints, fetchPendingRequestsCount, fetchOngoingActivitiesCount]);
+
+  // Fetch recent requests (5 items)
+  useEffect(() => {
+    const fetchRecentRequests = async () => {
+      if (!user?.userId) return;
+
+      setLoading(prev => ({ ...prev, requests: true }));
+      setErrors(prev => ({ ...prev, requests: null }));
+
+      try {
+        const response = await requestApi.getMyRequests({
+          employeeId: user.userId,
+          pageSize: 5,
+          currentPage: 1,
+          sortBy: 'createdAt',
+          sortDirection: 'DESC',
+        });
+        if (response.success && response.data?.content) {
+          console.log('Recent Requests Response:', response);
+          setRecentRequests(response.data.content);
+        } else {
+          setRecentRequests([]);
+        }
+      } catch (error) {
+        console.error('Error fetching recent requests:', error);
+        setErrors(prev => ({ ...prev, requests: 'Không thể tải danh sách yêu cầu' }));
+        setRecentRequests([]);
+      } finally {
+        setLoading(prev => ({ ...prev, requests: false }));
+      }
+    };
+
+    fetchRecentRequests();
+  }, [user?.userId, requestApi]);
+
+  // Fetch upcoming activities (5 items)
+  useEffect(() => {
+    const fetchUpcomingActivities = async () => {
+      if (!user?.userId) return;
+
+      setLoading(prev => ({ ...prev, activities: true }));
+      setErrors(prev => ({ ...prev, activities: null }));
+
+      try {
+        // Fetch both ongoing and upcoming activities
+        const [ongoingResponse, upcomingResponse] = await Promise.all([
+          activityApi.getMyActivities(user.userId, {
+            status: ActivityStatus.IN_PROGRESS,
+            pageSize: 5,
+            pageNumber: 1,
+          }),
+          activityApi.getMyActivities(user.userId, {
+            status: ActivityStatus.OPEN,
+            pageSize: 5,
+            pageNumber: 1,
+          }),
+        ]);
+
+        const ongoing = ongoingResponse.success ? ongoingResponse.data?.content || [] : [];
+        const upcoming = upcomingResponse.success ? upcomingResponse.data?.content || [] : [];
+        
+        // Combine and take first 5
+        const combined = [...ongoing, ...upcoming].slice(0, 5);
+        setUpcomingActivities(combined);
+      } catch (error) {
+        console.error('Error fetching upcoming activities:', error);
+        setErrors(prev => ({ ...prev, activities: 'Không thể tải danh sách hoạt động' }));
+        setUpcomingActivities([]);
+      } finally {
+        setLoading(prev => ({ ...prev, activities: false }));
+      }
+    };
+
+    fetchUpcomingActivities();
+  }, [user?.userId, activityApi]);
 
   const handleCheckIn = async () => {
     setIsCheckingIn(true);
@@ -223,7 +300,7 @@ const EmployeeDashboard: React.FC = () => {
       setIsCheckingIn(false);
     }
   };
-
+  console.log("hdhdhhd", recentRequests);
   return (
     <div>
       {/* Header */}
@@ -258,11 +335,11 @@ const EmployeeDashboard: React.FC = () => {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <RecentRequests 
           requests={recentRequests} 
-          isLoading={isLoadingRequests}
+          isLoading={loading.requests}
         />
         <UpcomingActivities 
           activities={upcomingActivities} 
-          isLoading={isLoadingActivities}
+          isLoading={loading.activities}
         />
       </div>
     </div>
