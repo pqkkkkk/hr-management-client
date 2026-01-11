@@ -53,7 +53,7 @@ export interface RequestApi {
 
   createTimesheetUpdateRequest(
     data: CreateTimesheetUpdateRequestDTO
-  ): Promise<ApiResponse<any>>;
+  ): Promise<ApiResponse<Request>>;
 
   // Bulk operations
   bulkApprove(
@@ -746,7 +746,10 @@ export class RestRequestApi implements RequestApi {
             currentCheckOutTime: res5.data["currentCheckOutTime"],
             desiredCheckInTime: res5.data["desiredCheckInTime"],
             desiredCheckOutTime: res5.data["desiredCheckOutTime"],
-
+            desiredAfternoonStatus: res5.data["desiredAfternoonStatus"],
+            desiredMorningStatus: res5.data["desiredMorningStatus"],
+            desiredMorningWfh: res5.data["desiredMorningWfh"],
+            desiredAfternoonWfh: res5.data["desiredAfternoonWfh"],
           }
         }
         res5.data = requestData5;

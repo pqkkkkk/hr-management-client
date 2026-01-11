@@ -347,75 +347,104 @@ const RequestDetailPage: React.FC = () => {
                     </div>
                   )}
 
-                  {/* Timesheet Info */}
+                  {/* Timesheet Info V2 */}
                   {request.additionalTimesheetInfo && (
                     <div>
-                      <div className="text-sm font-semibold text-gray-800">
+                      <div className="text-sm font-semibold text-gray-800 mb-2">
                         Chi tiết cập nhật công
                       </div>
-                      <div className="mt-2 bg-white border rounded p-4 space-y-2">
-                        <div className="text-sm text-gray-700">
-                          Ngày cần sửa:{" "}
-                          <span className="font-medium">
-                            {formatDate(
-                              request.additionalTimesheetInfo.targetDate
-                            )}
+                      <div className="bg-white border rounded p-4 space-y-4">
+                        {/* Target Date */}
+                        <div className="flex items-center justify-between border-b pb-2">
+                          <span className="text-sm text-gray-600">Ngày cần sửa</span>
+                          <span className="font-semibold text-gray-900">
+                            {formatDate(request.additionalTimesheetInfo.targetDate)}
                           </span>
                         </div>
-                        {request.additionalTimesheetInfo.currentCheckInTime && (
-                          <div className="text-sm text-gray-700">
-                            Giờ vào hiện tại:{" "}
-                            <span className="font-medium">
-                              {
-                                formatDateTime(
-                                  request.additionalTimesheetInfo
-                                    .currentCheckInTime
-                                ).time
-                              }
-                            </span>
-                          </div>
-                        )}
-                        {request.additionalTimesheetInfo
-                          .currentCheckOutTime && (
-                            <div className="text-sm text-gray-700">
-                              Giờ ra hiện tại:{" "}
-                              <span className="font-medium">
-                                {
-                                  formatDateTime(
-                                    request.additionalTimesheetInfo
-                                      .currentCheckOutTime
-                                  ).time
-                                }
-                              </span>
+
+                        {/* Morning & Afternoon Status Grid */}
+                        <div className="grid grid-cols-2 gap-4">
+                          {/* Morning Column */}
+                          <div className="bg-blue-50/50 p-3 rounded">
+                            <div className="text-xs font-bold text-blue-800 mb-2 uppercase">Buổi Sáng</div>
+                            <div className="space-y-1">
+                              <div className="text-sm">
+                                <span className="text-gray-500 mr-2">Trạng thái:</span>
+                                <span className="font-medium text-gray-900">
+                                  {request.additionalTimesheetInfo.desiredMorningStatus === "PRESENT" ? "Có mặt" :
+                                    request.additionalTimesheetInfo.desiredMorningStatus === "LEAVE" ? "Nghỉ phép" : "-"}
+                                </span>
+                              </div>
+                              <div className="text-sm">
+                                <span className="text-gray-500 mr-2">WFH:</span>
+                                <span className={`font-medium ${request.additionalTimesheetInfo.desiredMorningWfh ? "text-green-600" : "text-gray-400"}`}>
+                                  {request.additionalTimesheetInfo.desiredMorningWfh ? "Có" : "Không"}
+                                </span>
+                              </div>
                             </div>
-                          )}
-                        {request.additionalTimesheetInfo.desiredCheckInTime && (
-                          <div className="text-sm text-gray-700">
-                            Giờ vào mong muốn:{" "}
-                            <span className="font-medium">
-                              {
-                                formatDateTime(
-                                  request.additionalTimesheetInfo
-                                    .desiredCheckInTime
-                                ).time
-                              }
-                            </span>
                           </div>
-                        )}
-                        {request.additionalTimesheetInfo
-                          .desiredCheckOutTime && (
-                            <div className="text-sm text-gray-700">
-                              Giờ ra mong muốn:{" "}
-                              <span className="font-medium">
-                                {
-                                  formatDateTime(
-                                    request.additionalTimesheetInfo
-                                      .desiredCheckOutTime
-                                  ).time
-                                }
-                              </span>
+
+                          {/* Afternoon Column */}
+                          <div className="bg-orange-50/50 p-3 rounded">
+                            <div className="text-xs font-bold text-orange-800 mb-2 uppercase">Buổi Chiều</div>
+                            <div className="space-y-1">
+                              <div className="text-sm">
+                                <span className="text-gray-500 mr-2">Trạng thái:</span>
+                                <span className="font-medium text-gray-900">
+                                  {request.additionalTimesheetInfo.desiredAfternoonStatus === "PRESENT" ? "Có mặt" :
+                                    request.additionalTimesheetInfo.desiredAfternoonStatus === "LEAVE" ? "Nghỉ phép" : "-"}
+                                </span>
+                              </div>
+                              <div className="text-sm">
+                                <span className="text-gray-500 mr-2">WFH:</span>
+                                <span className={`font-medium ${request.additionalTimesheetInfo.desiredAfternoonWfh ? "text-green-600" : "text-gray-400"}`}>
+                                  {request.additionalTimesheetInfo.desiredAfternoonWfh ? "Có" : "Không"}
+                                </span>
+                              </div>
                             </div>
-                          )}
+                          </div>
+                        </div>
+
+                        {/* Time Details Grid */}
+                        <div className="grid grid-cols-2 gap-4 pt-2 border-t">
+                          {/* Check In */}
+                          <div>
+                            <div className="text-xs text-gray-500 mb-1">Giờ vào</div>
+                            <div className="flex flex-col">
+                              {request.additionalTimesheetInfo.desiredCheckInTime ? (
+                                <span className="font-semibold text-gray-900">
+                                  {formatDateTime(request.additionalTimesheetInfo.desiredCheckInTime).time}
+                                </span>
+                              ) : (
+                                <span className="text-gray-400 text-sm italic">Không nhập</span>
+                              )}
+                              {request.additionalTimesheetInfo.currentCheckInTime && (
+                                <span className="text-xs text-gray-400 mt-1">
+                                  Hiện tại: {formatDateTime(request.additionalTimesheetInfo.currentCheckInTime).time}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Check Out */}
+                          <div>
+                            <div className="text-xs text-gray-500 mb-1">Giờ ra</div>
+                            <div className="flex flex-col">
+                              {request.additionalTimesheetInfo.desiredCheckOutTime ? (
+                                <span className="font-semibold text-gray-900">
+                                  {formatDateTime(request.additionalTimesheetInfo.desiredCheckOutTime).time}
+                                </span>
+                              ) : (
+                                <span className="text-gray-400 text-sm italic">Không nhập</span>
+                              )}
+                              {request.additionalTimesheetInfo.currentCheckOutTime && (
+                                <span className="text-xs text-gray-400 mt-1">
+                                  Hiện tại: {formatDateTime(request.additionalTimesheetInfo.currentCheckOutTime).time}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
                       </div>
                     </div>
                   )}

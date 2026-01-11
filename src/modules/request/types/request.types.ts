@@ -73,13 +73,20 @@ export interface AdditionalCheckOutInfo {
   currentCheckOutTime?: string; // ISO datetime string
 }
 
+export type AttendanceStatus = "PRESENT" | "LEAVE";
+
 export interface AdditionalTimesheetInfo {
   requestId?: string;
-  desiredCheckInTime: string; // ISO datetime string
-  currentCheckInTime: string; // ISO datetime string
-  desiredCheckOutTime: string; // ISO datetime string
-  currentCheckOutTime: string; // ISO datetime string
+  desiredCheckInTime?: string; // ISO datetime string
+  currentCheckInTime?: string; // ISO datetime string
+  desiredCheckOutTime?: string; // ISO datetime string
+  currentCheckOutTime?: string; // ISO datetime string
   targetDate: string; // ISO date string
+  // Extended fields for v2
+  desiredMorningStatus?: AttendanceStatus;
+  desiredAfternoonStatus?: AttendanceStatus;
+  desiredMorningWfh?: boolean;
+  desiredAfternoonWfh?: boolean;
 }
 
 // Main Request entity
@@ -286,6 +293,11 @@ export interface CreateTimesheetUpdateRequestDTO {
   desiredCheckInTime?: string;
   currentCheckInTime?: string;
   desiredCheckOutTime?: string;
-  currentCheckOutTime: string;
+  currentCheckOutTime?: string;
   attachmentUrl?: string;
+  // Extended fields for v2
+  desiredMorningStatus?: AttendanceStatus;
+  desiredAfternoonStatus?: AttendanceStatus;
+  desiredMorningWfh?: boolean;
+  desiredAfternoonWfh?: boolean;
 }
