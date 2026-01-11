@@ -27,6 +27,9 @@ const DelegatedRequestsPage: React.FC = () => {
         currentPage: 1,
         pageSize: PAGE_SIZE,
         processorId: user?.userId,
+        status: RequestStatus.PENDING,
+        sortBy: "createdAt",
+        sortDirection: "DESC",
     });
 
     const fetchTeamRequests = useMemo(

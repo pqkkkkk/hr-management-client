@@ -38,12 +38,6 @@ const AdminSidebar: React.FC = () => {
                   <span>Danh sách nhân viên</span>
                 </NavLink>
               </li>
-              <li>
-                <NavLink to="/departments" className={navLinkClass}>
-                  <Building2 className="w-5 h-5" />
-                  <span>Quản lý phòng ban</span>
-                </NavLink>
-              </li>
             </ul>
           </li>
 
@@ -52,21 +46,9 @@ const AdminSidebar: React.FC = () => {
             <h3 className={sectionTitleClass}>Quản lý yêu cầu</h3>
             <ul className="mt-2 space-y-1">
               <li>
-                <NavLink to="/requests" end className={navLinkClass}>
-                  <FileText className="w-5 h-5" />
-                  <span>Yêu cầu của tôi</span>
-                </NavLink>
-              </li>
-              <li>
                 <NavLink to="/requests/delegated" end className={navLinkClass}>
                   <FileText className="w-5 h-5" />
                   <span>Yêu cầu được ủy quyền</span>
-                </NavLink>
-              </li>
-              <li>
-                <NavLink to="/requests/create" end className={navLinkClass}>
-                  <FileText className="w-5 h-5" />
-                  <span>Gửi yêu cầu</span>
                 </NavLink>
               </li>
             </ul>

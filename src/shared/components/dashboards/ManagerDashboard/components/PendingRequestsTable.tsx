@@ -30,23 +30,6 @@ const getRequestTypeColor = (type: RequestType) => {
   return colors[type] || 'text-gray-600 bg-gray-100';
 };
 
-const getTimeAgo = (dateString: string) => {
-  const date = new Date(dateString);
-  const now = new Date();
-  const diffMs = now.getTime() - date.getTime();
-  const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
-  const diffDays = Math.floor(diffHours / 24);
-
-  if (diffDays > 0) {
-    return `${diffDays} ngày trước`;
-  } else if (diffHours > 0) {
-    return `${diffHours} giờ trước`;
-  } else {
-    const diffMinutes = Math.floor(diffMs / (1000 * 60));
-    return `${diffMinutes} phút trước`;
-  }
-};
-
 const formatDate = (dateString: string) => {
   const date = new Date(dateString);
   return date.toLocaleDateString('vi-VN', {
@@ -125,9 +108,6 @@ const PendingRequestsTable: React.FC<PendingRequestsTableProps> = ({
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Ngày gửi
               </th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Thời gian chờ
-              </th>
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
@@ -158,12 +138,6 @@ const PendingRequestsTable: React.FC<PendingRequestsTableProps> = ({
                 </td>
                 <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500">
                   {formatDate(request.createdAt)}
-                </td>
-                <td className="px-4 py-4 whitespace-nowrap">
-                  <div className="flex items-center text-sm text-gray-500">
-                    <Clock className="w-4 h-4 mr-1" />
-                    {getTimeAgo(request.createdAt)}
-                  </div>
                 </td>
               </tr>
             ))}
