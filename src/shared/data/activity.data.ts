@@ -176,8 +176,8 @@ export const mockParticipants: ActivityParticipant[] = [
         employeeId: "NV001",
         employeeName: "Nguyễn Văn A",
         registeredAt: "2025-01-01T08:00:00Z",
-        totalDistance: 8.7,
-        totalLogs: 2,
+        totalDistanceKm: 8.7,
+        totalSubmissions: 2,
     },
     {
         participantId: "PART002",
@@ -185,8 +185,8 @@ export const mockParticipants: ActivityParticipant[] = [
         employeeId: "NV003",
         employeeName: "Lê Văn C",
         registeredAt: "2025-01-02T09:00:00Z",
-        totalDistance: 10.0,
-        totalLogs: 1,
+        totalDistanceKm: 10.0,
+        totalSubmissions: 1,
     },
     {
         participantId: "PART003",
@@ -194,8 +194,8 @@ export const mockParticipants: ActivityParticipant[] = [
         employeeId: "NV004",
         employeeName: "Phạm Thị D",
         registeredAt: "2025-01-03T10:00:00Z",
-        totalDistance: 0,
-        totalLogs: 1,
+        totalDistanceKm: 0,
+        totalSubmissions: 1,
     },
 ];
 

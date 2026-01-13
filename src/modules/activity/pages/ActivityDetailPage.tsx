@@ -9,6 +9,7 @@ import {
     ActivityLog,
     ActivityLogStatus,
     RegisterActivityRequest,
+    ActivityParticipant,
 } from "../types/activity.types";
 import { LeaderboardTable, ActivityLogCard, EmptyState } from "../components";
 import {
@@ -169,11 +170,11 @@ const ActionButtons: React.FC<ActionButtonsProps> = ({
 
 // My Stats Component
 interface MyStatsProps {
-    activity: ActivityDetailResponse;
+    myParticipantInfo: ActivityParticipant | null;
 }
 
-const MyStatsCard: React.FC<MyStatsProps> = ({ activity }) => {
-    if (!activity.isRegistered) return null;
+const MyStatsCard: React.FC<MyStatsProps> = ({ myParticipantInfo }) => {
+    if (!myParticipantInfo) return null;
 
     return (
         <div className="mt-6 p-4 bg-blue-50 rounded-lg">
@@ -181,13 +182,19 @@ const MyStatsCard: React.FC<MyStatsProps> = ({ activity }) => {
             <div className="flex gap-8">
                 <div>
                     <div className="text-2xl font-bold text-blue-600">
-                        {activity.myTotalDistance?.toFixed(1) || 0}
+                        {myParticipantInfo.totalScore?.toFixed(1) || 0}
+                    </div>
+                    <div className="text-sm text-blue-700">Điểm</div>
+                </div>
+                <div>
+                    <div className="text-2xl font-bold text-blue-600">
+                        {myParticipantInfo.totalDistanceKm?.toFixed(1) || 0}
                     </div>
                     <div className="text-sm text-blue-700">km đã chạy</div>
                 </div>
                 <div>
                     <div className="text-2xl font-bold text-blue-600">
-                        {activity.myTotalLogs || 0}
+                        {myParticipantInfo.totalSubmissions || 0}
                     </div>
                     <div className="text-sm text-blue-700">lần ghi nhận</div>
                 </div>
@@ -361,6 +368,7 @@ const ActivityDetailPage: React.FC = () => {
     const [activity, setActivity] = useState<ActivityDetailResponse | null>(null);
     const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
     const [myLogs, setMyLogs] = useState<ActivityLog[]>([]);
+    const [myParticipantInfo, setMyParticipantInfo] = useState<ActivityParticipant | null>(null);
     const [activeTab, setActiveTab] = useState<TabType>("overview");
     const [loading, setLoading] = useState(true);
     const [loadingLogs, setLoadingLogs] = useState(false);
@@ -423,10 +431,24 @@ const ActivityDetailPage: React.FC = () => {
         }
     }, [id, activityApi, user?.userId]);
 
+    // Fetch my participant info
+    const fetchMyParticipantInfo = useCallback(async () => {
+        if (!id || !user?.userId) return;
+        try {
+            const response = await activityApi.getParticipantByActivityIdAndEmployeeId(id, user.userId);
+            if (response.success && response.data) {
+                setMyParticipantInfo(response.data);
+            }
+        } catch (error) {
+            console.error("Error fetching my participant info:", error);
+        }
+    }, [id, activityApi, user?.userId]);
+
     useEffect(() => {
         fetchActivityDetails();
         fetchLeaderboard();
-    }, [fetchActivityDetails, fetchLeaderboard]);
+        fetchMyParticipantInfo();
+    }, [fetchActivityDetails, fetchLeaderboard, fetchMyParticipantInfo]);
 
     useEffect(() => {
         if (activeTab === "my-results" && myLogs.length === 0) {
@@ -516,7 +538,7 @@ const ActivityDetailPage: React.FC = () => {
                             onManage={handleManage}
                         />
                     </div>
-                    <MyStatsCard activity={activity} />
+                    <MyStatsCard myParticipantInfo={myParticipantInfo} />
                 </div>
             </div>
 

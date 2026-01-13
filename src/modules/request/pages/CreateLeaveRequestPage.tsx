@@ -264,7 +264,7 @@ const CreateLeaveRequestPage: React.FC = () => {
   const [errors, setErrors] = useState<FormErrors>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const remainingDays = user?.remainingAnnualLeaveDays || 12;
+  const remainingDays = user?.remainingAnnualLeaveDays || 0;
   const [file, setFile] = useState<File | null>(null);
   const [dragOver, setDragOver] = useState(false);
   const fileInputRef = React.useRef<HTMLInputElement | null>(null);
@@ -339,10 +339,9 @@ const CreateLeaveRequestPage: React.FC = () => {
       setIsSubmitting(true);
 
       const requestData: CreateLeaveRequestDTO = {
-        title: `Nghỉ ${
-          leaveTypeOptions.find((opt) => opt.value === formData.leaveType)
+        title: `Nghỉ ${leaveTypeOptions.find((opt) => opt.value === formData.leaveType)
             ?.label || "phép"
-        }`,
+          }`,
         userReason: formData.reason,
         employeeId: user?.userId || "",
         leaveType: formData.leaveType as LeaveType,
@@ -505,11 +504,10 @@ const CreateLeaveRequestPage: React.FC = () => {
                 onDragLeave={() => setDragOver(false)}
                 onDrop={handleDrop}
                 onClick={() => fileInputRef.current?.click()}
-                className={`border-2 ${
-                  dragOver
+                className={`border-2 ${dragOver
                     ? "border-blue-400 bg-blue-50"
                     : "border-dashed border-gray-300 bg-white"
-                } rounded p-6 text-center cursor-pointer transition-colors`}
+                  } rounded p-6 text-center cursor-pointer transition-colors`}
               >
                 {uploading ? (
                   <>

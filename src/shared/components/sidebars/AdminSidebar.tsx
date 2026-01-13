@@ -103,19 +103,6 @@ const AdminSidebar: React.FC = () => {
               </li>
             </ul>
           </li>
-
-          {/* Settings */}
-          <li>
-            <h3 className={sectionTitleClass}>Cài đặt</h3>
-            <ul className="mt-2 space-y-1">
-              <li>
-                <NavLink to="/settings" className={navLinkClass}>
-                  <Settings className="w-5 h-5" />
-                  <span>Cấu hình hệ thống</span>
-                </NavLink>
-              </li>
-            </ul>
-          </li>
         </ul>
       </nav>
     </aside>
