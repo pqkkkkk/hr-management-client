@@ -89,8 +89,12 @@ export interface ActivityParticipant {
     employeeId: string;
     employeeName?: string;
     registeredAt: string;
-    totalDistance?: number;
-    totalLogs?: number;
+    totalDistanceKm?: number;
+    totalSubmissions?: number;
+    totalScore?: number;
+    approvedSubmissions?: number;
+    pendingSubmissions?: number;
+    rejectedSubmissions?: number;
 }
 
 export interface LeaderboardEntry {

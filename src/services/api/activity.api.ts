@@ -18,6 +18,7 @@ import {
     ActivityDetailResponse,
     ConfigSchemaResponse,
     RegisterActivityRequest,
+    ActivityParticipant,
 } from "modules/activity/types/activity.types";
 import {
     mockActivities,
@@ -58,11 +59,17 @@ export interface ActivityApi {
     // Templates
     getActivityTemplates(): Promise<ApiResponse<ActivityTemplate[]>>;
     getTemplateSchema(templateId: string): Promise<ApiResponse<ConfigSchemaResponse>>;
+
+    // participant
+    getParticipantByActivityIdAndEmployeeId(activityId: string, employeeId: string): Promise<ApiResponse<ActivityParticipant>>;
 }
 
 // ========== MOCK API IMPLEMENTATION ==========
 
 export class MockActivityApi implements ActivityApi {
+    getParticipantByActivityIdAndEmployeeId(activityId: string, employeeId: string): Promise<ApiResponse<ActivityParticipant>> {
+        throw new Error("Method not implemented.");
+    }
     // GET /api/v1/activities
     async getActivities(employeeId?: string, filter?: ActivityFilter): Promise<ApiResponse<Page<Activity>>> {
         return new Promise((resolve) => {
@@ -454,6 +461,9 @@ export class MockActivityApi implements ActivityApi {
 // ========== REST API IMPLEMENTATION ==========
 
 export class RestActivityApi implements ActivityApi {
+    getParticipantByActivityIdAndEmployeeId(activityId: string, employeeId: string): Promise<ApiResponse<ActivityParticipant>> {
+        return dotnetApiClient.get(`/activity-participants`, { params: { activityId, employeeId } });
+    }
     async getActivities(employeeId?: string, filter?: ActivityFilter): Promise<ApiResponse<Page<Activity>>> {
         return dotnetApiClient.get(`/activities`, { params: { ...filter, employeeId } });
     }

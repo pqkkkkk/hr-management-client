@@ -160,7 +160,7 @@ const EmployeeListPage: React.FC = () => {
         filters={{
           search: query.nameTerm,
           gender: query.gender,
-          department: query.departmentId,
+          department: query.departmentName,
           position: query.position,
           status: query.status,
         }}

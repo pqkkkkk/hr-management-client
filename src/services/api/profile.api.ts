@@ -259,6 +259,7 @@ export class RestProfileApi implements ProfileApi {
   }
 
   async getProfiles(filter?: ProfileFilter): Promise<ApiResponse<Page<User>>> {
+    filter.departmentName = filter.departmentName == "" ? undefined : filter.departmentName;
     const response = await springApiClient.get<ApiResponse<Page<User>>>("/users", {
       params: filter,
     });

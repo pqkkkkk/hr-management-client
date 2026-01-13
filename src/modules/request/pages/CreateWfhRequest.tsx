@@ -278,7 +278,7 @@ const WfhRequestForm: React.FC<WfhModalProps> = ({
   const [dragOver, setDragOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const remainingWfhDays = user?.remainingWfhDays || 10;
+  const remainingWfhDays = user?.remainingWfhDays || 0;
   const { uploadSingleFile, uploading } = useFileUpload();
 
   if (isModalMode && open === false) return null;
@@ -510,8 +510,8 @@ const WfhRequestForm: React.FC<WfhModalProps> = ({
               if (!uploading && !loading) fileInputRef.current?.click();
             }}
             className={`border-2 ${dragOver
-                ? "border-blue-400 bg-blue-50"
-                : "border-dashed border-gray-300 bg-white"
+              ? "border-blue-400 bg-blue-50"
+              : "border-dashed border-gray-300 bg-white"
               } rounded-lg p-6 text-center ${uploading || loading
                 ? "opacity-50 pointer-events-none"
                 : "cursor-pointer"
